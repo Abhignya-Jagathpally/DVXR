@@ -47,6 +47,48 @@ All real sources download over plain HTTP without accounts. The stress labels co
 the Non-EEG `.atr` phase annotations; CGM is the open Shanghai diabetes dataset; EHR is
 the open MIMIC-IV demo subset.
 
+## DEAP EEG/peripheral arousal benchmark
+
+`scripts/run_deap_demo.py` runs the DEAP arousal-classification path: it loads EEG and
+peripheral physiology into the canonical schema, builds 30s windows (EEG band-power +
+per-channel statistics), encodes them, and trains a calibrated high/low-arousal classifier
+with a subject-held-out split.
+
+```bash
+# 1. Synthetic DEAP-shaped fixture — always runnable, no download
+python3 scripts/run_deap_demo.py
+
+# 2. One official preprocessed subject file
+python3 scripts/run_deap_demo.py \
+  --deap-pickle /path/to/data_preprocessed_python/s01.dat \
+  --max-trials 40
+
+# 3. A directory of subject files (subject-held-out evaluation)
+python3 scripts/run_deap_demo.py \
+  --deap-dir /path/to/data_preprocessed_python \
+  --max-subjects 10 \
+  --max-trials 40
+```
+
+The preprocessed `.dat` files can be fetched with `kagglehub`:
+
+```python
+import kagglehub
+path = kagglehub.dataset_download("manh123df/deap-dataset")
+# subjects land in <path>/deap-dataset/data_preprocessed_python/s01.dat ... s32.dat
+```
+
+| Mode | Data | Typical result |
+|---|---|---|
+| Synthetic fixture | generated in-process | AUROC ~1.0 (clean fixture, validation only) |
+| Single subject (`--deap-pickle`) | one DEAP subject, within-subject split | AUROC ~0.92, ECE ~0.13 |
+| Directory (`--deap-dir`) | N DEAP subjects, subject-held-out | AUROC near chance — cross-subject arousal does not transfer with a linear baseline |
+
+The single-vs-directory gap is the expected DEAP result: within-subject splits exploit
+subject-specific patterns, while whole-subject hold-out demands cross-subject generalization
+that a linear model on raw features does not achieve. Per-subject normalization or a stronger
+encoder is the next step.
+
 ## Datasets requiring credentials / access
 
 `scripts/fetch_data.py kaggle-wesad` and `kaggle-deap` use `kagglehub` and need a Kaggle
@@ -72,7 +114,7 @@ The real-data tests auto-skip when the corresponding dataset has not been downlo
 
 ```
 src/goal1_pipeline/   schemas, loaders, features, encoders, models, calibration, registry, explain, streaming
-scripts/              run_demo.py, run_real_demo.py, fetch_data.py, convert_*_subject.py
+scripts/              run_demo.py, run_real_demo.py, run_deap_demo.py, fetch_data.py, convert_*_subject.py
 tests/                test_pipeline_smoke.py (synthetic), test_real_data.py (real, auto-skipping)
 ```
 
