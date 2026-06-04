@@ -1,0 +1,5 @@
+modality,primary,fallback,reason
+eeg,EEG-X,LaBraM or BENDR,"Device-agnostic EEG is the highest priority because Galea and EMOTIV differ in channels, noise, and sampling."
+wearable_physiology,BIOT,MOMENT,BIOT handles mismatched biosignal channels; MOMENT is a strong generic time-series fallback.
+cgm,GluFormer,Ridge/SSM-CGM-style forecaster,CGM has strong temporal structure and benefits from self-supervised glucose representations.
+ehr,Med-BERT/BEHRT,Foresight-style timeline features,Structured EHR is best treated as longitudinal patient event sequences before fusion.

@@ -1,0 +1,7 @@
+subject_id,session_id,window_start,window_end,target,raw_high_arousal_probability,high_arousal_probability,predicted_label,risk_band
+DEAP_S03,deap_trial_00,2026-06-03 09:00:00+00:00,2026-06-03 09:00:30+00:00,low_arousal,0.0064176327928304605,0.3684355810480768,low_arousal,watch
+DEAP_S03,deap_trial_01,2026-06-03 09:02:00+00:00,2026-06-03 09:02:30+00:00,high_arousal,0.9948121397466475,0.6323798421083092,high_arousal,elevated
+DEAP_S03,deap_trial_02,2026-06-03 09:04:00+00:00,2026-06-03 09:04:30+00:00,low_arousal,0.005941475018394004,0.36831436895461983,low_arousal,watch
+DEAP_S03,deap_trial_03,2026-06-03 09:06:00+00:00,2026-06-03 09:06:30+00:00,high_arousal,0.9944764196036026,0.6322944492649778,high_arousal,elevated
+DEAP_S03,deap_trial_04,2026-06-03 09:08:00+00:00,2026-06-03 09:08:30+00:00,low_arousal,0.003815687644436212,0.3677734254323362,low_arousal,watch
+DEAP_S03,deap_trial_05,2026-06-03 09:10:00+00:00,2026-06-03 09:10:30+00:00,high_arousal,0.9940563629043084,0.6321875931215589,high_arousal,elevated
