@@ -6,3 +6,4 @@ pyarrow
 wfdb        # read PhysioNet WFDB records (Non-EEG stress dataset)
 openpyxl    # read Shanghai T1DM/T2DM CGM Excel workbooks
 kagglehub   # download WESAD/DEAP from Kaggle (requires Kaggle credentials)
+torch       # neural biosignal encoder (CPU ok): pip install torch --index-url https://download.pytorch.org/whl/cpu
