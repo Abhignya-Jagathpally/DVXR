@@ -12,6 +12,7 @@ from goal1_pipeline.features import build_glucose_forecast_table, build_stress_w
 from goal1_pipeline.models import train_glucose_forecaster, train_stress_classifier
 from goal1_pipeline.registry import dataset_choice_table, model_choice_table
 from goal1_pipeline.reporting import write_model_card
+from goal1_pipeline.sota import write_sota_report
 from goal1_pipeline.sample_data import generate_public_like_events
 from goal1_pipeline.schemas import summarize_events
 from goal1_pipeline.streaming import predict_latest_stress
@@ -31,6 +32,7 @@ def main() -> None:
     recommendations.to_csv(output_dir / "encoder_recommendations.csv", index=False)
     model_choice_table().to_csv(output_dir / "model_choice_registry.csv", index=False)
     dataset_choice_table().to_csv(output_dir / "dataset_registry.csv", index=False)
+    write_sota_report(output_dir)
     print("Saved encoder recommendations.")
 
     stress_windows = build_stress_windows(events, window_seconds=30, step_seconds=15)

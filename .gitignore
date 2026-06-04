@@ -11,7 +11,8 @@ venv/
 # Downloaded real datasets (re-fetch with scripts/fetch_data.py)
 data/real/
 
-# Generated synthetic fixtures and model outputs
+# Generated synthetic fixtures
 data/sample/*.csv
-outputs/*
-!outputs/.gitkeep
+
+# Outputs: keep curated result/report artifacts, ignore large regenerable raw event dumps
+outputs/*events*.csv

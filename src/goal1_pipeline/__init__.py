@@ -9,6 +9,7 @@ __all__ = [
     "models",
     "calibration",
     "registry",
+    "sota",
     "reporting",
     "explain",
     "streaming",

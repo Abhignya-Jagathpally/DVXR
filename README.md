@@ -89,6 +89,21 @@ subject-specific patterns, while whole-subject hold-out demands cross-subject ge
 that a linear model on raw features does not achieve. Per-subject normalization or a stronger
 encoder is the next step.
 
+## SOTA model comparison
+
+`scripts/compare_sota_models.py` scores the candidate foundation models per task on
+evidence, Goal-1 fit, integration effort, and calibration, and records which model is
+selected for the pipeline. `run_demo.py` also emits this report.
+
+```bash
+python3 scripts/compare_sota_models.py
+```
+
+Writes `outputs/sota_comparison.csv` (all candidates) and `outputs/sota_selection.csv`
+(the selected models). Selected per task: EEG-X (EEG/BCI), BIOT (wearable biosignals),
+GluFormer with a conformalized Ridge fallback (CGM), Med-BERT/BEHRT (EHR timelines), and
+PHIA (LLM insight layer).
+
 ## Datasets requiring credentials / access
 
 `scripts/fetch_data.py kaggle-wesad` and `kaggle-deap` use `kagglehub` and need a Kaggle
@@ -114,8 +129,9 @@ The real-data tests auto-skip when the corresponding dataset has not been downlo
 
 ```
 src/goal1_pipeline/   schemas, loaders, features, encoders, models, calibration, registry, explain, streaming
-scripts/              run_demo.py, run_real_demo.py, run_deap_demo.py, fetch_data.py, convert_*_subject.py
-tests/                test_pipeline_smoke.py (synthetic), test_real_data.py (real, auto-skipping)
+scripts/              run_demo.py, run_real_demo.py, run_deap_demo.py, compare_sota_models.py, fetch_data.py, convert_*_subject.py
+tests/                test_pipeline_smoke.py (synthetic), test_sota_selection.py, test_real_data.py (real, auto-skipping)
+outputs/              committed result artifacts (metrics, predictions, registries, model card, SOTA report); raw event dumps are gitignored
 ```
 
 ## Caveats
