@@ -1,0 +1,9 @@
+feature,saliency,method
+ppg_heart_rate_energy,1247342.4438863045,variance_fallback
+temp_temperature_energy,94.2840358769266,variance_fallback
+ppg_heart_rate_max,49.864153750852964,variance_fallback
+ppg_heart_rate_min,49.67188476798308,variance_fallback
+ppg_heart_rate_median,48.7701604003771,variance_fallback
+ppg_heart_rate_mean,48.49519099980236,variance_fallback
+eda_eda_energy,4.8720709682532926,variance_fallback
+ppg_heart_rate_iqr,4.4112346430718326,variance_fallback

@@ -13,4 +13,10 @@ __all__ = [
     "reporting",
     "explain",
     "streaming",
+    "neural_encoders",
+    "omics",
+    "clinical_tasks",
+    "personalization",
+    "realtime",
+    "biomarkers",
 ]

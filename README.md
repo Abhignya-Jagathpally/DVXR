@@ -30,6 +30,24 @@ Outputs: dataset summary, schema validation, stress classification metrics, gluc
 forecasting metrics, top explanations, one streaming-style prediction, plus registries
 and calibrated risk bands / prediction intervals in `outputs/`.
 
+## End-to-end Goal 1 run (all capabilities)
+
+```bash
+python3 scripts/run_goal1_full.py
+```
+
+Exercises every Goal 1 capability on synthetic fixtures: multimodal + multi-omics
+ingestion, real device/VR-AR converters, neural (torch BIOT-style) vs PCA embeddings, the
+seven clinical task heads, real-time stress+glucose streaming, explainable neural +
+physiological biomarkers, and per-subject personalization. See
+[`GOAL1_COMPLIANCE.md`](GOAL1_COMPLIANCE.md) for the deliverable-by-deliverable map.
+
+The neural encoder needs torch (CPU is fine):
+
+```bash
+pip install torch --index-url https://download.pytorch.org/whl/cpu
+```
+
 ## Run on real, credential-free public data
 
 ```bash
@@ -115,7 +133,15 @@ python3 scripts/convert_wesad_subject.py /path/to/WESAD/S2/S2.pkl data/sample/we
 python3 scripts/convert_deap_subject.py  /path/to/DEAP/s01.dat       data/sample/deap_s01_events.csv
 ```
 
-Real Galea / EMOTIV exports should be converted into the canonical event schema before modeling.
+Real Galea / EMOTIV / VR-AR exports convert into the canonical event schema before modeling
+(each accepts `--demo` to run on a synthetic sample now):
+
+```bash
+python3 scripts/convert_galea_subject.py  --demo --output outputs/galea_demo.csv
+python3 scripts/convert_emotiv_subject.py --demo --device epocx --output outputs/emotiv_demo.csv
+python3 scripts/ingest_vr_session.py      --demo --output outputs/vr_demo.csv
+python3 scripts/convert_omics_subject.py  --demo --output outputs/omics_demo.csv
+```
 
 ## Tests
 
@@ -128,10 +154,15 @@ The real-data tests auto-skip when the corresponding dataset has not been downlo
 ## Layout
 
 ```
-src/goal1_pipeline/   schemas, loaders, features, encoders, models, calibration, registry, explain, streaming
-scripts/              run_demo.py, run_real_demo.py, run_deap_demo.py, compare_sota_models.py, fetch_data.py, convert_*_subject.py
-tests/                test_pipeline_smoke.py (synthetic), test_sota_selection.py, test_real_data.py (real, auto-skipping)
-outputs/              committed result artifacts (metrics, predictions, registries, model card, SOTA report); raw event dumps are gitignored
+src/goal1_pipeline/   schemas, loaders, features, encoders, models, calibration, registry, sota, explain, streaming,
+                      neural_encoders (torch), omics, clinical_tasks, personalization, realtime, biomarkers
+scripts/              run_demo.py, run_real_demo.py, run_deap_demo.py, run_goal1_full.py, compare_sota_models.py,
+                      fetch_data.py, convert_{wesad,deap,galea,emotiv,omics}_subject.py, ingest_vr_session.py
+tests/                test_pipeline_smoke.py, test_sota_selection.py, test_neural_encoders.py, test_omics.py,
+                      test_device_converters.py, test_clinical_tasks.py, test_personalization.py, test_realtime.py,
+                      test_biomarkers.py, test_real_data.py (real, auto-skipping)
+outputs/              committed result artifacts (metrics, predictions, registries, model card, SOTA report); raw event dumps gitignored
+GOAL1_COMPLIANCE.md   deliverable-by-deliverable compliance map
 ```
 
 ## Caveats
