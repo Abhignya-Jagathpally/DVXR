@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Virtual environment
+venv/
+.venv/
+
+# Downloaded real datasets (re-fetch with scripts/fetch_data.py)
+data/real/
+
+# Generated synthetic fixtures and model outputs
+data/sample/*.csv
+outputs/*
+!outputs/.gitkeep

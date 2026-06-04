@@ -1,0 +1,8 @@
+numpy
+pandas
+scipy
+scikit-learn
+pyarrow
+wfdb        # read PhysioNet WFDB records (Non-EEG stress dataset)
+openpyxl    # read Shanghai T1DM/T2DM CGM Excel workbooks
+kagglehub   # download WESAD/DEAP from Kaggle (requires Kaggle credentials)
