@@ -1,9 +1,9 @@
 feature,saliency,method
-ppg_heart_rate_energy,1247342.4438863045,variance_fallback
-temp_temperature_energy,94.2840358769266,variance_fallback
-ppg_heart_rate_max,49.864153750852964,variance_fallback
-ppg_heart_rate_min,49.67188476798308,variance_fallback
-ppg_heart_rate_median,48.7701604003771,variance_fallback
-ppg_heart_rate_mean,48.49519099980236,variance_fallback
-eda_eda_energy,4.8720709682532926,variance_fallback
-ppg_heart_rate_iqr,4.4112346430718326,variance_fallback
+eda_eda_std,0.007172878,neural_saliency
+eda_eda_iqr,0.0071591726,neural_saliency
+motion_accel_mag_std,0.0068804,neural_saliency
+motion_accel_mag_iqr,0.006850279,neural_saliency
+ppg_heart_rate_std,0.006618529,neural_saliency
+ppg_heart_rate_iqr,0.0065833866,neural_saliency
+eda_eda_slope,0.0065417155,neural_saliency
+eeg_F3_gamma_power,0.0065093897,neural_saliency

@@ -209,12 +209,17 @@ def stream_predictions(
 
         row: dict[str, Any] = {"timestamp": cursor.isoformat()}
 
-        # Stress prediction
+        # Stress prediction (short feature window)
         if trained_stress_model is not None:
             row.update(_run_stress_prediction(window_events, trained_stress_model, window_seconds))
 
-        # Glucose
-        glucose_now, glucose_trend = _latest_glucose(window_events)
+        # Glucose uses its own longer lookback: CGM is sampled minutes apart, so a
+        # 30s stress window rarely contains a reading. Look back 30 minutes to the cursor.
+        glucose_window = events[
+            (events["timestamp_utc"] >= cursor - pd.Timedelta(minutes=30))
+            & (events["timestamp_utc"] <= cursor)
+        ]
+        glucose_now, glucose_trend = _latest_glucose(glucose_window)
         row["glucose_now"] = glucose_now
         row["glucose_trend"] = glucose_trend
 
