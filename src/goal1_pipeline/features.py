@@ -7,6 +7,9 @@ from scipy import signal, stats
 from .schemas import validate_events
 
 
+SIGNAL_MODALITIES = {"eeg", "eda", "ppg", "resp", "temp", "motion", "ecg", "emg", "physiology"}
+
+
 def build_stress_windows(
     events: pd.DataFrame,
     window_seconds: int = 30,
@@ -14,11 +17,42 @@ def build_stress_windows(
     label_name: str = "stress_state",
 ) -> pd.DataFrame:
     """Convert event streams into fixed-window features for stress/workload models."""
+    return build_signal_windows(
+        events=events,
+        window_seconds=window_seconds,
+        step_seconds=step_seconds,
+        label_name=label_name,
+    )
+
+
+def build_deap_arousal_windows(
+    events: pd.DataFrame,
+    window_seconds: int = 30,
+    step_seconds: int = 30,
+) -> pd.DataFrame:
+    """Convert DEAP EEG/peripheral streams into arousal-classification windows."""
+    return build_signal_windows(
+        events=events,
+        window_seconds=window_seconds,
+        step_seconds=step_seconds,
+        label_name="arousal",
+    )
+
+
+def build_signal_windows(
+    events: pd.DataFrame,
+    window_seconds: int = 30,
+    step_seconds: int = 15,
+    label_name: str = "stress_state",
+    modalities: set[str] | None = None,
+) -> pd.DataFrame:
+    """Convert signal events into fixed-window features for a labeled prediction task."""
     events = validate_events(events)
+    modalities = modalities or SIGNAL_MODALITIES
     rows: list[dict] = []
 
     for (subject_id, session_id), group in events.groupby(["subject_id", "session_id"], sort=False):
-        signal_group = group[group["modality"].isin(["eeg", "eda", "ppg", "resp", "temp", "motion", "ecg", "emg"])]
+        signal_group = group[group["modality"].isin(modalities)]
         if signal_group.empty:
             continue
 

@@ -8,9 +8,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from goal1_pipeline.features import build_glucose_forecast_table, build_stress_windows
-from goal1_pipeline.models import train_glucose_forecaster, train_stress_classifier
-from goal1_pipeline.sample_data import generate_public_like_events
+from goal1_pipeline.features import build_deap_arousal_windows, build_glucose_forecast_table, build_stress_windows
+from goal1_pipeline.models import train_arousal_classifier, train_glucose_forecaster, train_stress_classifier
+from goal1_pipeline.sample_data import generate_deap_like_events, generate_public_like_events
 from goal1_pipeline.schemas import summarize_events
 
 
@@ -40,6 +40,28 @@ class PipelineSmokeTest(unittest.TestCase):
             self.assertIn("mae_mg_dl", glucose_model.metrics)
             self.assertIn("interval_coverage", glucose_model.metrics)
             self.assertIn("lower_90", glucose_model.predictions.columns)
+
+    def test_deap_arousal_pipeline_runs(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            events = generate_deap_like_events(
+                Path(temp_dir) / "deap_events.csv",
+                subjects=4,
+                trials_per_subject=4,
+                seconds_per_trial=40,
+                eeg_channels=4,
+                peripheral_channels=2,
+                sample_rate_hz=16.0,
+            )
+            summary = summarize_events(events)
+            self.assertEqual(summary.subjects, 4)
+            self.assertIn("eeg", summary.modalities)
+            self.assertIn("physiology", summary.modalities)
+            self.assertEqual(set(summary.label_values), {"high_arousal", "low_arousal"})
+
+            windows = build_deap_arousal_windows(events, window_seconds=30, step_seconds=30)
+            model = train_arousal_classifier(windows)
+            self.assertIn("auroc", model.metrics)
+            self.assertIn("high_arousal_probability", model.predictions.columns)
 
 
 if __name__ == "__main__":

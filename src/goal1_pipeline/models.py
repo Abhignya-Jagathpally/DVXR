@@ -31,8 +31,34 @@ class TrainedModel:
 
 
 def train_stress_classifier(windows: pd.DataFrame) -> TrainedModel:
+    return train_binary_classifier(
+        windows,
+        positive_label="stress",
+        negative_label="non_stress",
+        probability_col="stress_probability",
+        raw_probability_col="raw_stress_probability",
+    )
+
+
+def train_arousal_classifier(windows: pd.DataFrame) -> TrainedModel:
+    return train_binary_classifier(
+        windows,
+        positive_label="high_arousal",
+        negative_label="low_arousal",
+        probability_col="high_arousal_probability",
+        raw_probability_col="raw_high_arousal_probability",
+    )
+
+
+def train_binary_classifier(
+    windows: pd.DataFrame,
+    positive_label: str,
+    negative_label: str,
+    probability_col: str,
+    raw_probability_col: str,
+) -> TrainedModel:
     features = feature_columns(windows)
-    y = (windows["target"] == "stress").astype(int)
+    y = (windows["target"] == positive_label).astype(int)
     groups = windows["subject_id"].astype(str)
     train_idx, calibration_idx, test_idx = _group_train_calibration_test_split(windows, groups)
 
@@ -63,10 +89,10 @@ def train_stress_classifier(windows: pd.DataFrame) -> TrainedModel:
         "test_windows": float(len(test_idx)),
     }
     predictions = windows.iloc[test_idx][["subject_id", "session_id", "window_start", "window_end", "target"]].copy()
-    predictions["raw_stress_probability"] = raw_probability
-    predictions["stress_probability"] = probability
-    predictions["predicted_label"] = np.where(predicted == 1, "stress", "non_stress")
-    predictions = add_risk_bands(predictions, "stress_probability")
+    predictions[raw_probability_col] = raw_probability
+    predictions[probability_col] = probability
+    predictions["predicted_label"] = np.where(predicted == 1, positive_label, negative_label)
+    predictions = add_risk_bands(predictions, probability_col)
     return TrainedModel(model=model, feature_columns=features, metrics=metrics, predictions=predictions, calibrator=calibrator)
 
 

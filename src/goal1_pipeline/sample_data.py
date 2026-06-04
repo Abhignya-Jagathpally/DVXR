@@ -38,6 +38,95 @@ def generate_public_like_events(
     return events
 
 
+def generate_deap_like_events(
+    output_csv: str | Path,
+    subjects: int = 5,
+    trials_per_subject: int = 6,
+    seconds_per_trial: int = 45,
+    eeg_channels: int = 8,
+    peripheral_channels: int = 4,
+    sample_rate_hz: float = 32.0,
+    seed: int = 17,
+) -> pd.DataFrame:
+    """Create a small DEAP-shaped fixture with EEG, peripheral physiology, and arousal labels."""
+    rng = np.random.default_rng(seed)
+    rows: list[dict] = []
+    start = pd.Timestamp("2026-06-01T09:00:00Z")
+    eeg_names = [
+        "Fp1", "AF3", "F3", "F7", "FC5", "FC1", "C3", "T7",
+        "CP5", "CP1", "P3", "P7", "PO3", "O1", "Oz", "Pz",
+        "Fp2", "AF4", "Fz", "F4", "F8", "FC6", "FC2", "Cz",
+        "C4", "T8", "CP6", "CP2", "P4", "P8", "PO4", "O2",
+    ][:eeg_channels]
+    peripheral_names = ["eda", "respiration", "temperature", "emg"][:peripheral_channels]
+
+    for subject_idx in range(subjects):
+        subject_id = f"DEAP_S{subject_idx + 1:02d}"
+        for trial_idx in range(trials_per_subject):
+            label = "high_arousal" if (trial_idx + subject_idx) % 2 else "low_arousal"
+            arousal = 1.0 if label == "high_arousal" else 0.0
+            trial_start = start + pd.Timedelta(days=subject_idx, minutes=trial_idx * 2)
+            samples = int(seconds_per_trial * sample_rate_hz)
+
+            for channel_idx, channel in enumerate(eeg_names):
+                phase = channel_idx / max(1, len(eeg_names))
+                for sample_idx in range(samples):
+                    timestamp = trial_start + pd.Timedelta(seconds=sample_idx / sample_rate_hz)
+                    alpha = np.sin(2 * np.pi * 10 * sample_idx / sample_rate_hz + phase)
+                    beta = np.sin(2 * np.pi * 18 * sample_idx / sample_rate_hz + phase)
+                    value = 7.0 + alpha + 1.8 * arousal * beta + rng.normal(0, 0.9)
+                    rows.append(
+                        _row(
+                            subject_id,
+                            f"deap_trial_{trial_idx:02d}",
+                            timestamp,
+                            "fixture",
+                            "deap_like",
+                            "eeg",
+                            channel,
+                            value,
+                            "uV",
+                            sample_rate_hz,
+                            label,
+                            label_name="arousal",
+                        )
+                    )
+
+            for channel_idx, channel in enumerate(peripheral_names):
+                for sample_idx in range(samples):
+                    timestamp = trial_start + pd.Timedelta(seconds=sample_idx / sample_rate_hz)
+                    if channel == "eda":
+                        value = 1.0 + 0.8 * arousal + rng.normal(0, 0.08)
+                    elif channel == "respiration":
+                        value = 0.3 * np.sin(sample_idx / sample_rate_hz * 0.35) + 0.2 * arousal + rng.normal(0, 0.04)
+                    elif channel == "temperature":
+                        value = 33.0 + 0.2 * arousal + rng.normal(0, 0.05)
+                    else:
+                        value = 0.4 + 0.4 * arousal + rng.normal(0, 0.08)
+                    rows.append(
+                        _row(
+                            subject_id,
+                            f"deap_trial_{trial_idx:02d}",
+                            timestamp,
+                            "fixture",
+                            "deap_like",
+                            "physiology",
+                            channel,
+                            value,
+                            "a.u.",
+                            sample_rate_hz,
+                            label,
+                            label_name="arousal",
+                        )
+                    )
+
+    events = validate_events(pd.DataFrame(rows))
+    output_csv = Path(output_csv)
+    output_csv.parent.mkdir(parents=True, exist_ok=True)
+    events.to_csv(output_csv, index=False)
+    return events
+
+
 def _stress_state(minute: float, stress_bias: float) -> str:
     if 6 <= minute < 12:
         return "stress"
@@ -110,6 +199,7 @@ def _add_cgm_rows(rows, rng, subject_id, start, minutes, stress_bias) -> None:
         rows.append(_row(subject_id, "demo_public_like", t, "fixture", "cgm_like", "cgm", "glucose", glucose, "mg/dL", rate, label))
 
 
+
 def _add_ehr_rows(rows, rng, subject_id, start, stress_bias) -> None:
     concepts = {
         "age": 25 + 8 * stress_bias + rng.integers(0, 20),
@@ -135,7 +225,7 @@ def _add_ehr_rows(rows, rng, subject_id, start, stress_bias) -> None:
         )
 
 
-def _row(subject_id, session_id, timestamp, source, device, modality, channel, value, unit, rate, label):
+def _row(subject_id, session_id, timestamp, source, device, modality, channel, value, unit, rate, label, label_name="stress_state"):
     return {
         "subject_id": subject_id,
         "session_id": session_id,
@@ -148,6 +238,6 @@ def _row(subject_id, session_id, timestamp, source, device, modality, channel, v
         "unit": unit,
         "sampling_rate_hz": float(rate),
         "quality_flag": "ok",
-        "label_name": "stress_state" if label else "",
+        "label_name": label_name if label else "",
         "label_value": label,
     }
