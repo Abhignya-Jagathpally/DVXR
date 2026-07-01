@@ -1,0 +1,141 @@
+{
+  "generated_by": "scripts/run_bci_pipeline.py",
+  "emotiv": {
+    "serial": "E5020C07",
+    "fs": 128.0,
+    "duration_s": 1373.1,
+    "n_eeg_samples": 175857,
+    "n_channels": 14
+  },
+  "windows": {
+    "n": 2744,
+    "distribution": {
+      "Neutral": 2175,
+      "Left": 240,
+      "Right": 134,
+      "Push": 124,
+      "Pull": 71
+    },
+    "n_trials": 170
+  },
+  "decoding": {
+    "welch": {
+      "n_features": 70,
+      "balanced_acc": 0.2651,
+      "macro_f1": 0.1753,
+      "macro_auroc": 0.7216
+    },
+    "pow": {
+      "n_features": 70,
+      "balanced_acc": 0.3033,
+      "macro_f1": 0.1972,
+      "macro_auroc": 0.7824
+    },
+    "all": {
+      "n_features": 162,
+      "balanced_acc": 0.2749,
+      "macro_f1": 0.1817,
+      "macro_auroc": 0.7535
+    }
+  },
+  "chance_balanced_acc": 0.2,
+  "cv": {
+    "scheme": "StratifiedGroupKFold by command-trial",
+    "n_splits": 5
+  },
+  "two_stage": {
+    "engaged_vs_neutral_auroc": 0.489,
+    "command_4class_balanced_acc": 0.8227,
+    "command_4class_macro_f1": 0.8191,
+    "command_chance": 0.25,
+    "n_engaged_windows": 569,
+    "feature_set": "pow",
+    "temporal_block_balanced_acc": 0.7219,
+    "temporal_block_macro_f1": 0.6628,
+    "lateralization_lr_auroc": 0.5412
+  },
+  "neural_latent_decode": {
+    "balanced_acc": 0.1561,
+    "macro_f1": 0.0995,
+    "embedding_dim": 16
+  },
+  "manifold_method": "PHATE",
+  "top_biomarkers": {
+    "eeg_AF4_betaL": 1.1249,
+    "eeg_T8_gamma": 0.8598,
+    "eeg_O2_betaH": 0.7336,
+    "eeg_FC6_gamma": 0.701,
+    "eeg_O1_betaL": 0.6999,
+    "eeg_F8_alpha": 0.6844,
+    "eeg_T8_alpha": 0.6648,
+    "eeg_FC6_betaL": 0.646,
+    "eeg_P8_betaL": 0.6454,
+    "eeg_T7_gamma": 0.6428
+  },
+  "galea": {
+    "fs": 250.0,
+    "n_samples": 29952,
+    "n_channels": 16,
+    "n_usable": 11,
+    "usable_channels": [
+      "eeg_1",
+      "eeg_2",
+      "eeg_3",
+      "eeg_4",
+      "eeg_5",
+      "eeg_6",
+      "eeg_7",
+      "eeg_11",
+      "eeg_12",
+      "eeg_13",
+      "eeg_14"
+    ]
+  },
+  "fusion_ablation": {
+    "task": "EMOTIV 4-class command (Left/Right/Push/Pull)",
+    "chance": 0.25,
+    "n_windows": 569,
+    "cv_splits": 5,
+    "rows": [
+      {
+        "modality": "EEG",
+        "n_features": 140,
+        "balanced_acc": 0.7801,
+        "macro_f1": 0.7865
+      },
+      {
+        "modality": "Motion",
+        "n_features": 20,
+        "balanced_acc": 0.6047,
+        "macro_f1": 0.5791
+      },
+      {
+        "modality": "PM (affective)",
+        "n_features": 2,
+        "balanced_acc": 0.5387,
+        "macro_f1": 0.5169
+      },
+      {
+        "modality": "Fusion (mean)",
+        "n_features": 162,
+        "balanced_acc": 0.7715,
+        "macro_f1": 0.7674
+      },
+      {
+        "modality": "Fusion (conf-weighted)",
+        "n_features": 162,
+        "balanced_acc": 0.7797,
+        "macro_f1": 0.7824
+      }
+    ],
+    "best_single_modality_balAcc": 0.7801,
+    "fusion_conf_weighted_balAcc": 0.7796500233950646,
+    "fusion_gain_vs_best_single": -0.0004,
+    "weights": {
+      "EEG": 0.452,
+      "Motion": 0.302,
+      "PM (affective)": 0.246
+    }
+  },
+  "runtime_s": 110.3
+}

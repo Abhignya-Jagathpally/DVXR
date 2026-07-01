@@ -13,6 +13,56 @@ models (see `model_choice_registry.csv`):
 - **CGM:** GluFormer if weights/data access are available, else a conformalized forecasting baseline.
 - **EHR:** Med-BERT/BEHRT for structured events, NYUTron/Foresight for note/concept timelines.
 
+## CACMF — the unified multimodal fusion framework (`dvxr`)
+
+The pipeline is now packaged as **`dvxr`** implementing **CACMF** (Cross-modal Aligned
+Codebook Multimodal Fusion). `goal1_pipeline` remains importable as thin re-export
+shims, so every existing script and test keeps working.
+
+```
+raw files ─▶ ingest/validate (13-col canonical schema) ─▶ per-modality features
+   │
+   ├─ per-modality ENCODER  f_m ─▶ z_m         (dvxr/encoders/*_adapter.py, real weights)
+   ├─ VQ CODEBOOK          q_m ─▶ ê_m, code k* (dvxr/encoders/codebook.py)
+   ├─ FUSION g  (early|intermediate|late|attention|cross-modal) ─▶ h  (dvxr/fusion/)
+   ├─ MULTI-TASK heads + relative losses ─▶ 7 calibrated tasks   (dvxr/tasks/)
+   ├─ REAL-TIME fused stream + adaptive intervention            (dvxr/realtime/)
+   ├─ EXPLAIN (physio + neural saliency + attention + codebook) (dvxr/explain/)
+   └─ LLM INSIGHT (explains, never predicts; offline-safe)      (dvxr/llm/)
+```
+
+**Real foundation-model weights** (verified, CPU-runnable; see `dvxr.config.FOUNDATION_MODELS`).
+Where the POW's named model has no usable open weights, a verified substitute is wired
+(the original is recorded), and an always-runnable baseline keeps the offline test suite green:
+
+| Modality | Primary (real weights) | Fallback | Baseline |
+|---|---|---|---|
+| EEG | LaBraM `braindecode/labram-pretrained` | EEGPT | band-power + VQ encoder |
+| Wearable | MOMENT `AutonLab/MOMENT-1-large` | TimesFM | neural encoder / PCA |
+| CGM | CGM-JEPA `CRUISEResearchGroup/CGM-JEPA` | Chronos-Bolt | conformal Ridge |
+| EHR | CEHR-BERT-style (train-local) | Bio_ClinicalBERT | tokenized-code timeline |
+| Omics | Geneformer `ctheodoris/Geneformer` | — | omics features |
+| Insight LLM | Anthropic Claude API | Qwen2.5-7B (local) | deterministic template |
+
+Real weights are the primary path (`config.use_real_weights=True`); they degrade to the
+baseline behind capability checks, so **the whole pipeline runs with no network and no GPU**.
+
+### Run CACMF (one command, offline/CPU/deterministic)
+
+```bash
+python3 scripts/run_mmf_full.py            # full pipeline -> outputs/
+python3 scripts/run_mmf_full.py --profile  # profile data/ -> outputs/data_schema_report.md
+python3 scripts/run_mmf_full.py --realtime # fused stream  -> outputs/realtime_fused_stream.csv
+python3 scripts/run_mmf_full.py --insight  # LLM insight   -> outputs/insight_example.md (offline)
+python3 scripts/run_ablation.py            # Goal-3 ablation-> outputs/ablation_table.csv
+make paper                                 # build paper/tables/*.tex (PDF if pdflatex present)
+make all                                   # ablation + full run + paper + tests
+```
+
+Optional real-weights setup: `pip install "braindecode[hug]"` (LaBraM); set
+`ANTHROPIC_API_KEY` + `DVXR_LLM_MODEL` for the live insight layer (keys read from env only,
+never logged). Architecture spec: `docs/ARCHITECTURE.md`; guardrails: `docs/MASTER_BRIEF.md`.
+
 ## Install
 
 ```bash
@@ -29,6 +79,23 @@ python3 scripts/run_demo.py
 Outputs: dataset summary, schema validation, stress classification metrics, glucose
 forecasting metrics, top explanations, one streaming-style prediction, plus registries
 and calibrated risk bands / prediction intervals in `outputs/`.
+
+## Real collected BCI data → decoding + dashboard (EMOTIV + Galea)
+
+The headline tangible result. Runs the full pipeline on the **collected** EMOTIV
+EPOC X (mental commands: Neutral/Left/Right/Push/Pull) and Galea recordings in
+`data/*.zip`, producing a self-contained dashboard, figures, and metrics:
+
+```bash
+venv/bin/python scripts/run_bci_pipeline.py
+# -> outputs/bci/dashboard.html  + PNG figures + metrics.json
+```
+
+Decodes intended cube movement from EEG (the avatarRT / MRAE / TPHATE analog):
+4-class command direction at **bal-acc 0.82 trial-grouped / 0.72 drift-controlled**
+(chance 0.25), with a PHATE neural manifold, leakage-controlled CV, real-time
+streaming decode, and explainable channel×band biomarkers. Full writeup:
+[`BCI_PIPELINE.md`](BCI_PIPELINE.md).
 
 ## End-to-end Goal 1 run (all capabilities)
 

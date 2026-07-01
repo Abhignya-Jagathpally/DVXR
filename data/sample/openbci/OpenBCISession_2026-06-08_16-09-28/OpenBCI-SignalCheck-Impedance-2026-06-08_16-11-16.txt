@@ -1,0 +1,5 @@
+%OpenBCI Signal Check - Impedance
+%Number of channels = 18
+%Sample Rate = Variable
+%Board = OpenBCI_GUI$BoardGaleaBeta
+ADS1299 Pin, Anatomical Name, Last Impedance (kOhms), Timestamp, Timestamp (Formatted)

@@ -7,3 +7,14 @@ wfdb        # read PhysioNet WFDB records (Non-EEG stress dataset)
 openpyxl    # read Shanghai T1DM/T2DM CGM Excel workbooks
 kagglehub   # download WESAD/DEAP from Kaggle (requires Kaggle credentials)
 torch       # neural biosignal encoder (CPU ok): pip install torch --index-url https://download.pytorch.org/whl/cpu
+
+# --- CACMF real foundation-model weights (optional; adapters degrade to baselines
+#     without these so the offline test suite still passes) ---
+transformers      # Bio_ClinicalBERT (ehr), Geneformer (omics)
+huggingface_hub   # checkpoint download/cache
+safetensors       # fast weight loading
+accelerate        # CPU/GPU-agnostic model placement
+einops            # tensor ops used by adapters
+momentfm          # MOMENT-1 (wearable_phys, cgm, behavior); install: pip install --no-deps momentfm (its numpy pin won't build on 3.12)
+# braindecode     # LaBraM (eeg) — pip install "braindecode[hug]"; enable when wiring EEGAdapter
+# anthropic       # LLM insight layer (Stage 8); offline template fallback needs no key
