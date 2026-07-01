@@ -1,0 +1,5 @@
+%OpenBCI Raw EXG Data
+%Number of channels = 18
+%Sample Rate = 250 Hz
+%Board = OpenBCI_GUI$BoardGaleaBeta
+Sample Index, EMG Channel 0, EMG Channel 1, EMG Channel 2, EMG Channel 3, EOG Channel 0, EOG Channel 1, EMG Channel 4, EMG Channel 5, EEG Channel 0, EEG Channel 1, EEG Channel 2, EEG Channel 3, EEG Channel 4, EEG Channel 5, EEG Channel 6, EEG Channel 7, EEG Channel 8, EEG Channel 9, EEG Channel 10, EEG Channel 11, EEG Channel 12, EEG Channel 13, EEG Channel 14, EEG Channel 15, Raw PC Timestamp, Raw Device Timestamp, Timestamp, Marker, Timestamp (Formatted)

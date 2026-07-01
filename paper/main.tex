@@ -1,0 +1,76 @@
+%% CACMF — IEEE conference paper scaffold (Goal 4).
+%% Prose marked TODO is a placeholder — DO NOT treat as results. Result tables are
+%% auto-generated from outputs/ by scripts/build_paper_tables.py; every number traces
+%% to a file under outputs/.
+\documentclass[conference]{IEEEtran}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{hyperref}
+
+\title{CACMF: Cross-modal Aligned Codebook Multimodal Fusion for\\
+Mental-Health and Diabetes Risk from BCI, Wearables, CGM, and EHR}
+\author{\IEEEauthorblockN{Abhignya Jagathpally}
+\IEEEauthorblockA{DVXR Lab, University of North Texas}}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+% TODO: final abstract. Draft: CACMF unifies per-modality vector-quantized codebook
+% tokenization aligned across modalities via cross-modal InfoNCE, a cross-modal
+% transformer fusion with per-sample confidence-weighted aggregation that degrades
+% gracefully under arbitrary missing modalities, joint mental-health + glucose
+% multi-task calibration with per-subject personalization, and a real-time
+% intervention loop with an LLM layer constrained to explain rather than predict.
+% State contributions as our framing, verified against literature at write-up.
+\textbf{TODO: abstract.}
+\end{abstract}
+
+\section{Introduction}
+% TODO: motivation (BCI + wearables + CGM + EHR for mental-health/diabetes risk),
+% gap (no single framework spans these with graceful missing-modality handling),
+% contributions (VQ codebook alignment, cross-modal fusion, multi-task calibration,
+% real-time intervention, explain-only LLM). Novelty stated as our contribution.
+\textbf{TODO: introduction.}
+
+\section{Related Work}
+% EEG/BCI foundation models: EEG-X~\cite{eegx}, LaBraM~\cite{labram}, BENDR~\cite{bendr}.
+% Biosignal/time-series: BIOT~\cite{biot}, MOMENT~\cite{moment}.
+% CGM/diabetes: GluFormer~\cite{gluformer}.
+% EHR: Med-BERT~\cite{medbert}, BEHRT~\cite{behrt}.
+% Wearable LLM insight: PHIA~\cite{phia}, PH-LLM~\cite{phllm}, Health-LLM~\cite{healthllm}.
+% Multimodal clinical fusion: MedFuse~\cite{medfuse}, MedPatch~\cite{medpatch}.
+\textbf{TODO: related work synthesis.}
+
+\section{Method: CACMF}
+% Per-modality encoders $f_m \to z_m$; VQ codebook $q_m$ (straight-through, EMA,
+% dead-code reinit); fusion $g$ (early | intermediate | late | attention |
+% cross-modal transformer); multi-task heads + conformal forecast; relative losses
+% $L_\text{total}=\sum_t \lambda_t L_t + \lambda_\text{vq}\sum L_\text{vq}
+% + \lambda_\text{rec}\sum L_\text{rec} + \lambda_\text{alg} L_\text{align}$.
+% See docs/ARCHITECTURE.md for the full specification.
+\textbf{TODO: method details and figure.}
+
+\section{Experiments}
+% Datasets: PhysioNet Non-EEG~\cite{noneeg}, Shanghai CGM~\cite{shanghai},
+% MIMIC-IV demo~\cite{mimic}, DEAP~\cite{deap}, WESAD~\cite{wesad}, and locally
+% collected EMOTIV/Galea BCI. Protocol: subject/patient-held-out splits.
+\textbf{TODO: experimental setup.}
+
+\section{Ablation}
+% Auto-generated from outputs/ablation_table.csv. Honest: fusion is not assumed to
+% beat the best single modality.
+\IfFileExists{tables/ablation.tex}{\input{tables/ablation.tex}}{\textbf{TODO: run scripts/run\_ablation.py}}
+\IfFileExists{tables/clinical_metrics.tex}{\input{tables/clinical_metrics.tex}}{}
+\IfFileExists{tables/codebook.tex}{\input{tables/codebook.tex}}{}
+
+\section{Limitations}
+% Synthetic-fixture scores validate the pipeline, not science; documented proxies are
+% not clinically-validated labels; foundation-model substitutions where original
+% weights are unavailable (e.g., LaBraM for EEG-X, MOMENT for GluFormer).
+\textbf{TODO: limitations.}
+
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+\end{document}

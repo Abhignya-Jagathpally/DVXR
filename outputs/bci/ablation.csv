@@ -1,0 +1,6 @@
+modality,n_features,balanced_acc,macro_f1
+EEG,140,0.7801,0.7865
+Motion,20,0.6047,0.5791
+PM (affective),2,0.5387,0.5169
+Fusion (mean),162,0.7715,0.7674
+Fusion (conf-weighted),162,0.7797,0.7824

@@ -73,3 +73,59 @@ real checkpoints when available.
 - Multi-omics, VR/AR, and device demos run on **synthetic fixtures** until real exports are
   supplied; every converter accepts real files in the same shape.
 - Metrics on synthetic fixtures validate the pipeline, not scientific performance.
+
+---
+
+# Goals 1–3 (CACMF / `dvxr`) compliance map
+
+The pipeline is packaged as **`dvxr`** implementing CACMF. `goal1_pipeline` stays
+importable via re-export shims. Run everything with `python3 scripts/run_mmf_full.py`
+(offline/CPU/deterministic). Status legend as above.
+
+## Goal 1 — ingestion, encoders, tasks, real-time, explainability
+
+| Deliverable | Status | Where |
+|---|---|---|
+| Canonical 13-column schema (unchanged) | ✅ | `dvxr/schemas.py` |
+| Local `data/` profiling → schema report | ✅ | `dvxr/ingest/profile.py::profile_data_dir` → `outputs/data_schema_report.md` |
+| VQ-codebook tokenizer (EMA, dead-code, straight-through, perplexity) | ✅ | `dvxr/encoders/codebook.py` |
+| Per-modality adapters behind one `EncoderProtocol` | ✅ | `dvxr/encoders/*_adapter.py`, `base.py` |
+| **Real foundation-model weights** (primary) + guarded fallbacks | ✅ | `dvxr.config.FOUNDATION_MODELS`; MOMENT verified running on CPU |
+| Seven clinical tasks (documented proxies, no invented labels) | ✅/⚠️ | `dvxr/clinical_tasks.py` reused in `dvxr/tasks/heads.py` |
+| Real-time fused streaming + adaptive intervention | ✅ | `dvxr/realtime/monitor.py`, `intervention.py` |
+| Explainable biomarkers + neural saliency + attention + codebook | ✅ | `dvxr/explain/` |
+| Personalization (per-subject normalize + calibrator) | ✅ | `dvxr/tasks/train.py::population_and_personalized_metrics` |
+| LLM insight layer (explains only, offline-safe) | ✅ | `dvxr/llm/` |
+
+## Goal 2 — multimodal fusion
+
+| Deliverable | Status | Where |
+|---|---|---|
+| Early / intermediate / late / attention / cross-modal transformer | ✅ | `dvxr/fusion/strategies.py` |
+| Weighted-late / ensemble-avg / confidence-weighted aggregation | ✅ | `dvxr/fusion/aggregate.py` |
+| Cross-modal InfoNCE alignment + relative-loss weights | ✅ | `dvxr/tasks/losses.py` |
+| Arbitrary missing-modality handling (learned absent token, masking) | ✅ | `dvxr/fusion/strategies.py` |
+| `CACMFModel` end-to-end + latent/attention/weight export | ✅ | `dvxr/fusion/model.py` |
+
+## Goal 3 — ablation (fused vs single-modality)
+
+| Deliverable | Status | Where |
+|---|---|---|
+| Subject/patient-held-out splits | ✅ | `dvxr/eval/splits.py` |
+| Per-task single vs fusion vs aggregation, AUROC/AUPRC/F1/acc/ECE + MAE/coverage | ✅ | `dvxr/eval/ablation.py` → `outputs/ablation_table.csv` |
+| Honest reporting (fused ≥ single **not** assumed) | ✅ | `dvxr/eval/ablation.py::ablation_summary` |
+
+## Goal 4 — IEEE paper scaffold
+
+| Deliverable | Status | Where |
+|---|---|---|
+| IEEEtran skeleton, TODO placeholders (no fabricated results) | ✅ | `paper/main.tex`, `references.bib` |
+| Result tables auto-filled from `outputs/`, every number traceable | ✅ | `dvxr/eval/paper.py`, `scripts/build_paper_tables.py` |
+
+## CACMF honest limitations
+- Ablation uses a frozen-encoder linear-probe protocol on synthetic fixtures — it
+  validates the harness, not scientific performance; real metrics need real labeled data.
+- `EEG-X`, `GluFormer`, `Med-BERT`, and `PH-LLM` have **no usable open weights**; verified
+  real substitutes are wired (LaBraM, MOMENT/CGM-JEPA, Bio_ClinicalBERT, Claude API) and the
+  originals recorded in `dvxr.config.FOUNDATION_MODELS`.
+- Paper prose is placeholder TODO; only the result tables are auto-generated.
