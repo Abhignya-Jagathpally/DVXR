@@ -1,0 +1,5 @@
+%OpenBCI Raw Aux Data
+%Number of channels = 19
+%Sample Rate = 50 Hz
+%Board = OpenBCI_GUI$BoardGaleaBeta
+Sample Index, EDA, PPG Red, PPG IR, Board Temperature, Battery, Accelerometer X, Accelerometer Y, Accelerometer Z, Gyroscope X, Gyroscope Y, Gyroscope Z, Magnetometer X, Magnetometer Y, Magnetometer Z, Raw PC Timestamp, Raw Device Timestamp, Timestamp, Marker, Timestamp (Formatted)

@@ -1,0 +1,46 @@
+{
+  "task": "EMOTIV 4-class command (Left/Right/Push/Pull)",
+  "chance": 0.25,
+  "n_windows": 569,
+  "cv_splits": 5,
+  "rows": [
+    {
+      "modality": "EEG",
+      "n_features": 140,
+      "balanced_acc": 0.7801,
+      "macro_f1": 0.7865
+    },
+    {
+      "modality": "Motion",
+      "n_features": 20,
+      "balanced_acc": 0.6047,
+      "macro_f1": 0.5791
+    },
+    {
+      "modality": "PM (affective)",
+      "n_features": 2,
+      "balanced_acc": 0.5387,
+      "macro_f1": 0.5169
+    },
+    {
+      "modality": "Fusion (mean)",
+      "n_features": 162,
+      "balanced_acc": 0.7715,
+      "macro_f1": 0.7674
+    },
+    {
+      "modality": "Fusion (conf-weighted)",
+      "n_features": 162,
+      "balanced_acc": 0.7797,
+      "macro_f1": 0.7824
+    }
+  ],
+  "best_single_modality_balAcc": 0.7801,
+  "fusion_conf_weighted_balAcc": 0.7796500233950646,
+  "fusion_gain_vs_best_single": -0.0004,
+  "weights": {
+    "EEG": 0.452,
+    "Motion": 0.302,
+    "PM (affective)": 0.246
+  }
+}
