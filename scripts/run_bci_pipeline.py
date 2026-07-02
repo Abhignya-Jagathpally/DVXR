@@ -17,9 +17,11 @@ Run:  venv/bin/python scripts/run_bci_pipeline.py
 """
 from __future__ import annotations
 
+import argparse
 import base64
 import io
 import json
+import os
 import sys
 import time
 from pathlib import Path
@@ -50,8 +52,39 @@ from goal1_pipeline.bci_real import (
 
 OUT = ROOT / "outputs" / "bci"
 OUT.mkdir(parents=True, exist_ok=True)
-EMOTIV_ZIP = ROOT / "data" / "EmotivBCI-AJ_EPOCX_142080_2026.06.08T15.15.46.05.00.zip"
-GALEA_ZIP = ROOT / "data" / "OpenBCISession_2026-06-08_11-23-34.zip"
+SAMPLE_EMOTIV = ROOT / "data" / "sample" / "emotiv"
+SAMPLE_GALEA = ROOT / "data" / "sample" / "openbci"
+
+
+def _is_sample(p: Path) -> bool:
+    return "sample" in str(p).lower()
+
+
+def resolve_emotiv(explicit: str | None) -> tuple[Path, bool]:
+    """Return (path, is_full). Priority: explicit CLI > $DVXR_BCI_DATA > full zip > sample."""
+    if explicit:
+        return Path(explicit), not _is_sample(Path(explicit))
+    env = os.environ.get("DVXR_BCI_DATA")
+    for base in ([Path(env)] if env else []) + [ROOT / "data"]:
+        zips = sorted(base.glob("*EPOCX*.zip")) + sorted(base.glob("*Emotiv*.zip"))
+        if zips:
+            return zips[0], True
+        if (base / "emotiv").is_dir() and any((base / "emotiv").rglob("*.csv")):
+            return base / "emotiv", not _is_sample(base)
+    return SAMPLE_EMOTIV, False
+
+
+def resolve_galea(explicit: str | None) -> tuple[Path, bool]:
+    if explicit:
+        return Path(explicit), not _is_sample(Path(explicit))
+    env = os.environ.get("DVXR_BCI_DATA")
+    for base in ([Path(env)] if env else []) + [ROOT / "data"]:
+        zips = sorted(base.glob("OpenBCI*.zip")) + sorted(base.glob("*Galea*.zip"))
+        if zips:
+            return zips[0], True
+        if (base / "openbci").is_dir() and any((base / "openbci").rglob("*.csv")):
+            return base / "openbci", not _is_sample(base)
+    return SAMPLE_GALEA, False
 
 PALETTE = {"Neutral": "#8a94a6", "Left": "#2456c7", "Right": "#d6455d",
            "Push": "#1c9e77", "Pull": "#e8a33d"}
@@ -77,24 +110,53 @@ def fig_to_b64(fig) -> str:
     return base64.b64encode(buf.getvalue()).decode("ascii")
 
 
-def main():
+def main(emotiv_src=None, galea_src=None):
     t_start = time.time()
     report = {"generated_by": "scripts/run_bci_pipeline.py"}
     imgs: dict[str, str] = {}
 
+    emotiv_path, emo_full = resolve_emotiv(emotiv_src)
+    galea_path, gal_full = resolve_galea(galea_src)
+    data_source = "full" if emo_full else "sample"
+    report["data_source"] = data_source
+    report["labels_source"] = "emotiv_mc_engine"   # C1: labels come from Emotiv's MC engine, not cues
+    print(f"[0] EMOTIV source: {emotiv_path}  ({'FULL recording' if emo_full else 'committed SAMPLE'})")
+    print(f"[0] Galea source:  {galea_path}  ({'FULL recording' if gal_full else 'committed SAMPLE'})")
+
     # === 1. INGEST =========================================================
-    print("[1] Ingesting real recordings ...")
-    emo = ingest_emotiv(EMOTIV_ZIP)
-    print(f"    EMOTIV {emo.meta['serial']}: {len(emo.eeg):,} samples @ {emo.fs:.0f} Hz "
+    print("[1] Ingesting recordings ...")
+    emo = ingest_emotiv(emotiv_path)
+    print(f"    EMOTIV {emo.meta.get('device','EPOC X')}: {len(emo.eeg):,} samples @ {emo.fs:.0f} Hz "
           f"({emo.duration_s:.0f}s), {len(emo.ch_names)} EEG ch, {len(emo.mc):,} MC samples")
-    report["emotiv"] = {"serial": emo.meta["serial"], "fs": emo.fs,
+    report["emotiv"] = {"device": emo.meta.get("device", "EMOTIV EPOC X"),
+                        "serial": "<redacted-PII>", "fs": emo.fs,
                         "duration_s": round(emo.duration_s, 1),
-                        "n_eeg_samples": len(emo.eeg), "n_channels": len(emo.ch_names)}
+                        "n_eeg_samples": len(emo.eeg), "n_channels": len(emo.ch_names),
+                        "source": str(emotiv_path.name)}
 
     # === 2. EPOCH + LABEL ==================================================
     print("[2] Epoching into labeled windows ...")
     win = epoch_emotiv(emo, win_s=2.0, step_s=0.5, power_thresh=0.05)
-    win = win[win["label"].isin(COMMAND_CLASSES)].reset_index(drop=True)
+    if "label" in win.columns and len(win):
+        win = win[win["label"].isin(COMMAND_CLASSES)].reset_index(drop=True)
+
+    # Graceful degradation: the committed SAMPLE is a schema subset (a handful of
+    # rows), not enough to decode. Exit cleanly with a metrics dict instead of
+    # crashing, so a fresh clone still runs. Full artifacts need the full recording.
+    n_cmd = int(len(win)) if "label" in win.columns else 0
+    n_classes = int(win["label"].nunique()) if ("label" in win.columns and len(win)) else 0
+    if n_cmd < 25 or n_classes < 2:
+        report["windows"] = {"n": n_cmd, "n_command_classes": n_classes}
+        report["note"] = (f"insufficient data to decode on the committed SAMPLE "
+                          f"({n_cmd} command windows). Provide the full recording via "
+                          f"--emotiv <path> or $DVXR_BCI_DATA to reproduce outputs/bci/ artifacts.")
+        report["runtime_s"] = round(time.time() - t_start, 1)
+        # never clobber the committed full-run metrics.json with a sample run
+        dest = OUT / ("metrics.json" if emo_full else "metrics_sample.json")
+        dest.write_text(json.dumps(report, indent=2))
+        print(f"[!] {report['note']}  -> {dest}")
+        return report
+
     dist = win["label"].value_counts().reindex(COMMAND_CLASSES).fillna(0).astype(int)
     print(f"    {len(win):,} windows | label distribution: {dist.to_dict()}")
     print(f"    {win['trial_id'].nunique()} leakage-control trials")
@@ -448,7 +510,7 @@ def main():
     # === 10. GALEA (multi-device ingestion + quality + rest manifold) =====
     print("[8] Galea multi-device ingestion + signal quality ...")
     try:
-        gal = ingest_galea(GALEA_ZIP, max_seconds=120)
+        gal = ingest_galea(galea_path, max_seconds=120)
         usable = gal.quality[gal.quality["usable"]]["channel"].tolist()
         print(f"    Galea: {len(gal.eeg):,} samples @ {gal.fs:.0f} Hz, "
               f"{len(usable)}/{len(gal.ch_names)} usable channels")
@@ -565,7 +627,7 @@ code{{background:#0c1322;padding:2px 6px;border-radius:5px;color:#9ad0ff}}
 <header>
 <h1>DVXR — Multimodal BCI Pipeline · Real Collected Data</h1>
 <p>EMOTIV EPOC X mental-command decoding (Neutral / Left / Right / Push / Pull) — the wearable-BCI analog of real-time neural-manifold avatar decoding (avatarRT · MRAE · TPHATE).</p>
-<p>EMOTIV serial <code>{emo['serial']}</code> · {emo['duration_s']:.0f}s · {emo['fs']:.0f} Hz · {emo['n_channels']} EEG channels · manifold method <code>{report.get('manifold_method','?')}</code> · generated in {report['runtime_s']}s</p>
+<p>EMOTIV <code>{emo.get('device','EPOC X')}</code> · {emo['duration_s']:.0f}s · {emo['fs']:.0f} Hz · {emo['n_channels']} EEG channels · data_source <code>{report.get('data_source','?')}</code> · labels <code>{report.get('labels_source','?')}</code> · manifold <code>{report.get('manifold_method','?')}</code> · {report['runtime_s']}s</p>
 </header>
 <div class="wrap">
 <div class="kpis">
@@ -597,7 +659,14 @@ code{{background:#0c1322;padding:2px 6px;border-radius:5px;color:#9ad0ff}}
 <p style="color:#6e82a6;font-size:12px;margin-top:24px">DVXR Lab · Goal 1 (BCI/EEG ingestion → embeddings → real-time decoding → explainable biomarkers). Omics deferred. Leakage-controlled = windows from the same command trial never split across train/test.</p>
 </div></body></html>"""
     (OUT / "dashboard.html").write_text(html)
+    return report
 
 
 if __name__ == "__main__":
-    main()
+    ap = argparse.ArgumentParser(description="BCI pipeline (EMOTIV + Galea)")
+    ap.add_argument("--emotiv", default=None,
+                    help="EMOTIV .zip, directory, or CSV (default: $DVXR_BCI_DATA / full zip / committed sample)")
+    ap.add_argument("--galea", default=None,
+                    help="Galea/OpenBCI .zip, directory, or CSV (default: as above)")
+    args = ap.parse_args()
+    main(emotiv_src=args.emotiv, galea_src=args.galea)

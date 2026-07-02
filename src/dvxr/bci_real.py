@@ -111,15 +111,32 @@ def _parse_emotiv_header(line: str) -> dict:
     return meta
 
 
-def ingest_emotiv(zip_path: str | Path) -> EmotivRecording:
-    """Load an EMOTIV EPOC X export zip into an :class:`EmotivRecording`."""
-    zip_path = Path(zip_path)
-    with zipfile.ZipFile(zip_path) as zf:
-        member = _emotiv_csv_member(zf)
-        with zf.open(member) as f:
-            raw_bytes = f.read()
+def _emotiv_text(source: str | Path) -> tuple[str, str]:
+    """Return (csv_text, source_name) for a .zip, a directory, or a direct CSV."""
+    source = Path(source)
+    if source.suffix.lower() == ".zip":
+        with zipfile.ZipFile(source) as zf:
+            member = _emotiv_csv_member(zf)
+            with zf.open(member) as f:
+                return f.read().decode("utf-8", errors="replace"), source.name
+    if source.is_dir():
+        cands = [p for p in sorted(source.rglob("*.csv"))
+                 if "intervalMarker" not in p.name]
+        if not cands:
+            raise FileNotFoundError(f"No EMOTIV data CSV under {source}")
+        return cands[0].read_text(errors="replace"), cands[0].name
+    if source.suffix.lower() == ".csv":
+        return source.read_text(errors="replace"), source.name
+    raise FileNotFoundError(f"Unsupported EMOTIV source (need .zip, dir, or .csv): {source}")
 
-    text = raw_bytes.decode("utf-8", errors="replace")
+
+def ingest_emotiv(source: str | Path) -> EmotivRecording:
+    """Load an EMOTIV EPOC X export into an :class:`EmotivRecording`.
+
+    ``source`` may be the ``.zip`` export, a directory containing the exported CSV
+    (e.g. ``data/sample/emotiv``), or a direct path to the ``.md.mc.pm.fe.bp.csv``.
+    """
+    text, source_name = _emotiv_text(source)
     header_line, _, _ = text.partition("\n")
     meta = _parse_emotiv_header(header_line)
 
@@ -197,7 +214,7 @@ def ingest_emotiv(zip_path: str | Path) -> EmotivRecording:
         "firmware": meta.get("headset firmware"),
         "start_timestamp": meta.get("start timestamp"),
         "samples": meta.get("samples"),
-        "source_zip": zip_path.name,
+        "source": source_name,
     }
     return EmotivRecording(eeg=eeg, fs=fs, ch_names=list(EPOCX_CHANNELS),
                            mc=mc, pow=pow_df, pm=pm, motion=motion, meta=meta_out)
@@ -208,21 +225,41 @@ def ingest_emotiv(zip_path: str | Path) -> EmotivRecording:
 # ---------------------------------------------------------------------------
 
 
-def ingest_galea(zip_path: str | Path, max_seconds: float | None = None) -> GaleaRecording:
-    """Load the first BrainFlow session inside a Galea/OpenBCI zip.
+def _galea_raw(source: str | Path) -> tuple[pd.DataFrame, str]:
+    """Return (raw BrainFlow DataFrame, session_name) for a .zip, directory, or CSV."""
+    source = Path(source)
+    if source.suffix.lower() == ".zip":
+        with zipfile.ZipFile(source) as zf:
+            members = sorted(n for n in zf.namelist()
+                             if "BrainFlow-RAW" in n and n.endswith(".csv"))
+            if not members:
+                raise FileNotFoundError("No BrainFlow-RAW CSV in Galea zip")
+            data = zf.read(members[0]).decode("utf-8", errors="replace")
+            session = members[0].split("/")[0]
+    elif source.is_dir():
+        cands = sorted(source.rglob("BrainFlow-RAW*.csv"))
+        if not cands:
+            raise FileNotFoundError(f"No BrainFlow-RAW CSV under {source}")
+        data = cands[0].read_text(errors="replace")
+        session = cands[0].parent.name
+    elif source.suffix.lower() == ".csv":
+        data = source.read_text(errors="replace")
+        session = source.parent.name
+    else:
+        raise FileNotFoundError(f"Unsupported Galea source (need .zip, dir, or .csv): {source}")
+    first = data.split("\n", 1)[0]
+    sep = "\t" if first.count("\t") >= first.count(",") else ","
+    return pd.read_csv(io.StringIO(data), sep=sep, header=None), session
+
+
+def ingest_galea(source: str | Path, max_seconds: float | None = None) -> GaleaRecording:
+    """Load the first BrainFlow session from a Galea/OpenBCI ``.zip``, directory, or CSV.
 
     BrainFlow columns: col0 = sample index, col1..N = channel volts, a unix-epoch
     timestamp column (~1.7e9), plus aux/marker columns. We auto-detect the
     timestamp column and treat the leading high-amplitude columns as EEG.
     """
-    zip_path = Path(zip_path)
-    with zipfile.ZipFile(zip_path) as zf:
-        members = sorted(n for n in zf.namelist()
-                         if "BrainFlow-RAW" in n and n.endswith(".csv"))
-        if not members:
-            raise FileNotFoundError("No BrainFlow-RAW CSV in Galea zip")
-        with zf.open(members[0]) as f:
-            raw = pd.read_csv(f, sep="\t", header=None)
+    raw, session = _galea_raw(source)
 
     # Locate the unix-epoch timestamp column.
     tcol = None
@@ -267,8 +304,8 @@ def ingest_galea(zip_path: str | Path, max_seconds: float | None = None) -> Gale
         })
     quality = pd.DataFrame(rows)
 
-    meta = {"device": "Galea (OpenBCI BrainFlow)", "source_zip": zip_path.name,
-            "session": members[0].split("/")[0]}
+    meta = {"device": "Galea (OpenBCI BrainFlow)", "source": str(Path(source).name),
+            "session": session}
     return GaleaRecording(eeg=eeg, fs=fs, ch_names=ch_names, quality=quality, meta=meta)
 
 
