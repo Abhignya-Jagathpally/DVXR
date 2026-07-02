@@ -63,6 +63,31 @@ Optional real-weights setup: `pip install "braindecode[hug]"` (LaBraM); set
 `ANTHROPIC_API_KEY` + `DVXR_LLM_MODEL` for the live insight layer (keys read from env only,
 never logged). Architecture spec: `docs/ARCHITECTURE.md`; guardrails: `docs/MASTER_BRIEF.md`.
 
+## Real-label benchmark — the honest scoreboard
+
+Synthetic-fixture metrics validate plumbing, not science. For the actual evaluation —
+real external labels, subject/patient-held-out CV, real baselines, CIs and significance —
+run:
+
+```bash
+python3 scripts/run_benchmark.py --repeats 5 --folds 5 --ablate
+# -> outputs/benchmark_scoreboard.{csv,md}
+```
+
+`src/dvxr/bench/` compares the CACMF fused model (encoder + VQ + cross-modal fusion →
+shared head) against real baselines (persistence/majority, classical GBM, best single
+modality, and real pretrained SOTA encoders — MOMENT, Bio_ClinicalBERT) on three
+credential-free real-label tasks, under 5×5 grouped CV with bootstrap CIs, paired
+Wilcoxon + Holm, and a **true retrain-without-modality** ablation.
+
+**Result (honest):** on stress (Non-EEG annotations), glucose (Shanghai CGM future
+value), and mortality (MIMIC-IV), the learned fusion does **not** beat the strongest
+baseline and does not approach a 50% relative-error reduction (RER −20% / −23% / −102%).
+What *does* hold up: multimodality beats the best single modality on stress (~35% via
+concatenation), and a simple learned model beats glucose persistence (~17%) — both
+modest, both significant. Full analysis, root causes, and the audit-by-audit status:
+[`BENCHMARK_FINDINGS.md`](BENCHMARK_FINDINGS.md).
+
 ## Install
 
 ```bash
