@@ -1,11 +1,12 @@
 {
   "generated_by": "scripts/run_bci_pipeline.py",
   "emotiv": {
-    "serial": "E5020C07",
     "fs": 128.0,
     "duration_s": 1373.1,
     "n_eeg_samples": 175857,
-    "n_channels": 14
+    "n_channels": 14,
+    "serial": "<redacted-PII>",
+    "device": "EMOTIV EPOC X"
   },
   "windows": {
     "n": 2744,
@@ -137,5 +138,16 @@
       "PM (affective)": 0.246
     }
   },
-  "runtime_s": 110.3
+  "runtime_s": 110.3,
+  "data_source": "full (uncommitted recording; only a schema sample is in the repo)",
+  "labels_source": "emotiv_mc_engine",
+  "framing": "single-subject, single-session, EXPLORATORY. The 4-class 'command' decode reproduces Emotiv's on-device Mental-Command engine state from raw EEG (labels are MC.Action, not experimenter cues) \u2014 NOT validated neural-intent decoding. Lead with the honest controls: engaged-vs-neutral AUROC 0.489, lateralization 0.541 (chance 0.5); command balanced-accuracy 0.82 (trial-grouped) collapses toward chance under stricter time splits.",
+  "honest_headline": {
+    "engaged_vs_neutral_auroc": 0.489,
+    "lateralization_lr_auroc": 0.5412,
+    "command_temporal_block_balAcc": 0.7219,
+    "command_trial_grouped_balAcc_DEMOTED": 0.8227,
+    "chance_engaged": 0.5,
+    "chance_command": 0.25
+  }
 }

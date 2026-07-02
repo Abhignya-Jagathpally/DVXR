@@ -87,8 +87,13 @@ def _build_vector_quantizer(cfg):
             onehot = nn.functional.one_hot(indices, self.num_codes).type_as(flat)
             quantized_hard = self.codebook[indices]             # (N, d)
 
-            codebook_loss = (flat.detach() - quantized_hard).pow(2).mean()
-            commitment = (flat - quantized_hard.detach()).pow(2).mean()
+            # NOTE (m1): codebook_loss is DIAGNOSTIC-ONLY. The codebook is an EMA buffer
+            # (updated in _ema_update, not by autograd) and quantized_hard indexes it, so
+            # this term carries no gradient to any learnable parameter (flat is detached
+            # on its side too). Only `commitment` trains the encoder. It is kept for
+            # monitoring the codebook-fit magnitude, not as an optimisation objective.
+            codebook_loss = (flat.detach() - quantized_hard).pow(2).mean()   # diagnostic
+            commitment = (flat - quantized_hard.detach()).pow(2).mean()      # trains encoder
             loss = codebook_loss + self.beta * commitment
 
             if self.gumbel and training:

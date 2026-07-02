@@ -77,6 +77,9 @@ def rep_neural(task, tr, te, seed=7):
 
 
 def rep_vq(task, tr, te, seed=7):
+    # NOTE (m1): this probes the CONTINUOUS pre-quantization latent produced by the VQ
+    # encoder (transform() returns the embedding, not the discrete code indices). It is
+    # a "VQ-trained encoder" representation, not a bag-of-codes representation.
     from dvxr.encoders.codebook import VQBiosignalEncoder
     X = _concat(task)
     df, cols = _as_frame(X)
