@@ -16,3 +16,6 @@ data/sample/*.csv
 
 # Outputs: keep curated result/report artifacts, ignore large regenerable raw event dumps
 outputs/*events*.csv
+
+# scratch: BCI pipeline run on the committed sample (smoke test)
+outputs/bci/metrics_sample.json
