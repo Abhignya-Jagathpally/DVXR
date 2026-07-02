@@ -86,6 +86,10 @@ def _sota_embeddings(task: BenchTask) -> np.ndarray:
     frame = pd.DataFrame(X, columns=cols)
     cfg = DEFAULTS.with_(d=16, use_real_weights=True, allow_download=True, seed=7)
     backend = make_primary_backend(modality, cfg)
+    if backend is None or not hasattr(backend, "_embed"):
+        # e.g. CGM-JEPA cannot load as an HF text model — fail cleanly so run.py logs
+        # it once per fold and marks the sota config "unstable" (never silent).
+        raise RuntimeError(f"no real SOTA backend available for modality {modality!r}")
     emb = np.asarray(backend._embed(frame, cols), dtype=float)   # RAW, no PCA
     task.extra["_sota_emb"] = emb
     task.extra["_sota_backend"] = getattr(backend, "name",
