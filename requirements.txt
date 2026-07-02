@@ -16,5 +16,7 @@ safetensors       # fast weight loading
 accelerate        # CPU/GPU-agnostic model placement
 einops            # tensor ops used by adapters
 momentfm          # MOMENT-1 (wearable_phys, cgm, behavior); install: pip install --no-deps momentfm (its numpy pin won't build on 3.12)
+sentencepiece     # tokenizer backend for some HF SOTA encoders (e.g. CGM-JEPA)
+tiktoken          # tokenizer backend for some HF SOTA encoders
 # braindecode     # LaBraM (eeg) — pip install "braindecode[hug]"; enable when wiring EEGAdapter
 # anthropic       # LLM insight layer (Stage 8); offline template fallback needs no key
