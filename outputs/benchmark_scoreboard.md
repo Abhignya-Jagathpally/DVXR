@@ -1,8 +1,13 @@
 # CACMF relativity scoreboard — real labels, held-out subjects
 
-**Protocol:** repeats=5, folds=5, seed=7, sota=True
+**Run params:** repeats=5, folds=5, seed=7, sota=True
 
-Proposed = CACMF fused (cross-modal transformer + VQ) as a swappable representation into a shared head. Baseline = the single strongest NON-fused opponent on the same folds (trivial floor, classical GBM, best single modality, or a real pretrained SOTA encoder). Error metric per task; RER = (base_err - prop_err)/base_err. No configuration is assumed to win.
+**Protocol:** repeated subject/patient-held-out 5x5 CV (single-level; opponent selection and RER share folds — nested CV deferred)
+
+Proposed = CACMF fused (cross-modal transformer + VQ) as a swappable representation into a shared head. Baseline = the single strongest NON-fused opponent on the same folds (trivial floor, classical GBM, best single modality, or a real pretrained SOTA encoder — unstable configs excluded). Error metric per task; RER = (base_err - prop_err)/base_err. No configuration is assumed to win.
+
+
+**Modality labeling (M4):** stress = MULTIMODAL (4 peripheral-physiology streams, one wearable); glucose = single-modality (CGM only); mortality = single-modality (EHR only). Multimodal-fusion conclusions rest on the **stress** task; no dataset co-registers EEG+CGM+EHR per subject.
 
 ```
      task  metric best_baseline  base_err  prop_err  delta_abs  RER_pct  RER_CI_low  RER_CI_high  p_wilcoxon  p_holm  cliffs_delta  n_folds  meets_>=50%
@@ -13,9 +18,13 @@ mortality 1-AUROC       rep:pca    0.1784    0.3599    -0.1815  -101.71     -156
 
 ## Verdict
 
-- **stress** (1-AUROC): fused 0.1294 vs rep:pca 0.1079 -> RER -19.9% (95% CI -28.6..-13.5, Wilcoxon p=1.0000, Holm p=1.0000) -> **does NOT meet the >=50% RER bar.**
-- **glucose** (MAE): fused 13.0939 vs rep:raw 10.6631 -> RER -22.8% (95% CI -25.7..-20.1, Wilcoxon p=1.0000, Holm p=1.0000) -> **does NOT meet the >=50% RER bar.**
-- **mortality** (1-AUROC): fused 0.3599 vs rep:pca 0.1784 -> RER -101.7% (95% CI -157.0..-61.1, Wilcoxon p=0.9999, Holm p=1.0000) -> **does NOT meet the >=50% RER bar.**
+- **stress** (1-AUROC, MULTIMODAL (4 peripheral-physiology streams, one wearable)): fused 0.1294 vs rep:pca 0.1079 -> RER -19.9% (95% CI -28.6..-13.5, Wilcoxon p=1.0000, Holm p=1.0000) -> **does NOT meet the >=50% RER bar.**
+- **glucose** (MAE, single-modality (CGM only)): fused 13.0939 vs rep:raw 10.6631 -> RER -22.8% (95% CI -25.7..-20.1, Wilcoxon p=1.0000, Holm p=1.0000) -> **does NOT meet the >=50% RER bar.**
+- **mortality** (1-AUROC, single-modality (EHR only)): fused 0.3599 vs rep:pca 0.1784 -> RER -101.7% (95% CI -157.0..-61.1, Wilcoxon p=0.9999, Holm p=1.0000) -> **does NOT meet the >=50% RER bar.**
+
+## Stability (M2)
+
+- **glucose**: failures by config = {'sota': 25}; unstable (NaN >20% folds) = ['sota']
 
 ## Per-configuration CV error (lower is better)
 
@@ -29,8 +38,8 @@ classical_gbm   0.1204
     rep:fused   0.1294
     cacmf_e2e   0.1666
 single:motion   0.1670
+         sota   0.1912
    single:ppg   0.2505
-         sota   0.2743
        rep:vq   0.3166
    rep:neural   0.3245
    single:eda   0.3416
@@ -38,19 +47,19 @@ single:motion   0.1670
      majority   0.5000
 ```
 
-### glucose  (SOTA backend: cgm_summary)
+### glucose
 ```
        config     MAE
       rep:raw 10.6631
    single:cgm 10.6631
       rep:pca 10.6636
 classical_gbm 11.6248
-         sota 11.7073
   persistence 12.8761
     rep:fused 13.0939
    rep:neural 14.8668
        rep:vq 15.3913
     cacmf_e2e 20.1736
+         sota     NaN
 ```
 
 ### mortality  (SOTA backend: hf:emilyalsentzer/Bio_ClinicalBERT)
@@ -62,8 +71,8 @@ classical_gbm 11.6248
        rep:vq   0.2282
 classical_gbm   0.2457
    rep:neural   0.3092
-         sota   0.3126
     cacmf_e2e   0.3175
+         sota   0.3440
     rep:fused   0.3599
      majority   0.5000
 ```

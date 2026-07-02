@@ -7,9 +7,10 @@
   * sota:<fm>              — a real pretrained foundation model as a FROZEN feature
                              extractor -> shared head (MOMENT / CGM-JEPA / Bio_ClinicalBERT)
 
-Frozen SOTA embeddings are unsupervised (the FM never sees labels) and identical
-across folds, so they are computed once on all rows without leakage; only the
-shared head is refit per fold.
+SOTA embeddings use the RAW frozen-FM output (no PCA). The FM is unsupervised (never
+sees labels), so its forward pass over all rows is leakage-free; ALL supervised fitting
+(the per-fold StandardScaler + head) happens on train indices only. This fixes the
+earlier transductive-PCA leak (M5): no projection is fit over test rows.
 """
 from __future__ import annotations
 
@@ -67,27 +68,37 @@ _FM_FOR_TASK = {"stress": "wearable_phys", "glucose": "cgm", "mortality": "ehr"}
 
 
 def _sota_embeddings(task: BenchTask) -> np.ndarray:
-    """Compute (and cache) frozen real-FM embeddings for every row, once."""
+    """Cache the RAW frozen-FM embedding for every row (no PCA -> no transductive leak).
+
+    Only the FM forward pass runs here (unsupervised, label-free); dimensionality is
+    handled by the per-fold shared head (StandardScaler + logistic/ridge on train only).
+    """
     if "_sota_emb" in task.extra:
         return task.extra["_sota_emb"]
     import pandas as pd
 
     from dvxr.config import DEFAULTS
-    from dvxr.encoders import ADAPTERS
+    from dvxr.encoders.base import make_primary_backend
 
     modality = _FM_FOR_TASK.get(task.name, "wearable_phys")
     X = _concat(task)
     cols = [f"f{i}" for i in range(X.shape[1])]
     frame = pd.DataFrame(X, columns=cols)
     cfg = DEFAULTS.with_(d=16, use_real_weights=True, allow_download=True, seed=7)
-    adapter = ADAPTERS[modality](cfg)
-    emb = adapter.fit_transform(frame, cols).to_numpy(dtype=float)
+    backend = make_primary_backend(modality, cfg)
+    if backend is None or not hasattr(backend, "_embed"):
+        # e.g. CGM-JEPA cannot load as an HF text model — fail cleanly so run.py logs
+        # it once per fold and marks the sota config "unstable" (never silent).
+        raise RuntimeError(f"no real SOTA backend available for modality {modality!r}")
+    emb = np.asarray(backend._embed(frame, cols), dtype=float)   # RAW, no PCA
     task.extra["_sota_emb"] = emb
-    task.extra["_sota_backend"] = getattr(adapter, "used_encoder", "unknown")
+    task.extra["_sota_backend"] = getattr(backend, "name",
+                                          getattr(backend, "used_encoder", type(backend).__name__))
     return emb
 
 
 def pred_sota(task, tr, te, seed=7):
+    # per-fold: StandardScaler + head fit on TRAIN raw-FM embedding only (no leak)
     emb = _sota_embeddings(task)
     return _fit_head(task.kind, emb[tr], task.y[tr], emb[te], seed=seed)
 

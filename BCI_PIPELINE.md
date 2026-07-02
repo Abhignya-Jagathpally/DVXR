@@ -105,3 +105,33 @@ evaluative threat) → recovery, with STAI-6 / SAM self-reports as ground truth.
 Unity broadcasts LSL markers recorded alongside EMOTIV (Cortex/Band-Power outlet)
 and Galea (BrainFlow→LSL). This yields the stress-labeled data Goal 1's stress/
 anxiety heads need.
+
+## Data provenance & reproducibility
+
+**What produced `outputs/bci/`:** a single full EMOTIV EPOC X recording (subject "AJ",
+one ~1373 s session) plus a Galea/OpenBCI resting session. **These raw recordings are
+NOT committed** (biometric data). Only a small **schema sample** is in the repo:
+
+- `data/sample/emotiv/` — a 5-row EMOTIV CSV + an **empty** `*_intervalMarker.csv`
+  (header only → no experimenter cue onsets) + the session JSON.
+- `data/sample/openbci/` — small OpenBCI/BrainFlow session subsets.
+
+**What a fresh clone can do:** `ingest_emotiv()` / `ingest_galea()` accept a `.zip`,
+a directory, **or** a direct CSV. `scripts/run_bci_pipeline.py` resolves its input in
+priority order — `--emotiv/--galea` CLI → `$DVXR_BCI_DATA` → a full `.zip` in `data/` →
+the committed sample — and stamps `data_source: "full" | "sample"` and
+`labels_source: "emotiv_mc_engine"` into `metrics.json`. On the committed sample it
+**exits cleanly** (writes `metrics_sample.json`, never overwrites the full-run
+`metrics.json`) because 5 rows cannot be decoded.
+
+**To reproduce the full artifacts**, point the script at the full recording:
+
+```bash
+python3 scripts/run_bci_pipeline.py --emotiv /path/to/EmotivBCI-*.zip --galea /path/to/OpenBCISession-*.zip
+# or:  DVXR_BCI_DATA=/path/to/recordings  python3 scripts/run_bci_pipeline.py
+```
+
+**Honesty note (see BENCHMARK_FINDINGS / FIX_PLAN):** labels come from Emotiv's on-device
+Mental-Command engine, not experimenter cues — this is a **single-subject, single-session,
+exploratory** pilot that *reproduces the MC-engine command state from raw EEG*, not
+validated neural-intent decoding. Do not commit raw biometric recordings without consent.

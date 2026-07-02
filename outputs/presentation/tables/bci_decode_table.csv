@@ -1,0 +1,8 @@
+metric,value,chance
+welch 5-class balAcc (raw EEG),0.2651,0.2
+pow 5-class balAcc (Emotiv),0.3033,0.2
+engaged-vs-neutral AUROC,0.489,0.5
+Left-vs-Right lateralization AUROC,0.5412,0.5
+command 4-class balAcc (trial-grouped) [DEMOTED],0.8227,0.25
+command 4-class balAcc (temporal-block),0.7219,0.25
+"command 4-class balAcc (leave-one-block-out, raw EEG)",0.4451729500894618,0.25

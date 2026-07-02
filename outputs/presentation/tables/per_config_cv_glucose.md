@@ -1,0 +1,17 @@
+# per_config_cv_glucose
+
+Source: `outputs/benchmark_scoreboard.md`
+
+```
+       config  cv_error
+      rep:raw   10.6631
+   single:cgm   10.6631
+      rep:pca   10.6636
+classical_gbm   11.6248
+  persistence   12.8761
+    rep:fused   13.0939
+   rep:neural   14.8668
+       rep:vq   15.3913
+    cacmf_e2e   20.1736
+         sota       NaN
+```
