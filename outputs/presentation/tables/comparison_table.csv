@@ -1,0 +1,5 @@
+task,RER_pct,meets_50pct,honest_sentence
+stress,-19.87,False,Multimodal (4 peripheral-physiology streams); fusion loses to naive concat (RER<0).
+glucose,-22.8,False,CGM-only (single modality); learned model loses to simple features/persistence.
+mortality,-101.71,False,"EHR-only (single modality); tiny n=100, fused overfits and loses badly."
+"Brain2Qwerty (reference, different task)",~52-58,True,External reference point for scale only; not our result.

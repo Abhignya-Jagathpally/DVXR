@@ -1,0 +1,4 @@
+protocol,task,metric,best_baseline,base_err,prop_err,delta_abs,RER_pct,RER_CI_low,RER_CI_high,p_wilcoxon,p_holm,cliffs_delta,n_folds,meets_>=50%
+subject/patient-held-out 5x5 CV,stress,1-AUROC,rep:pca,0.1079,0.1294,-0.0215,-19.87,-28.58,-13.5,0.99999,1.0,-0.254,25,False
+subject/patient-held-out 5x5 CV,glucose,MAE,rep:raw,10.6631,13.0939,-2.4308,-22.8,-25.66,-20.15,1.0,1.0,-0.712,25,False
+subject/patient-held-out 5x5 CV,mortality,1-AUROC,rep:pca,0.1784,0.3599,-0.1815,-101.71,-156.98,-61.07,0.9999,1.0,-0.539,23,False
