@@ -91,10 +91,11 @@ def rep_vq(task, tr, te, seed=7):
     return emb_tr, emb_te
 
 
-def _train_fused(task, tr, seed=7, epochs=25):
+def _train_fused(task, tr, seed=7, epochs=25, modality_dropout=0.0):
     """Train the CACMF encoder+VQ+cross-modal fusion+head end-to-end on train fold.
 
     Returns (model, feats_all_tensors). Standardisation is fit on train only.
+    ``modality_dropout`` >0 trains through random modality subsets (streaming robustness).
     """
     import torch
 
@@ -127,7 +128,8 @@ def _train_fused(task, tr, seed=7, epochs=25):
         y_sd = float(np.std(task.y[tr])) or 1.0
         forecast = torch.tensor((task.y[tr] - y_mu) / y_sd, dtype=torch.float32)
     train_multitask(model, ftr, labels, forecast_target=forecast, config=cfg,
-                    log_path="outputs/_bench_train_log.csv")
+                    log_path="outputs/_bench_train_log.csv",
+                    modality_dropout=modality_dropout)
     model.eval()
     f_all = {m: torch.tensor(feats_all[m], dtype=torch.float32) for m in mods}
     return model, f_all, (y_mu, y_sd)

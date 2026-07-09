@@ -43,14 +43,23 @@ def train_multitask(
     log_path: str | pathlib.Path = "outputs/train_log.csv",
     uncertainty_weighting: bool = False,
     ema_decay: Optional[float] = None,
+    modality_dropout: float = 0.0,
 ) -> dict:
-    """Train ``model`` in place; returns history + learned σ_t (if enabled)."""
+    """Train ``model`` in place; returns history + learned σ_t (if enabled).
+
+    ``modality_dropout`` (0..1): if >0, each epoch drops each modality independently with
+    this probability (always keeping >=1), forwarding only the surviving subset so the
+    fusion learns to predict through its absent-token path. This is standard modality-
+    dropout augmentation — it trades a little full-observation accuracy for graceful
+    degradation when sensors drop out at test time (the streaming regime).
+    """
     import torch
     from torch.nn.utils import clip_grad_norm_
 
     cfg = config
     torch.manual_seed(cfg.seed)
     np.random.seed(cfg.seed)
+    all_mods = list(features.keys())
 
     forecast_key = "glucose"
     uw = None
@@ -74,7 +83,15 @@ def train_multitask(
         for g in opt.param_groups:
             g["lr"] = cfg.lr_fusion * _cosine_warmup(epoch, warmup, total_steps)
 
-        out = model(features)
+        feats_ep = features
+        if modality_dropout > 0.0 and len(all_mods) > 1:
+            rng = np.random.default_rng(cfg.seed + epoch)
+            keep = [m for m in all_mods if rng.random() >= modality_dropout]
+            if not keep:                                   # always keep >=1 modality
+                keep = [all_mods[int(rng.integers(len(all_mods)))]]
+            feats_ep = {m: features[m] for m in keep}
+
+        out = model(feats_ep)
         task_losses = {t: class_weighted_ce(out["logits"][t], labels[t])
                        for t in labels}
         if forecast_target is not None:
@@ -82,7 +99,7 @@ def train_multitask(
         else:
             task_losses[forecast_key] = out["forecast"].sum() * 0.0
 
-        recon = mse_recon(out["recon"], features)
+        recon = mse_recon(out["recon"], feats_ep)
         align = info_nce(out["z"], cfg.align_temperature)
         loss = total_loss(task_losses, out["vq_loss"], recon, align, cfg, uw)
 

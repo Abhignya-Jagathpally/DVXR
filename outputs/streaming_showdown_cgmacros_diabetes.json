@@ -1,0 +1,132 @@
+{
+  "task": "cgmacros_diabetes",
+  "metric": "1-AUROC",
+  "floor": "xgboost",
+  "n_modalities": 3,
+  "modalities": [
+    "cgm",
+    "wearable_phys",
+    "ehr"
+  ],
+  "curve": [
+    {
+      "k": 0,
+      "model": "fused",
+      "proposed_err": 0.186,
+      "floor_err": 0.0134,
+      "rer_pct": -1288.52,
+      "rer_ci": [
+        -2214.6,
+        -311.31
+      ],
+      "p": 1.0,
+      "win": false
+    },
+    {
+      "k": 1,
+      "model": "fused",
+      "proposed_err": 0.1999,
+      "floor_err": 0.0944,
+      "rer_pct": -111.75,
+      "rer_ci": [
+        -146.17,
+        -65.78
+      ],
+      "p": 0.9921875,
+      "win": false
+    },
+    {
+      "k": 2,
+      "model": "fused",
+      "proposed_err": 0.268,
+      "floor_err": 0.2725,
+      "rer_pct": 1.67,
+      "rer_ci": [
+        -10.25,
+        18.91
+      ],
+      "p": 0.59375,
+      "win": false
+    },
+    {
+      "k": 0,
+      "model": "fused_robust",
+      "proposed_err": 0.2377,
+      "floor_err": 0.0134,
+      "rer_pct": -1674.63,
+      "rer_ci": [
+        -3119.22,
+        -314.34
+      ],
+      "p": 1.0,
+      "win": false
+    },
+    {
+      "k": 1,
+      "model": "fused_robust",
+      "proposed_err": 0.2315,
+      "floor_err": 0.0944,
+      "rer_pct": -145.26,
+      "rer_ci": [
+        -205.88,
+        -101.45
+      ],
+      "p": 1.0,
+      "win": false
+    },
+    {
+      "k": 2,
+      "model": "fused_robust",
+      "proposed_err": 0.2758,
+      "floor_err": 0.2725,
+      "rer_pct": -1.19,
+      "rer_ci": [
+        -11.74,
+        13.39
+      ],
+      "p": 0.7109375,
+      "win": false
+    },
+    {
+      "k": 0,
+      "model": "llm",
+      "proposed_err": 0.214,
+      "floor_err": 0.0134,
+      "rer_pct": -1498.15,
+      "rer_ci": [
+        -1895.31,
+        -411.88
+      ],
+      "p": 1.0,
+      "win": false
+    },
+    {
+      "k": 1,
+      "model": "llm",
+      "proposed_err": 0.2881,
+      "floor_err": 0.0944,
+      "rer_pct": -205.23,
+      "rer_ci": [
+        -490.38,
+        -89.51
+      ],
+      "p": 1.0,
+      "win": false
+    },
+    {
+      "k": 2,
+      "model": "llm",
+      "proposed_err": 0.2909,
+      "floor_err": 0.2725,
+      "rer_pct": -6.76,
+      "rer_ci": [
+        -35.77,
+        18.52
+      ],
+      "p": 0.7265625,
+      "win": false
+    }
+  ],
+  "crossover_k": null,
+  "crossover_model": null
+}

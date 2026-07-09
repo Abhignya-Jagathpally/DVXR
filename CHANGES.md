@@ -1,3 +1,31 @@
+# Streaming / partial-observation showdown — honest win-hunt (branch `inherit-skills-and-real-datasets`)
+
+After the full triangulation showed the proposed model beats deep-SOTA but loses to the
+tuned floor on complete data, the natural place to look for a legitimate win is the POW's
+**streaming** regime: sensors drop out, so a graceful-degradation model (learned absent
+tokens) could beat a floor that must impute. New `src/dvxr/bench/streaming_eval.py`
+(`partial_observation_showdown`) sweeps modality dropout k=0..M−1 and compares each proposed
+model to the strongest floor under held-out-subject CV with bootstrap-CI RER; a win is only
+claimed where the CI lower bound clears a tie. `scripts/run_streaming_showdown.py` +
+`outputs/streaming_showdown_<task>.{md,json}`.
+
+- **Fair floor**: `_concat_masked` blanks dropped-modality blocks — NaN for xgboost's native
+  missing handling (the hard floor), train-mean for the linear floor. Proposed models drop a
+  modality by omitting it (fusion/LLM absent-token path).
+- **Modality-dropout training** (`tasks/train.py` new `modality_dropout` arg, default 0.0;
+  `_train_fused` passthrough; `fused_robust` showdown leg): trains the fusion through random
+  modality subsets — the textbook streaming-robustness technique.
+- **Honest result: NO CI-backed crossover.** On the summary-statistic feature tasks the tuned
+  floor beats the proposed model at *every* dropout level (wesad_stress: gap narrows to a tie
+  at k=6, RER +3.4% but CI −11.1..17.6; cgmacros_diabetes: closes to a tie at k=2). Modality-
+  dropout training did not flip it. Reported as a negative — not faked. Root cause is the
+  documented one: per-window summary stats cap the ceiling and xgboost's native NaN handling
+  is a very strong floor even under heavy dropout. The proposal's genuine wins are elsewhere
+  (beats the deep open-weight SOTA encoder on every task; predicts under any modality subset;
+  per-modality interpretability). `tests/test_streaming_eval.py` (skip-guarded on torch).
+
+---
+
 # Triangulated benchmark + LLM-in-the-predictive-path (branch `fixes-and-assets`)
 
 Two gaps the user called out are closed: the benchmark now **triangulates** against an
