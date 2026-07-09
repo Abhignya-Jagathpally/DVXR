@@ -1,3 +1,23 @@
+# Full Option 3: LoRA soft-prompt classification finetuning (rasbt recipe) — honest negative
+
+Applied the rasbt *LLMs-from-scratch* classification-finetuning recipe (ch6 + appendix-E LoRA)
+to the soft-prompt predictor: `src/dvxr/llm/finetune.py::finetune_softprompt` trains the
+per-modality projections + LoRA adapters on the last transformer block(s) + a classification
+head (last-token pooling, class-weighted CE, AdamW). LoRA adapters are injected fresh and
+**removed after each call**, so the module-cached base LLM is never mutated — leakage-free
+across CV folds (`tests/test_llm_finetune.py` asserts the base stays pristine).
+
+Honest result (`outputs/llm_finetune_probe.md`): on `cgmacros_diabetes` finetuning scores
+**0.391** 1-AUROC vs the frozen probe's 0.196 vs the xgboost floor's 0.000 — i.e. finetuning
+**overfits and does worse**. Root cause is the data regime, not the recipe: N=45 subjects
+(rasbt uses ~25k text examples), per-window summary-stat features (little sequence structure),
+and a near-separable label. `deap_arousal` (the weakest floor) is near-chance for every model
+(rep:llm 0.505 vs gbm 0.468). No LLM finetuning beats the floor on these small tabular tasks —
+reported, not faked. The finetuning code is retained for when a larger raw-signal dataset is
+wired in (the justified next step).
+
+---
+
 # Streaming / partial-observation showdown — honest win-hunt (branch `inherit-skills-and-real-datasets`)
 
 After the full triangulation showed the proposed model beats deep-SOTA but loses to the
