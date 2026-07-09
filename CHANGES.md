@@ -1,3 +1,30 @@
+# Real-dataset refactor (branch `inherit-skills-and-real-datasets`)
+
+First careful step toward the POW goal: inherit external capability skills and wire three
+real datasets into the pipeline (replacing synthetic/placeholder modalities), keeping the
+offline/CPU/deterministic guardrails and honest reporting.
+
+- **Skills inherited** into `.claude/skills/`: `addyosmani/agent-skills` (24 engineering
+  skills) + `imbad0202/academic-research-skills` (deep-research, academic-paper,
+  academic-paper-reviewer, academic-pipeline). `karpathy/autoresearch` vendored under
+  `third_party/` as GPU-only reference (not a skill).
+- **Canonical schema relaxed** (`schemas.validate_events`): the 13 columns are now a
+  required floor, not an exact set — loaders may carry dataset-specific extras
+  (`glucose_source`, `meal_photo_path`, …).
+- **WESAD** (Siegen `WESAD.zip`): `fetch_wesad_siegen` + `load_wesad_dataset`; real
+  baseline/stress/amusement/meditation labels across chest+wrist physiology.
+- **CGMacros** (PhysioNet): new `load_cgmacros_*` loaders splitting each subject CSV into
+  `cgm` (Libre+Dexcom), `wearable_phys` (Fitbit), `behavior` (meal macros), plus `bio.csv`
+  → `ehr`; real diabetes strata derived from HbA1c. Profiler rule + zip-in-zip fetch added.
+- **DEAP** (Kaggle `sayuksh/deap-datasetraw-data`): fetch slug wired, `mne` added for raw
+  `.bdf`; download pending user Kaggle credentials.
+- **Real benchmark**: new `bench.tasks` builders `wesad_stress`, `cgmacros_glucose`,
+  `cgmacros_diabetes` run under held-out-subject CV. Honest result — CACMF fusion does
+  **not** beat baselines (RER: WESAD stress -81.7%, CGMacros diabetes -10.6%, CGMacros
+  glucose -7.3%); see `outputs/benchmark_scoreboard.md`. DEAP task folds in once fetched.
+
+---
+
 # CHANGES — final fixes & presentation assets (branch `fixes-and-assets`)
 
 Honest self-audit against the code review (C1/C2, M1–M5, minors). Guardrails held:

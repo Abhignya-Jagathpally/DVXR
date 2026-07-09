@@ -143,7 +143,8 @@ pip install torch --index-url https://download.pytorch.org/whl/cpu
 ## Run on real, credential-free public data
 
 ```bash
-python3 scripts/fetch_data.py all-free --subjects 20   # noneeg + mimic-demo + shanghai-cgm
+# noneeg + mimic-demo + shanghai-cgm + WESAD (Siegen) + CGMacros (PhysioNet)
+python3 scripts/fetch_data.py all-free --subjects 20
 python3 scripts/run_real_demo.py
 ```
 
@@ -156,6 +157,20 @@ python3 scripts/run_real_demo.py
 All real sources download over plain HTTP without accounts. The stress labels come from
 the Non-EEG `.atr` phase annotations; CGM is the open Shanghai diabetes dataset; EHR is
 the open MIMIC-IV demo subset.
+
+### Additional real datasets (WESAD, CGMacros, DEAP)
+
+Wired in via `scripts/fetch_data.py {wesad,cgmacros,kaggle-deap}` and exposed as real-label
+benchmark tasks (`scripts/run_benchmark.py --tasks wesad_stress cgmacros_diabetes cgmacros_glucose`):
+
+| Dataset | Source | Modalities | Real task / label |
+|---|---|---|---|
+| WESAD | Siegen sciebo (`WESAD.zip`, ~2 GB) | wearable_phys (chest+wrist) | stress vs non-stress (protocol conditions) |
+| CGMacros | PhysioNet (open) | cgm (Libre+Dexcom), wearable_phys (Fitbit), behavior (meal macros), ehr (bio labs) | glucose 30-min forecast; diabetes strata (HbA1c) |
+| DEAP | Kaggle `sayuksh/deap-datasetraw-data` (needs `~/.kaggle/kaggle.json`) | eeg (32-ch) + peripheral | affect (valence/arousal) |
+
+Honest note: on these real cohorts the CACMF fused model does **not** beat the best
+non-fused baseline (see `outputs/benchmark_scoreboard.md`) — reported as-is.
 
 ## DEAP EEG/peripheral arousal benchmark
 

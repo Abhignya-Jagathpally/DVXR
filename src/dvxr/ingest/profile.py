@@ -115,6 +115,10 @@ def profile_data_dir(
         for name in sorted(files):
             if name in _SKIP_NAMES:
                 continue
+            # Skip transient fetch scratch (download logs / partial archives named _*),
+            # which are not dataset files and would otherwise fail strict profiling.
+            if name.endswith(".log") or (name.startswith("_") and name.endswith((".log", ".zip"))):
+                continue
             p = Path(dirpath) / name
             rel = str(p.relative_to(root))
             modality, source, device = _infer_modality(rel)

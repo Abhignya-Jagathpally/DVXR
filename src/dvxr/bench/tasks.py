@@ -24,9 +24,12 @@ import pandas as pd
 
 from dvxr.features import build_glucose_forecast_table, build_signal_windows, feature_columns
 from dvxr.loaders import (
+    load_cgmacros_bio,
+    load_cgmacros_dataset,
     load_mimic_demo_ehr,
     load_noneeg_dataset,
     load_shanghai_cgm_dataset,
+    load_wesad_dataset,
 )
 
 
@@ -154,8 +157,117 @@ def mimic_mortality_task(hosp_dir: str = "data/real/mimic_demo/hosp",
     )
 
 
+# ------------------------------------------------------------- WESAD stress
+def wesad_stress_task(data_dir: str = "data/real/WESAD", subjects: int = 8,
+                      window_seconds: int = 60) -> BenchTask:
+    """WESAD multimodal stress — REAL protocol labels (stress vs non-stress).
+
+    Chest (RespiBAN) + wrist (Empatica E4) physiology. Protocol condition 2 = stress;
+    1/3/4 = baseline/amusement/meditation (non-stress); 0/5-7 (transient/ignore) dropped.
+    Non-overlapping windows so N is not inflated.
+    """
+    assert_no_fabrication()
+    events = load_wesad_dataset(data_dir, subjects=subjects)
+    win = build_signal_windows(events, window_seconds=window_seconds,
+                               step_seconds=window_seconds, label_name="wesad_label")
+    codes = pd.to_numeric(win["target"], errors="coerce")
+    win = win[codes.isin([1, 2, 3, 4])].reset_index(drop=True)
+    codes = pd.to_numeric(win["target"], errors="coerce")
+    y = (codes == 2).astype(int).to_numpy()
+    groups = _split_by_modality(win)
+    feats = {m: win[cols].to_numpy(dtype=float) for m, cols in groups.items()}
+    return BenchTask(
+        name="wesad_stress", kind="classification", features=feats,
+        feature_names=groups, y=y, subject_ids=win["subject_id"].to_numpy(),
+        metric="1-AUROC", baseline_hint="majority", raw_windows=win,
+        extra={"events": events, "window_seconds": window_seconds},
+    )
+
+
+# --------------------------------------------------------- CGMacros glucose
+def cgmacros_glucose_task(data_dir: str = "data/real/cgmacros", subjects: Optional[int] = 12,
+                          horizon_minutes: int = 30, source: str = "dexcom") -> BenchTask:
+    """CGMacros 30-min-ahead glucose forecast — REAL future CGM (regression).
+
+    Uses one CGM source (Dexcom G6 by default) so simultaneous Libre readings don't
+    create duplicate timestamps.
+    """
+    assert_no_fabrication()
+    events = load_cgmacros_dataset(data_dir, subjects=subjects, include_bio=False)
+    cgm = events[events["modality"] == "cgm"]
+    if "glucose_source" in cgm.columns:
+        cgm = cgm[cgm["glucose_source"] == source]
+    # CGMacros CSVs are per-minute; thin to ~10-min steps (near the 5-min Dexcom native
+    # cadence) so forecast windows aren't near-duplicate and N isn't inflated.
+    cgm = cgm.sort_values(["subject_id", "session_id", "timestamp_utc"])
+    order = cgm.groupby(["subject_id", "session_id"]).cumcount()
+    cgm = cgm[order % 10 == 0]
+    tbl = build_glucose_forecast_table(cgm, history_minutes=40, horizon_minutes=horizon_minutes)
+    tbl = tbl.dropna(subset=["target_glucose", "glucose_now"]).reset_index(drop=True)
+    cols = [c for c in feature_columns(tbl) if c != "target_glucose"]
+    feats = {"cgm": tbl[cols].to_numpy(dtype=float)}
+    return BenchTask(
+        name="cgmacros_glucose", kind="forecast", features=feats,
+        feature_names={"cgm": cols}, y=tbl["target_glucose"].to_numpy(dtype=float),
+        subject_ids=tbl["subject_id"].to_numpy(), metric="MAE",
+        baseline_hint="persistence", raw_windows=tbl,
+        extra={"persistence_col": cols.index("glucose_now")},
+    )
+
+
+# -------------------------------------------------------- CGMacros diabetes
+def cgmacros_diabetes_task(data_dir: str = "data/real/cgmacros",
+                           subjects: Optional[int] = None) -> BenchTask:
+    """CGMacros diabetes classification — REAL A1c-derived strata (diabetes vs not).
+
+    Per-subject multimodal vectors: cgm (glucose summary), wearable_phys (Fitbit
+    summary), ehr (bio labs). Label = HbA1c-derived diabetes status (diabetes vs
+    healthy/prediabetes). Multimodal → usable for the modality ablation.
+    """
+    assert_no_fabrication()
+    events = load_cgmacros_dataset(data_dir, subjects=subjects, include_bio=True)
+    if "glucose_source" in events.columns:
+        events = events[(events["modality"] != "cgm") | (events["glucose_source"] == "dexcom")].copy()
+
+    # real label per subject from the diabetes_status carried on the events
+    status = (events[events["label_value"] != ""]
+              .groupby("subject_id")["label_value"].agg(lambda s: s.iloc[0]))
+    y_map = {sid: int(v == "diabetes") for sid, v in status.items()}
+
+    feats: Dict[str, np.ndarray] = {}
+    names: Dict[str, List[str]] = {}
+    index: Optional[List[str]] = None
+    for modality in ("cgm", "wearable_phys", "ehr"):
+        sub = events[events["modality"] == modality]
+        if sub.empty:
+            continue
+        piv = sub.pivot_table(index="subject_id", columns="channel",
+                              values="value", aggfunc="mean")
+        if modality == "cgm":  # add per-subject glucose variability (CV)
+            cv = sub.groupby("subject_id")["value"].agg(lambda s: float(np.std(s) / (np.mean(s) + 1e-9)))
+            piv["glucose_cv"] = cv
+        piv = piv.loc[[s for s in piv.index if s in y_map]].sort_index()
+        piv = piv.fillna(piv.median())
+        if index is None:
+            index = list(piv.index)
+        piv = piv.reindex(index).fillna(piv.median())
+        feats[modality] = piv.to_numpy(dtype=float)
+        names[modality] = [f"{modality}_{c}" for c in piv.columns]
+
+    y = np.array([y_map[s] for s in index], dtype=int)
+    return BenchTask(
+        name="cgmacros_diabetes", kind="classification", features=feats,
+        feature_names=names, y=y, subject_ids=np.array(index),
+        metric="1-AUROC", baseline_hint="majority", raw_windows=None,
+        extra={"n_subjects": len(index)},
+    )
+
+
 TASK_BUILDERS = {
     "stress": noneeg_stress_task,
     "glucose": shanghai_glucose_task,
     "mortality": mimic_mortality_task,
+    "wesad_stress": wesad_stress_task,
+    "cgmacros_glucose": cgmacros_glucose_task,
+    "cgmacros_diabetes": cgmacros_diabetes_task,
 }
