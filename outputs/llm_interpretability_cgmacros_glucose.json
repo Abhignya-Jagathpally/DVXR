@@ -1,0 +1,7 @@
+{
+  "task": "cgmacros_glucose",
+  "backend": "Qwen/Qwen2.5-0.5B-Instruct",
+  "modality_attribution": {
+    "cgm": 1.0
+  }
+}

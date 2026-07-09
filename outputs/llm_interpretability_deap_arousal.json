@@ -1,0 +1,8 @@
+{
+  "task": "deap_arousal",
+  "backend": "Qwen/Qwen2.5-0.5B-Instruct",
+  "modality_attribution": {
+    "eeg": 0.48318026080310017,
+    "physiology": 0.5168197391968998
+  }
+}

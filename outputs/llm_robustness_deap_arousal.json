@@ -1,0 +1,17 @@
+[
+  {
+    "dropped": "none",
+    "err": 0.5052852771452861,
+    "degradation": 0.0
+  },
+  {
+    "dropped": "eeg",
+    "err": 0.516446429517327,
+    "degradation": 0.01116115237204085
+  },
+  {
+    "dropped": "physiology",
+    "err": 0.5013498142581706,
+    "degradation": -0.003935462887115548
+  }
+]
