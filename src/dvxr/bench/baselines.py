@@ -56,6 +56,55 @@ def pred_classical(task, tr, te, seed=7):
         X[tr], task.y[tr]).predict(X[te])
 
 
+# ------------------------------------------------- stronger classical floors
+def pred_xgboost(task, tr, te, seed=7):
+    """XGBoost on concatenated raw features — the tuned-GBM floor a fusion/LLM method
+    must beat. Import-guarded: raises cleanly if xgboost is absent (run.py logs + skips)."""
+    import xgboost as xgb  # noqa: F401 (guarded)
+
+    X = _concat(task)
+    if task.kind == "classification":
+        if len(np.unique(task.y[tr])) < 2:
+            return np.full(len(te), float(np.mean(task.y[tr])))
+        m = xgb.XGBClassifier(
+            n_estimators=300, max_depth=4, learning_rate=0.05, subsample=0.8,
+            colsample_bytree=0.8, eval_metric="logloss", random_state=seed, n_jobs=2)
+        m.fit(X[tr], task.y[tr])
+        return m.predict_proba(X[te])[:, list(m.classes_).index(1)]
+    m = xgb.XGBRegressor(n_estimators=300, max_depth=4, learning_rate=0.05,
+                         subsample=0.8, colsample_bytree=0.8, random_state=seed, n_jobs=2)
+    return m.fit(X[tr], task.y[tr]).predict(X[te])
+
+
+def pred_tabpfn(task, tr, te, seed=7):
+    """TabPFN-v2 — SOTA on small tabular. Classification only; capped train size.
+    Import-guarded (raises cleanly if tabpfn is absent)."""
+    from tabpfn import TabPFNClassifier  # noqa: F401 (guarded)
+
+    if task.kind != "classification" or len(np.unique(task.y[tr])) < 2:
+        raise RuntimeError("tabpfn: classification with 2 classes only")
+    X = _concat(task)
+    # TabPFN v2 handles up to ~10k rows / 500 features; subsample train if larger.
+    idx = tr
+    if len(tr) > 3000:
+        rng = np.random.default_rng(seed)
+        idx = rng.choice(tr, size=3000, replace=False)
+    clf = TabPFNClassifier(random_state=seed)
+    clf.fit(X[idx][:, :500], task.y[idx])
+    proba = clf.predict_proba(X[te][:, :500])
+    classes = list(clf.classes_)
+    return proba[:, classes.index(1)] if 1 in classes else proba[:, -1]
+
+
+def pred_ridge_history(task, tr, te, seed=7):
+    """CGM forecast floor: ridge on the glucose-history feature vector (beyond bare
+    persistence). Forecast tasks only."""
+    if task.kind != "forecast":
+        raise RuntimeError("ridge_history: forecast tasks only")
+    X = task.features["cgm"]
+    return _fit_head("forecast", X[tr], task.y[tr], X[te], seed=seed)
+
+
 def _single_fn(modality: str) -> Callable:
     def fn(task, tr, te, seed=7):
         X = task.features[modality]
@@ -112,6 +161,21 @@ def baseline_configs(task: BenchTask, include_sota: bool = True) -> Dict[str, Ca
     }
     for m in task.modalities:
         cfgs[f"single:{m}"] = _single_fn(m)
+    # stronger floors — import-guarded predictors raise cleanly when their dep is absent,
+    # so run.py logs+skips them and the offline suite still passes. Only register the
+    # ones whose dep is importable, so absent deps don't spam per-fold failures.
+    if _importable("xgboost"):
+        cfgs["xgboost"] = pred_xgboost
+    if task.kind == "classification" and _importable("tabpfn"):
+        cfgs["tabpfn"] = pred_tabpfn
+    if task.kind == "forecast":
+        cfgs["ridge_history"] = pred_ridge_history
     if include_sota:
         cfgs["sota"] = pred_sota
     return cfgs
+
+
+def _importable(module: str) -> bool:
+    import importlib.util
+
+    return importlib.util.find_spec(module) is not None

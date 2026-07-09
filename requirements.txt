@@ -21,4 +21,9 @@ sentencepiece     # tokenizer backend for some HF SOTA encoders (e.g. CGM-JEPA)
 tiktoken          # tokenizer backend for some HF SOTA encoders
 # braindecode     # LaBraM (eeg) — pip install "braindecode[hug]"; enable when wiring EEGAdapter
 # anthropic       # LLM insight layer (Stage 8); offline template fallback needs no key
+
+# --- optional benchmark-floor opponents (import-guarded; suite passes without them) ---
+xgboost           # tuned-GBM floor (the hard bar) in dvxr.bench.baselines
+# tabpfn          # TabPFN-v2 small-tabular floor (classification); pip install tabpfn
+# pyriemann       # Riemannian EEG floor (needs raw-epoch plumbing; future)
 python-docx        # one-page results_brief.docx in make_presentation_assets.py
