@@ -40,7 +40,11 @@ def validate_events(events: pd.DataFrame) -> pd.DataFrame:
         raise ValueError(f"Missing canonical columns: {missing}")
 
     clean = events.copy()
-    clean = clean[REQUIRED_EVENT_COLUMNS]
+    # The 13 canonical columns are a required floor, not an exact set: a loader may carry
+    # dataset-specific extra columns (e.g. glucose_source=libre|dexcom, meal_photo_path,
+    # Fitbit sub-metrics). Keep the required columns first, then preserve any extras as-is.
+    extra_cols = [c for c in clean.columns if c not in REQUIRED_EVENT_COLUMNS]
+    clean = clean[REQUIRED_EVENT_COLUMNS + extra_cols]
     clean["timestamp_utc"] = pd.to_datetime(clean["timestamp_utc"], utc=True)
     clean["value"] = pd.to_numeric(clean["value"], errors="coerce")
     clean["sampling_rate_hz"] = pd.to_numeric(clean["sampling_rate_hz"], errors="coerce")
