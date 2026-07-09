@@ -723,6 +723,11 @@ def load_deap_dataset(
     Prefers the preprocessed ``data_preprocessed_python/sXX.dat`` pickles (one file per
     participant, includes valence/arousal labels). Falls back to raw ``.bdf`` recordings
     (joined to the participant_ratings sheet) when no ``.dat`` files are present.
+
+    Note: the raw Kaggle set (``sayuksh/deap-datasetraw-data``) ships ``.bdf`` signals
+    ONLY — no ratings file — so it loads unlabeled and cannot drive the supervised
+    ``deap_arousal`` task on its own; supply the official ``participant_ratings.csv`` or
+    use the preprocessed set for labels.
     """
     data_dir = Path(data_dir)
     dats = sorted(

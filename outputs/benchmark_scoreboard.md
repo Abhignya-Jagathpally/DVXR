@@ -10,10 +10,11 @@ Proposed = CACMF fused (cross-modal transformer + VQ) as a swappable representat
 **Modality labeling (M4):** stress = MULTIMODAL (4 peripheral-physiology streams, one wearable); glucose = single-modality (CGM only); mortality = single-modality (EHR only). Multimodal-fusion conclusions rest on the **stress** task; no dataset co-registers EEG+CGM+EHR per subject.
 
 ```
-             task  metric best_baseline  base_err  prop_err  delta_abs  RER_pct  RER_CI_low  RER_CI_high  p_wilcoxon  p_holm  cliffs_delta  n_folds  meets_>=50%
-     wesad_stress 1-AUROC       rep:pca    0.0645    0.1172    -0.0527   -81.75     -153.65         4.72     0.92188     1.0        -0.222        6        False
-cgmacros_diabetes 1-AUROC    single:ehr    0.1088    0.1203    -0.0115   -10.58     -164.80        38.96     0.82812     1.0        -0.167        6        False
- cgmacros_glucose     MAE       rep:raw   10.8567   11.6542    -0.7974    -7.35       -8.69        -6.09     1.00000     1.0        -1.000        6        False
+             task  metric     best_baseline  base_err  prop_err  delta_abs  RER_pct  RER_CI_low  RER_CI_high  p_wilcoxon  p_holm  cliffs_delta  n_folds  meets_>=50%
+     wesad_stress 1-AUROC           rep:pca    0.0645    0.1172    -0.0527   -81.75     -153.65         4.72     0.92188     1.0        -0.222        6        False
+cgmacros_diabetes 1-AUROC        single:ehr    0.1088    0.1203    -0.0115   -10.58     -164.80        38.96     0.82812     1.0        -0.167        6        False
+ cgmacros_glucose     MAE           rep:raw   10.8567   11.6542    -0.7974    -7.35       -8.69        -6.09     1.00000     1.0        -1.000        6        False
+     deap_arousal 1-AUROC single:physiology    0.4582    0.4730    -0.0148    -3.23      -16.25        12.79     0.84375     1.0        -0.222        6        False
 ```
 
 ## Verdict
@@ -21,6 +22,7 @@ cgmacros_diabetes 1-AUROC    single:ehr    0.1088    0.1203    -0.0115   -10.58 
 - **wesad_stress** (1-AUROC, ): fused 0.1172 vs rep:pca 0.0645 -> RER -81.7% (95% CI -153.7..4.7, Wilcoxon p=0.9219, Holm p=1.0000) -> **does NOT meet the >=50% RER bar.**
 - **cgmacros_diabetes** (1-AUROC, ): fused 0.1203 vs single:ehr 0.1088 -> RER -10.6% (95% CI -164.8..39.0, Wilcoxon p=0.8281, Holm p=1.0000) -> **does NOT meet the >=50% RER bar.**
 - **cgmacros_glucose** (MAE, ): fused 11.6542 vs rep:raw 10.8567 -> RER -7.3% (95% CI -8.7..-6.1, Wilcoxon p=1.0000, Holm p=1.0000) -> **does NOT meet the >=50% RER bar.**
+- **deap_arousal** (1-AUROC, ): fused 0.4730 vs single:physiology 0.4582 -> RER -3.2% (95% CI -16.2..12.8, Wilcoxon p=0.8438, Holm p=1.0000) -> **does NOT meet the >=50% RER bar.**
 
 ## Stability (M2)
 
@@ -79,6 +81,21 @@ classical_gbm 11.0915
     cacmf_e2e 13.0122
 ```
 
+### deap_arousal
+```
+           config  1-AUROC
+single:physiology   0.4582
+        rep:fused   0.4730
+       rep:neural   0.4788
+           rep:vq   0.4804
+    classical_gbm   0.4864
+          rep:raw   0.4889
+         majority   0.5000
+          rep:pca   0.5015
+       single:eeg   0.5161
+        cacmf_e2e   0.5359
+```
+
 ## True modality ablation (retrain without the modality)
 
 
@@ -100,4 +117,11 @@ dropped_modality  err_without (1-AUROC)  err_with_all (1-AUROC)  contribution  c
              cgm                 0.1791                  0.1203        0.0588  0.0067   0.1103
    wearable_phys                 0.1408                  0.1203        0.0205 -0.0274   0.0670
              ehr                 0.1336                  0.1203        0.0133 -0.0309   0.0594
+```
+
+### deap_arousal  (contribution = error increase when dropped)
+```
+dropped_modality  err_without (1-AUROC)  err_with_all (1-AUROC)  contribution  ci_low  ci_high
+      physiology                 0.4887                   0.473        0.0158 -0.0234   0.0669
+             eeg                 0.4844                   0.473        0.0115 -0.0195   0.0424
 ```

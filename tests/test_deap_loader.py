@@ -36,5 +36,23 @@ class DeapLoaderTest(unittest.TestCase):
         self.assertTrue(any(v in {"high_arousal", "low_arousal"} for v in df["label_value"]))
 
 
+RAW_BDF = DEAP / "raw_bdf"
+
+
+@unittest.skipUnless(list(RAW_BDF.glob("*.bdf")), "raw DEAP .bdf not present")
+class DeapRawBdfTest(unittest.TestCase):
+    def test_raw_bdf_loads_signals(self):
+        from dvxr.loaders import load_deap_raw_bdf
+
+        bdf = sorted(RAW_BDF.glob("*.bdf"))[0]
+        df = load_deap_raw_bdf(bdf, max_seconds=10)
+        summary = summarize_events(df)
+        self.assertIn("eeg", summary.modalities)
+        self.assertIn("physiology", summary.modalities)
+        # 10-20 EEG channel names surfaced from the BioSemi montage
+        self.assertIn("AF3", set(df[df["modality"] == "eeg"]["channel"]))
+        self.assertEqual(df["device"].iloc[0], "biosemi_activetwo")
+
+
 if __name__ == "__main__":
     unittest.main()

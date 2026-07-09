@@ -2,3 +2,4 @@ task,metric,best_baseline,base_err,prop_err,delta_abs,RER_pct,RER_CI_low,RER_CI_
 wesad_stress,1-AUROC,rep:pca,0.0645,0.1172,-0.0527,-81.75,-153.65,4.72,0.92188,1.0,-0.222,6,False
 cgmacros_diabetes,1-AUROC,single:ehr,0.1088,0.1203,-0.0115,-10.58,-164.8,38.96,0.82812,1.0,-0.167,6,False
 cgmacros_glucose,MAE,rep:raw,10.8567,11.6542,-0.7974,-7.35,-8.69,-6.09,1.0,1.0,-1.0,6,False
+deap_arousal,1-AUROC,single:physiology,0.4582,0.473,-0.0148,-3.23,-16.25,12.79,0.84375,1.0,-0.222,6,False
