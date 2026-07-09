@@ -1,0 +1,9 @@
+{
+  "task": "cgmacros_diabetes",
+  "backend": "Qwen/Qwen2.5-0.5B-Instruct",
+  "modality_attribution": {
+    "cgm": 0.343655276624728,
+    "wearable_phys": 0.4023795823498562,
+    "ehr": 0.2539651410254158
+  }
+}

@@ -26,4 +26,9 @@ tiktoken          # tokenizer backend for some HF SOTA encoders
 xgboost           # tuned-GBM floor (the hard bar) in dvxr.bench.baselines
 # tabpfn          # TabPFN-v2 small-tabular floor (classification); pip install tabpfn
 # pyriemann       # Riemannian EEG floor (needs raw-epoch plumbing; future)
+
+# --- LLM-in-the-predictive-path (Option 3 soft-prompt fusion, dvxr.llm.predictor) ---
+#   Default backend Qwen/Qwen2.5-0.5B-Instruct (CPU); DVXR_LLM_PREDICTOR overrides
+#   (e.g. Qwen/Qwen2.5-7B-Instruct on a GPU). transformers (above) loads the frozen LM.
+# peft            # LoRA for the trainable-projection variant (GPU-gated; CPU uses a frozen probe)
 python-docx        # one-page results_brief.docx in make_presentation_assets.py

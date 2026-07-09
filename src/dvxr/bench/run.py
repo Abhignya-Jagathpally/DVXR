@@ -28,7 +28,7 @@ PROTOCOL_LABEL = "repeated subject/patient-held-out 5x5 CV (single-level; " \
 
 from dvxr.bench.baselines import baseline_configs, error_metric
 from dvxr.bench.protocol import RelativityResult, holm_correction, relativity, repeated_group_folds
-from dvxr.bench.representations import REPRESENTATIONS, evaluate_representation, pred_fused_e2e
+from dvxr.bench.representations import DEFAULT_REPS, REPRESENTATIONS, evaluate_representation, pred_fused_e2e
 from dvxr.bench.tasks import BenchTask
 from dvxr.calibration import expected_calibration_error, fit_temperature_scaler
 
@@ -63,7 +63,7 @@ class TaskResult:
 def run_task(task: BenchTask, n_repeats: int = 5, n_folds: int = 5,
              seed: int = 7, include_sota: bool = True,
              representations: List[str] | None = None) -> TaskResult:
-    reps = representations or list(REPRESENTATIONS.keys())
+    reps = representations or DEFAULT_REPS
     folds = repeated_group_folds(task.subject_ids, n_repeats, n_folds, seed)
 
     baselines = baseline_configs(task, include_sota=include_sota)

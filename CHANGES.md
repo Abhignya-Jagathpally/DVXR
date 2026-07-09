@@ -1,3 +1,44 @@
+# Triangulated benchmark + LLM-in-the-predictive-path (branch `fixes-and-assets`)
+
+Two gaps the user called out are closed: the benchmark now **triangulates** against an
+honest floor and an open-weight SOTA ceiling, and the LLM is put in the **predictive path**
+(not just the explanation layer). Honest reporting held — the floor still wins on clean
+tabular; nothing is faked.
+
+- **Calibration in the harness** (`dvxr.calibration`): added `TemperatureScaler` +
+  `fit_temperature_scaler` (logit-space, AUROC-preserving). `bench.run` now pools
+  out-of-fold predictions per config and reports **ECE raw / after temperature scaling**
+  for every classification config. `tests/test_calibration_temp.py` guards it.
+- **Floor opponents** (`bench.baselines`, import-guarded so the offline suite stays green):
+  `xgboost` tuned-GBM floor, `tabpfn` (TabPFN-v2, small-tabular classification), and
+  `ridge_history` (CGM forecast floor). Registered only when their dep imports.
+- **Triangulation scoreboard** (`bench.scoreboard`): a "floor vs SOTA vs proposed" section
+  buckets every config into floor / SOTA / proposed and prints, per task, the strongest of
+  each with err + ECE and a verdict *vs floor* and *vs SOTA* separately. A win must beat
+  **both**. SOTA encoders that can't load on this box are labeled, not faked.
+- **True LOSO**: `run_benchmark.py --loso` sets folds = #subjects, repeats = 1.
+- **LLM predictor — Option 3 soft-prompt fusion** (`dvxr.llm.predictor`, `rep:llm`): each
+  modality's VQ codebook tokens are projected into a frozen causal-LM's embedding space
+  (default `Qwen/Qwen2.5-0.5B-Instruct`, CPU; `DVXR_LLM_PREDICTOR`/CUDA → 7B), prepended as
+  soft-prompt tokens to a short grounded prompt, and the pooled hidden state feeds the
+  **same shared bench head** as every other representation — so `rep:llm` flows through the
+  identical LOSO + RER/Wilcoxon/Holm stats. The frozen forward is run once per window and
+  cached (label-free, no leakage), matching the SOTA-opponent contract. Predict and explain
+  stay separate: the head originates the number; `llm/insight.py` only narrates.
+  - **Interoperability**: a missing modality uses a learned **absent token**, so arbitrary
+    modality subsets work at test time. `--llm` writes `outputs/llm_robustness_<task>.md` —
+    train on all modalities, test with each dropped (graceful degradation a single-modality
+    model can't do). On `cgmacros_diabetes`, dropping cgm hurts most (+0.109 1-AUROC),
+    dropping ehr slightly helps (−0.057, a noisy modality here).
+  - **Interpretability**: `outputs/llm_interpretability_<task>.md` reports per-modality
+    attribution (L2 shift of the representation when each modality → absent token):
+    wearable_phys 0.402 > cgm 0.344 > ehr 0.254.
+  - **Honest result**: `rep:llm` predicts (cgmacros_diabetes err 0.225, ECE 0.229) but, as
+    expected, loses to the xgboost floor (0.010) on clean tabular — reported, not hidden.
+    `tests/test_llm_predictor.py` (skip-guarded on a local LLM) covers it.
+
+---
+
 # Real-dataset refactor (branch `inherit-skills-and-real-datasets`)
 
 First careful step toward the POW goal: inherit external capability skills and wire three

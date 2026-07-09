@@ -1,0 +1,22 @@
+[
+  {
+    "dropped": "none",
+    "err": 0.2246969696969697,
+    "degradation": 0.0
+  },
+  {
+    "dropped": "cgm",
+    "err": 0.33409090909090905,
+    "degradation": 0.10939393939393935
+  },
+  {
+    "dropped": "wearable_phys",
+    "err": 0.29878787878787877,
+    "degradation": 0.07409090909090907
+  },
+  {
+    "dropped": "ehr",
+    "err": 0.16742424242424245,
+    "degradation": -0.05727272727272725
+  }
+]

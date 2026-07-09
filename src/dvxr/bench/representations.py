@@ -10,6 +10,7 @@ evaluated.
 """
 from __future__ import annotations
 
+import os
 from typing import Callable, Dict, Tuple
 
 import numpy as np
@@ -157,10 +158,41 @@ def pred_fused_e2e(task, tr, te, seed=7):
     return pred[te]
 
 
+def rep_llm(task, tr, te, seed=7):
+    """Option 3: frozen soft-prompted LLM pooled hidden state -> shared head. Lazy import
+    so the bench runs without transformers/a local LLM; callers that request it must have
+    both. Registered dynamically via ``llm_representations()`` to keep the default set light."""
+    from dvxr.llm.predictor import rep_llm as _rep_llm
+    return _rep_llm(task, tr, te, seed=seed)
+
+
 REPRESENTATIONS: Dict[str, Callable] = {
     "raw": rep_raw, "pca": rep_pca, "neural": rep_neural,
-    "vq": rep_vq, "fused": rep_fused,
+    "vq": rep_vq, "fused": rep_fused, "llm": rep_llm,
 }
+
+# rep:llm is addressable but excluded from the default sweep (it loads a local LLM and is
+# slow on CPU); run_benchmark.py adds it only under --llm when a model is available.
+DEFAULT_REPS = ["raw", "pca", "neural", "vq", "fused"]
+
+
+def llm_available() -> bool:
+    """True when transformers + a local/GPU LLM can be loaded for the rep:llm predictor."""
+    import importlib.util
+
+    if importlib.util.find_spec("transformers") is None:
+        return False
+    try:
+        from dvxr.llm.predictor import resolve_model_id
+        from huggingface_hub import try_to_load_from_cache  # noqa: F401
+
+        # cheap check: is the default/env model in the HF cache?
+        from pathlib import Path
+        mid = resolve_model_id().replace("/", "--")
+        cache = Path.home() / ".cache" / "huggingface" / "hub" / f"models--{mid}"
+        return cache.exists() or bool(os.environ.get("DVXR_LLM_ALLOW_DOWNLOAD"))
+    except Exception:
+        return False
 
 
 def evaluate_representation(task: BenchTask, name: str, tr, te, seed: int = 7):

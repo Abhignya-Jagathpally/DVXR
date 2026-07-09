@@ -1,4 +1,2 @@
 task,metric,best_baseline,base_err,prop_err,delta_abs,RER_pct,RER_CI_low,RER_CI_high,p_wilcoxon,p_holm,cliffs_delta,n_folds,meets_>=50%
 cgmacros_diabetes,1-AUROC,xgboost,0.01,0.1203,-0.1103,-1103.03,-1666.67,-350.51,1.0,1.0,-0.889,6,False
-cgmacros_glucose,MAE,rep:raw,10.8567,11.6542,-0.7974,-7.35,-8.69,-6.09,1.0,1.0,-1.0,6,False
-wesad_stress,1-AUROC,rep:raw,0.0859,0.156,-0.07,-81.48,-282.47,-17.51,0.96875,1.0,-0.556,6,False
