@@ -147,7 +147,11 @@ def fetch_cgmacros() -> Path:
 
 
 def fetch_kaggle(slug: str) -> Path:
-    """Download a Kaggle dataset via kagglehub. Requires Kaggle credentials."""
+    """Download a Kaggle dataset via kagglehub. Requires Kaggle credentials.
+
+    Accepts either the classic username+key (KAGGLE_USERNAME/KAGGLE_KEY or
+    ~/.kaggle/kaggle.json) or the newer bearer token in KAGGLE_API_TOKEN (KGAT_...).
+    """
     try:
         import kagglehub
     except ImportError:
@@ -155,17 +159,39 @@ def fetch_kaggle(slug: str) -> Path:
 
     import os
 
-    if not (os.environ.get("KAGGLE_USERNAME") and os.environ.get("KAGGLE_KEY")) and not (
+    has_classic = (os.environ.get("KAGGLE_USERNAME") and os.environ.get("KAGGLE_KEY")) or (
         Path.home() / ".kaggle" / "kaggle.json"
-    ).exists():
+    ).exists()
+    has_token = bool(os.environ.get("KAGGLE_API_TOKEN"))
+    if not (has_classic or has_token):
         sys.exit(
-            "Kaggle credentials not found. Set KAGGLE_USERNAME and KAGGLE_KEY, or place a\n"
-            "kaggle.json token at ~/.kaggle/kaggle.json (https://www.kaggle.com/settings -> API).\n"
-            f"Then re-run. Target dataset: {slug}"
+            "Kaggle credentials not found. Set KAGGLE_API_TOKEN=KGAT_... (newer tokens),\n"
+            "or KAGGLE_USERNAME + KAGGLE_KEY, or place kaggle.json at ~/.kaggle/kaggle.json\n"
+            f"(https://www.kaggle.com/settings -> API). Then re-run. Target dataset: {slug}"
         )
     path = Path(kagglehub.dataset_download(slug))
     print(f"Kaggle {slug} -> {path}")
     return path
+
+
+def fetch_deap(link: bool = True) -> Path:
+    """Download DEAP (raw or preprocessed) via kagglehub and expose it at data/real/deap.
+
+    kagglehub caches under ~/.cache/kagglehub; we symlink the resolved dataset dir into
+    data/real/deap so the loaders' default path works. load_deap_dataset auto-detects
+    preprocessed .dat vs raw .bdf.
+    """
+    src = fetch_kaggle(KAGGLE_SLUGS["kaggle-deap"])
+    out = REAL_DIR / "deap"
+    out.mkdir(parents=True, exist_ok=True)
+    target = out / src.name
+    if link and not target.exists():
+        try:
+            target.symlink_to(src)
+        except OSError:
+            pass
+    print(f"DEAP -> {out} (source {src})")
+    return out
 
 
 KAGGLE_SLUGS = {
@@ -207,7 +233,9 @@ def main() -> None:
         fetch_wesad_siegen()
     if args.source in ("cgmacros", "all-free"):
         fetch_cgmacros()
-    if args.source in KAGGLE_SLUGS:
+    if args.source == "kaggle-deap":
+        fetch_deap()
+    elif args.source in KAGGLE_SLUGS:
         fetch_kaggle(KAGGLE_SLUGS[args.source])
 
 

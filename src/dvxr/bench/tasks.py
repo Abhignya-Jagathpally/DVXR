@@ -26,6 +26,7 @@ from dvxr.features import build_glucose_forecast_table, build_signal_windows, fe
 from dvxr.loaders import (
     load_cgmacros_bio,
     load_cgmacros_dataset,
+    load_deap_dataset,
     load_mimic_demo_ehr,
     load_noneeg_dataset,
     load_shanghai_cgm_dataset,
@@ -263,6 +264,31 @@ def cgmacros_diabetes_task(data_dir: str = "data/real/cgmacros",
     )
 
 
+# ------------------------------------------------------------- DEAP arousal
+def deap_arousal_task(data_dir: str = "data/real/deap", subjects: int = 8,
+                      max_trials: Optional[int] = None, window_seconds: int = 8) -> BenchTask:
+    """DEAP EEG+peripheral arousal — REAL self-report arousal (high vs low).
+
+    Auto-detects preprocessed (.dat, labels included) vs raw (.bdf + ratings).
+    EEG band-power + peripheral-physiology windows, non-overlapping. One trial spans
+    ~60 s, so short windows give several examples per trial while subjects stay the CV group.
+    """
+    assert_no_fabrication()
+    events = load_deap_dataset(data_dir, subjects=subjects, max_trials=max_trials)
+    win = build_signal_windows(events, window_seconds=window_seconds,
+                               step_seconds=window_seconds, label_name="arousal")
+    win = win[win["target"].astype(str).str.len() > 0].reset_index(drop=True)
+    y = (win["target"].astype(str) == "high_arousal").astype(int).to_numpy()
+    groups = _split_by_modality(win)
+    feats = {m: win[cols].to_numpy(dtype=float) for m, cols in groups.items()}
+    return BenchTask(
+        name="deap_arousal", kind="classification", features=feats,
+        feature_names=groups, y=y, subject_ids=win["subject_id"].to_numpy(),
+        metric="1-AUROC", baseline_hint="majority", raw_windows=win,
+        extra={"events": events, "window_seconds": window_seconds},
+    )
+
+
 TASK_BUILDERS = {
     "stress": noneeg_stress_task,
     "glucose": shanghai_glucose_task,
@@ -270,4 +296,5 @@ TASK_BUILDERS = {
     "wesad_stress": wesad_stress_task,
     "cgmacros_glucose": cgmacros_glucose_task,
     "cgmacros_diabetes": cgmacros_diabetes_task,
+    "deap_arousal": deap_arousal_task,
 }

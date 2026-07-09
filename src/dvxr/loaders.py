@@ -618,6 +618,133 @@ def load_deap_preprocessed_pickle(path: str | Path, max_trials: int | None = 3) 
     return validate_events(pd.DataFrame(rows))
 
 
+def _deap_ratings_map(data_dir: Path) -> dict[tuple[int, int], float]:
+    """Map (participant, trial) -> arousal rating from the DEAP participant_ratings sheet.
+
+    Raw DEAP ships ratings separately from the .bdf recordings. Returns {} if no ratings
+    file is found (loader then emits without a label).
+    """
+    for pat in ("**/participant_ratings.csv", "**/*ratings*.csv", "**/*ratings*.xls*"):
+        for path in data_dir.glob(pat):
+            try:
+                table = pd.read_excel(path) if path.suffix.lower().startswith(".xls") else pd.read_csv(path)
+            except Exception:
+                continue
+            cols = {c.lower().strip(): c for c in table.columns}
+            pcol = cols.get("participant_id") or cols.get("participant")
+            tcol = cols.get("trial")
+            acol = cols.get("arousal")
+            if not (pcol and tcol and acol):
+                continue
+            out: dict[tuple[int, int], float] = {}
+            for r in table.itertuples(index=False):
+                try:
+                    out[(int(getattr(r, pcol)), int(getattr(r, tcol)))] = float(getattr(r, acol))
+                except Exception:
+                    continue
+            if out:
+                return out
+    return {}
+
+
+def load_deap_raw_bdf(
+    bdf_path: str | Path,
+    ratings: dict[tuple[int, int], float] | None = None,
+    max_seconds: float | None = 60.0,
+    target_rate_hz: float = 128.0,
+) -> pd.DataFrame:
+    """Load one raw DEAP BioSemi ``.bdf`` recording into the canonical schema.
+
+    Raw DEAP is 48-channel BioSemi at 512 Hz (32 EEG 10-20 + peripheral). We read via
+    ``mne``, keep the first 32 channels as ``eeg`` and the rest as ``physiology``,
+    downsample to ``target_rate_hz`` to keep event volume sane, and attach the arousal
+    label from ``ratings`` (participant/trial parsed from the filename ``sXX`` / ``trialNN``)
+    when available. Requires ``mne`` (``pip install mne``).
+    """
+    import re
+
+    import mne
+
+    bdf_path = Path(bdf_path)
+    raw = mne.io.read_raw_bdf(bdf_path, preload=True, verbose="ERROR")
+    if target_rate_hz and raw.info["sfreq"] > target_rate_hz:
+        raw.resample(target_rate_hz, verbose="ERROR")
+    rate = float(raw.info["sfreq"])
+    data = raw.get_data()  # (n_channels, n_samples)
+    if max_seconds:
+        data = data[:, : int(max_seconds * rate)]
+
+    pmatch = re.search(r"s(\d+)", bdf_path.stem, re.I)
+    tmatch = re.search(r"trial[_-]?(\d+)", bdf_path.stem, re.I)
+    participant = int(pmatch.group(1)) if pmatch else 0
+    trial = int(tmatch.group(1)) if tmatch else 0
+    subject_id = f"deap_s{participant:02d}"
+
+    arousal = (ratings or {}).get((participant, trial))
+    label_name, label_value = ("", "")
+    if arousal is not None:
+        label_name, label_value = "arousal", ("high_arousal" if arousal >= 5 else "low_arousal")
+
+    ch_names = _deap_channel_names(data.shape[0])
+    start = pd.Timestamp("2026-01-01T00:00:00Z")
+    step = max(1, int(rate) // int(target_rate_hz)) if target_rate_hz else 1
+    rows: list[dict] = []
+    for ch_idx, channel in enumerate(ch_names):
+        modality = "eeg" if ch_idx < 32 else "physiology"
+        series = data[ch_idx]
+        for sample_idx in range(0, len(series), step):
+            rows.append(
+                {
+                    "subject_id": subject_id,
+                    "session_id": f"deap_trial_{trial:02d}",
+                    "timestamp_utc": start + pd.Timedelta(seconds=sample_idx / rate),
+                    "source_system": "deap_raw",
+                    "device": "biosemi_activetwo",
+                    "modality": modality,
+                    "channel": channel,
+                    "value": float(series[sample_idx]) * (1e6 if modality == "eeg" else 1.0),
+                    "unit": "uV" if modality == "eeg" else "a.u.",
+                    "sampling_rate_hz": rate,
+                    "quality_flag": "ok",
+                    "label_name": label_name,
+                    "label_value": label_value,
+                }
+            )
+    return validate_events(pd.DataFrame(rows))
+
+
+def load_deap_dataset(
+    data_dir: str | Path,
+    subjects: int | None = None,
+    max_trials: int | None = 3,
+) -> pd.DataFrame:
+    """Load DEAP into the canonical schema, auto-detecting preprocessed vs raw layout.
+
+    Prefers the preprocessed ``data_preprocessed_python/sXX.dat`` pickles (one file per
+    participant, includes valence/arousal labels). Falls back to raw ``.bdf`` recordings
+    (joined to the participant_ratings sheet) when no ``.dat`` files are present.
+    """
+    data_dir = Path(data_dir)
+    dats = sorted(
+        data_dir.glob("**/data_preprocessed_python/s*.dat"),
+        key=lambda p: int("".join(ch for ch in p.stem if ch.isdigit()) or 0),
+    ) or sorted(data_dir.glob("**/s*.dat"))
+    if dats:
+        if subjects is not None:
+            dats = dats[:subjects]
+        frames = [load_deap_preprocessed_pickle(p, max_trials=max_trials) for p in dats]
+        return validate_events(pd.concat(frames, ignore_index=True))
+
+    bdfs = sorted(data_dir.glob("**/*.bdf"))
+    if not bdfs:
+        raise ValueError(f"No DEAP .dat or .bdf files found under {data_dir}")
+    if subjects is not None:
+        bdfs = bdfs[:subjects]
+    ratings = _deap_ratings_map(data_dir)
+    frames = [load_deap_raw_bdf(p, ratings=ratings) for p in bdfs]
+    return validate_events(pd.concat(frames, ignore_index=True))
+
+
 def _aligned_wesad_label(labels: np.ndarray, sample_idx: int, signal_len: int) -> int:
     if len(labels) == 0:
         return -1
