@@ -16,10 +16,14 @@ deep-beats-classical task, and streaming-natural.
   head, trained end-to-end on train folds only (leakage-safe); `sleep_win_benchmark` pits it
   head-to-head against the summary-stat xgboost/GBM floor with RER + bootstrap CI.
   `scripts/run_sleep_win.py` → `outputs/sleep_edf_win.{md,json}`.
-- **Preliminary win (3 recordings):** on wake/sleep the raw-CNN beats the xgboost floor —
-  RER +54.5%, CI (42.2, 76.7) (CI excludes a tie). The raw-signal lever works; full-recording
-  confirmation + harder REM/N1 targets follow. `tests/test_sleep_edf.py` (skip-guarded on torch
-  + local recordings).
+- **Honest result (corrected):** a 3-recording probe showed a wake/sleep win (RER +54.5%), but
+  it did NOT replicate. At **5 recordings under proper 5-fold subject-held-out CV the raw-CNN
+  LOSES** on every target (wake RER -824%, REM -142%, deep -88%; `outputs/sleep_edf_win.md`).
+  EEG band-power features + tuned GBM are a strong sleep-staging baseline, and a single-epoch
+  1D-CNN does not beat it at this scale. The project-wide pattern holds — tuned GBM on good
+  features is very hard to beat. Reported, not faked. Untried principled levers: temporal
+  cross-epoch sequence modeling (the real deep advantage on staging), many more subjects, or a
+  pretrained EEG foundation encoder. `tests/test_sleep_edf.py` (skip-guarded on torch + data).
 
 ---
 
