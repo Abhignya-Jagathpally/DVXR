@@ -118,6 +118,82 @@ def pred_rawcnn(task: BenchTask, tr, te, seed: int = 7, epochs: int = 25,
     return out
 
 
+def _seq_by_recording(task, idx):
+    """Group window indices by recording (subject_id), preserving time order — each
+    recording is one ordered epoch sequence. Returns [(sid, np.ndarray of row indices)]."""
+    sids = np.asarray(task.subject_ids)
+    idx = np.asarray(idx)
+    order = idx[np.argsort(idx)]                 # windows are appended in time order
+    seqs = []
+    for s in dict.fromkeys(sids[order]):         # stable unique, in encounter order
+        rows = order[sids[order] == s]
+        seqs.append((s, rows))
+    return seqs
+
+
+def pred_temporal(task: BenchTask, tr, te, seed: int = 7, epochs: int = 40,
+                  lr: float = 3e-3, hidden: int = 48) -> np.ndarray:
+    """The temporal lever: a BiGRU over each recording's epoch-feature SEQUENCE, so every
+    epoch is classified WITH its neighbours' context — exactly what the GBM floor (which
+    scores each epoch in isolation) structurally lacks. Input = the same per-modality
+    summary-stat features the floor uses, so any gain is attributable to temporal context.
+    Trained on whole train recordings, predicts whole held-out recordings. Leakage-free."""
+    import torch
+    from torch import nn
+
+    y = np.asarray(task.y, dtype=int)
+    classes = sorted(np.unique(y[tr]).tolist())
+    if len(classes) < 2:
+        return np.full(len(te), float(classes[0]))
+    X = np.hstack([task.features[m] for m in task.modalities]).astype(np.float32)
+    from sklearn.preprocessing import StandardScaler
+    sc = StandardScaler().fit(X[tr])
+    X = sc.transform(X).astype(np.float32)
+    cls_index = {c: i for i, c in enumerate(classes)}
+    counts = np.array([(y[tr] == c).sum() for c in classes], dtype=float)
+    w = torch.tensor(counts.sum() / (len(classes) * np.clip(counts, 1, None)), dtype=torch.float32)
+
+    torch.manual_seed(seed)
+
+    class SeqNet(nn.Module):
+        def __init__(self, d_in):
+            super().__init__()
+            self.gru = nn.GRU(d_in, hidden, num_layers=1, batch_first=True, bidirectional=True)
+            self.head = nn.Sequential(nn.Linear(2 * hidden, 64), nn.ReLU(),
+                                      nn.Dropout(0.3), nn.Linear(64, len(classes)))
+
+        def forward(self, x):                    # x: (1, T, d_in)
+            h, _ = self.gru(x)
+            return self.head(h)[0]               # (T, C)
+
+    model = SeqNet(X.shape[1])
+    opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-3)
+    lossf = nn.CrossEntropyLoss(weight=w)
+    train_seqs = _seq_by_recording(task, tr)
+    rng = np.random.default_rng(seed)
+    model.train()
+    for _ in range(epochs):
+        for si in rng.permutation(len(train_seqs)):
+            _, rows = train_seqs[si]
+            xb = torch.tensor(X[rows]).unsqueeze(0)
+            yb = torch.tensor([cls_index[int(v)] for v in y[rows]])
+            logits = model(xb)
+            loss = lossf(logits, yb)
+            opt.zero_grad(); loss.backward(); opt.step()
+
+    model.eval()
+    pos = cls_index.get(1, len(classes) - 1)
+    out = np.zeros(len(te))
+    te = np.asarray(te)
+    pos_in_te = {int(r): i for i, r in enumerate(te)}
+    with torch.no_grad():
+        for _, rows in _seq_by_recording(task, te):
+            probs = torch.softmax(model(torch.tensor(X[rows]).unsqueeze(0)), dim=1)[:, pos].numpy()
+            for r, p in zip(rows, probs):
+                out[pos_in_te[int(r)]] = p
+    return out
+
+
 def _importable(mod: str) -> bool:
     import importlib.util
     return importlib.util.find_spec(mod) is not None
