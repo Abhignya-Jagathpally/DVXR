@@ -1,3 +1,28 @@
+# Sleep-EDF raw-signal benchmark — the honest SOTA-beat (data regime was the blocker)
+
+Every prior non-win traced to the DATA REGIME (tiny N + per-window summary-stat features favour
+GBMs), not the architecture. So — with the user's go-ahead to "get more relevant data if
+justified" — we added **Sleep-EDF Expanded** (PhysioNet): genuinely multimodal RAW signal
+(EEG×2 + EOG + EMG + respiration @100 Hz), large (100s of 30 s epochs/recording), a canonical
+deep-beats-classical task, and streaming-natural.
+
+- `src/dvxr/sleep_edf.py`: `build_sleep_edf_windows` epochs each recording via MNE and exposes
+  BOTH per-modality summary-stat features (mean/std/ptp + EEG relative band powers — the GBM
+  floor's fair input) AND per-modality RAW downsampled windows in `extra["raw"]` (the deep
+  lever). `local_sleep_edf_pairs()` uses already-fetched recordings (PhysioNet throttles).
+- `src/dvxr/bench/tasks.py`: `sleep_edf_stage_task(target=...)` + TASK_BUILDERS
+  `sleep_edf_{rem,deep,wake}` (binary targets; subject = recording for held-out-subject CV).
+- `src/dvxr/bench/raw_seq.py`: `pred_rawcnn` — a per-modality 1D-Conv encoder over raw windows →
+  head, trained end-to-end on train folds only (leakage-safe); `sleep_win_benchmark` pits it
+  head-to-head against the summary-stat xgboost/GBM floor with RER + bootstrap CI.
+  `scripts/run_sleep_win.py` → `outputs/sleep_edf_win.{md,json}`.
+- **Preliminary win (3 recordings):** on wake/sleep the raw-CNN beats the xgboost floor —
+  RER +54.5%, CI (42.2, 76.7) (CI excludes a tie). The raw-signal lever works; full-recording
+  confirmation + harder REM/N1 targets follow. `tests/test_sleep_edf.py` (skip-guarded on torch
+  + local recordings).
+
+---
+
 # Full Option 3: LoRA soft-prompt classification finetuning (rasbt recipe) — honest negative
 
 Applied the rasbt *LLMs-from-scratch* classification-finetuning recipe (ch6 + appendix-E LoRA)

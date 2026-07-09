@@ -289,6 +289,27 @@ def deap_arousal_task(data_dir: str = "data/real/deap", subjects: int = 8,
     )
 
 
+def sleep_edf_stage_task(n_recordings: int = 20, target: str = "rem",
+                         max_epochs_per_rec: Optional[int] = 400) -> BenchTask:
+    """Sleep-EDF Expanded multimodal sleep staging — REAL expert hypnogram labels.
+
+    Genuinely multimodal RAW signal (EEG×2 + EOG + EMG + respiration @100 Hz), large N,
+    and a canonical deep-beats-classical task. Carries BOTH per-modality summary-stat
+    features (the GBM/linear floor's fair input) and per-modality RAW downsampled windows
+    in ``extra["raw"]`` (the deep/LLM sequence path — the actual lever over summary stats).
+    ``target``: "rem" | "deep" | "n1" | "wake_sleep" (binary, subject = recording for CV).
+    """
+    from dvxr.sleep_edf import build_sleep_edf_windows
+    d = build_sleep_edf_windows(n_recordings=n_recordings, target=target,
+                                max_epochs_per_rec=max_epochs_per_rec)
+    return BenchTask(
+        name=f"sleep_edf_{target}", kind="classification", features=d["features"],
+        feature_names=d["feature_names"], y=d["y"], subject_ids=d["subject_ids"],
+        metric="1-AUROC", baseline_hint="majority", raw_windows=None,
+        extra={"raw": d["raw"], "target": target, "modality_is_raw": True},
+    )
+
+
 TASK_BUILDERS = {
     "stress": noneeg_stress_task,
     "glucose": shanghai_glucose_task,
@@ -297,4 +318,7 @@ TASK_BUILDERS = {
     "cgmacros_glucose": cgmacros_glucose_task,
     "cgmacros_diabetes": cgmacros_diabetes_task,
     "deap_arousal": deap_arousal_task,
+    "sleep_edf_rem": lambda: sleep_edf_stage_task(target="rem"),
+    "sleep_edf_deep": lambda: sleep_edf_stage_task(target="deep"),
+    "sleep_edf_wake": lambda: sleep_edf_stage_task(target="wake_sleep"),
 }
