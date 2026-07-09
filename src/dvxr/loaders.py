@@ -220,6 +220,254 @@ def load_shanghai_cgm_dataset(data_dir: str | Path, max_patients: int | None = N
     return validate_events(pd.concat(frames, ignore_index=True))
 
 
+# --- CGMacros multimodal dataset: CGM (Libre+Dexcom) + Fitbit + diet + labs (PhysioNet, real) ---
+
+# Per-subject CSV continuous channels: (column, modality, channel, unit, glucose_source).
+CGMACROS_CONTINUOUS = [
+    ("Libre GL", "cgm", "glucose", "mg/dL", "libre"),
+    ("Dexcom GL", "cgm", "glucose", "mg/dL", "dexcom"),
+    ("HR", "wearable_phys", "heart_rate", "bpm", ""),
+    ("Calories (Activity)", "wearable_phys", "calories_activity", "kcal", ""),
+    ("Mets", "wearable_phys", "mets_x10", "met_x10", ""),
+]
+
+# Per-subject CSV meal-event channels (emitted only on rows that start a meal).
+CGMACROS_MEAL = [
+    ("Calories", "meal_calories", "kcal"),
+    ("Carbs", "meal_carbs", "g"),
+    ("Protein", "meal_protein", "g"),
+    ("Fat", "meal_fat", "g"),
+    ("Fiber", "meal_fiber", "g"),
+    ("Amount Consumed", "meal_amount_consumed", "pct"),
+]
+
+# bio.csv numeric static concepts -> EHR events (source column -> canonical channel).
+CGMACROS_BIO_NUMERIC = {
+    "Age": "age",
+    "BMI": "bmi",
+    "Body weight": "body_weight_lb",
+    "Height": "height_in",
+    "A1c PDL (Lab)": "hba1c",
+    "Fasting GLU - PDL (Lab)": "fasting_glucose",
+    "Insulin": "fasting_insulin",
+    "Triglycerides": "triglycerides",
+    "Cholesterol": "cholesterol",
+    "HDL": "hdl",
+    "Non HDL": "non_hdl",
+    "LDL (Cal)": "ldl",
+    "VLDL (Cal)": "vldl",
+    "Cho/HDL Ratio": "chol_hdl_ratio",
+}
+
+
+def _diabetes_status_from_a1c(a1c: float | None) -> str:
+    """ADA HbA1c(%) strata: >=6.5 diabetes, 5.7-6.4 prediabetes, else healthy."""
+    if a1c is None or pd.isna(a1c):
+        return ""
+    if a1c >= 6.5:
+        return "diabetes"
+    if a1c >= 5.7:
+        return "prediabetes"
+    return "healthy"
+
+
+def _cgmacros_subject_num(path: Path) -> str:
+    import re
+
+    match = re.search(r"(\d{2,3})", path.stem)
+    return match.group(1) if match else path.stem
+
+
+def _find_bio_csv(data_dir: Path) -> Path | None:
+    for pattern in ("**/bio.csv", "**/Bio.csv", "**/CGMacros_bio.csv"):
+        hits = [p for p in data_dir.glob(pattern) if "DataDictionary" not in p.name]
+        if hits:
+            return hits[0]
+    return None
+
+
+def _cgmacros_bio_status_map(data_dir: Path) -> dict[str, str]:
+    """Map cgmacros subject_id -> diabetes status derived from bio.csv HbA1c."""
+    bio_path = _find_bio_csv(data_dir)
+    if bio_path is None:
+        return {}
+    bio = pd.read_csv(bio_path)
+    bio.columns = [c.strip() for c in bio.columns]
+    id_col = next((c for c in bio.columns if c.lower() in {"subject", "subjectid", "subject_id", "id", "pid", "participant"}), None)
+    a1c_col = next((c for c in bio.columns if c.strip().startswith("A1c")), None)
+    status: dict[str, str] = {}
+    for i, record in bio.reset_index(drop=True).iterrows():
+        num = str(int(record[id_col])) if id_col and pd.notna(record[id_col]) else str(i + 1)
+        num = num.zfill(3)
+        a1c = pd.to_numeric(record.get(a1c_col), errors="coerce") if a1c_col else None
+        status[f"cgmacros_{num}"] = _diabetes_status_from_a1c(a1c)
+    return status
+
+
+def load_cgmacros_subject(csv_path: str | Path, diabetes_status: str = "") -> pd.DataFrame:
+    """Load one CGMacros per-subject CSV into canonical events across three modalities.
+
+    Emits `cgm` (Libre + Dexcom glucose, disambiguated by the extra `glucose_source`
+    column), `wearable_phys` (Fitbit HR / activity calories / METs), and `behavior`
+    (per-meal macronutrients, with `meal_type` and `meal_photo_path` extras). Uses the
+    relaxed schema so those dataset-specific extra columns are preserved.
+    """
+    csv_path = Path(csv_path)
+    subject_id = f"cgmacros_{_cgmacros_subject_num(csv_path)}"
+    frame = pd.read_csv(csv_path)
+    frame.columns = [c.strip() for c in frame.columns]
+    # Column names vary in case across the real files (e.g. "METs", "Image path").
+    lower_map = {c.lower(): c for c in frame.columns}
+
+    def _col(name: str):
+        return lower_map.get(name.lower())
+
+    ts = pd.to_datetime(frame[_col("Timestamp")], errors="coerce", utc=True)
+
+    parts: list[pd.DataFrame] = []
+
+    def _emit(mask, values, modality, channel, unit, rate, glucose_source="", meal_type="", photo=""):
+        mask = mask & ts.notna()
+        if not mask.any():
+            return
+        parts.append(
+            pd.DataFrame(
+                {
+                    "subject_id": subject_id,
+                    "session_id": "cgmacros",
+                    "timestamp_utc": ts[mask].values,
+                    "source_system": "cgmacros_physionet",
+                    "device": "cgmacros",
+                    "modality": modality,
+                    "channel": channel,
+                    "value": pd.to_numeric(values[mask], errors="coerce").values,
+                    "unit": unit,
+                    "sampling_rate_hz": rate,
+                    "quality_flag": "ok",
+                    "label_name": "diabetes_status" if diabetes_status else "",
+                    "label_value": diabetes_status,
+                    "glucose_source": glucose_source,
+                    "meal_type": meal_type if isinstance(meal_type, str) else "",
+                    "meal_photo_path": photo if isinstance(photo, str) else "",
+                }
+            )
+        )
+
+    for col, modality, channel, unit, source in CGMACROS_CONTINUOUS:
+        actual = _col(col)
+        if actual is None:
+            continue
+        values = pd.to_numeric(frame[actual], errors="coerce")
+        _emit(values.notna(), values, modality, channel, unit, 1.0 / 60.0, glucose_source=source)
+
+    meal_type_col = _col("Meal Type")
+    if meal_type_col is not None:
+        meal_mask = frame[meal_type_col].notna() & (frame[meal_type_col].astype(str).str.strip() != "")
+        photo_col = _col("Image Path") or _col("Image path")
+        for col, channel, unit in CGMACROS_MEAL:
+            actual = _col(col)
+            if actual is None:
+                continue
+            values = pd.to_numeric(frame[actual], errors="coerce")
+            m = meal_mask & values.notna()
+            if not (m & ts.notna()).any():
+                continue
+            sub = pd.DataFrame(
+                {
+                    "subject_id": subject_id,
+                    "session_id": "cgmacros",
+                    "timestamp_utc": ts[m].values,
+                    "source_system": "cgmacros_physionet",
+                    "device": "diet_log",
+                    "modality": "behavior",
+                    "channel": channel,
+                    "value": values[m].values,
+                    "unit": unit,
+                    "sampling_rate_hz": 0.0,
+                    "quality_flag": "ok",
+                    "label_name": "diabetes_status" if diabetes_status else "",
+                    "label_value": diabetes_status,
+                    "glucose_source": "",
+                    "meal_type": frame.loc[m, meal_type_col].astype(str).values,
+                    "meal_photo_path": (frame.loc[m, photo_col].astype(str).values if photo_col else ""),
+                }
+            )
+            parts.append(sub)
+
+    if not parts:
+        raise ValueError(f"No usable CGMacros signals in {csv_path.name}")
+    return validate_events(pd.concat(parts, ignore_index=True))
+
+
+def load_cgmacros_bio(data_dir: str | Path) -> pd.DataFrame:
+    """Load CGMacros bio.csv into static per-subject EHR events (demographics + labs)."""
+    data_dir = Path(data_dir)
+    bio_path = _find_bio_csv(data_dir)
+    if bio_path is None:
+        raise ValueError(f"No bio.csv found under {data_dir}")
+    bio = pd.read_csv(bio_path)
+    bio.columns = [c.strip() for c in bio.columns]
+    id_col = next((c for c in bio.columns if c.lower() in {"subject", "subjectid", "subject_id", "id", "pid", "participant"}), None)
+    anchor = pd.Timestamp("2021-01-01T00:00:00Z")
+
+    rows: list[dict] = []
+    for i, record in bio.reset_index(drop=True).iterrows():
+        num = (str(int(record[id_col])) if id_col and pd.notna(record[id_col]) else str(i + 1)).zfill(3)
+        subject_id = f"cgmacros_{num}"
+        status = _diabetes_status_from_a1c(pd.to_numeric(record.get(next((c for c in bio.columns if c.startswith("A1c")), "")), errors="coerce"))
+        concepts = {canonical: pd.to_numeric(record.get(src), errors="coerce") for src, canonical in CGMACROS_BIO_NUMERIC.items()}
+        if "Gender" in bio.columns:
+            concepts["sex_is_female"] = 1.0 if str(record.get("Gender")).strip().upper().startswith("F") else 0.0
+        for channel, value in concepts.items():
+            if pd.isna(value):
+                continue
+            rows.append(
+                {
+                    "subject_id": subject_id,
+                    "session_id": "bio",
+                    "timestamp_utc": anchor,
+                    "source_system": "cgmacros_physionet",
+                    "device": "ehr_static",
+                    "modality": "ehr",
+                    "channel": channel,
+                    "value": float(value),
+                    "unit": "value",
+                    "sampling_rate_hz": 0.0,
+                    "quality_flag": "ok",
+                    "label_name": "diabetes_status" if status else "",
+                    "label_value": status,
+                }
+            )
+    if not rows:
+        raise ValueError(f"No numeric bio concepts parsed from {bio_path}")
+    return validate_events(pd.DataFrame(rows))
+
+
+def load_cgmacros_dataset(data_dir: str | Path, subjects: int | None = None, include_bio: bool = True) -> pd.DataFrame:
+    """Load CGMacros per-subject CSVs (+ bio EHR) into one canonical multimodal table."""
+    data_dir = Path(data_dir)
+    csvs = sorted(
+        (p for p in data_dir.glob("**/CGMacros-*.csv") if "DataDictionary" not in p.name),
+        key=lambda p: _cgmacros_subject_num(p),
+    )
+    if not csvs:
+        raise ValueError(f"No CGMacros-*.csv subject files found under {data_dir}")
+    if subjects is not None:
+        csvs = csvs[:subjects]
+    status_map = _cgmacros_bio_status_map(data_dir)
+    loaded_ids = {f"cgmacros_{_cgmacros_subject_num(p)}" for p in csvs}
+    frames = [load_cgmacros_subject(p, diabetes_status=status_map.get(f"cgmacros_{_cgmacros_subject_num(p)}", "")) for p in csvs]
+    if include_bio:
+        try:
+            bio = load_cgmacros_bio(data_dir)
+            if subjects is not None:
+                bio = bio[bio["subject_id"].isin(loaded_ids)]
+            frames.append(bio)
+        except ValueError:
+            pass
+    return validate_events(pd.concat(frames, ignore_index=True))
+
+
 WESAD_RATES = {
     ("chest", "ACC"): 700.0,
     ("chest", "ECG"): 700.0,

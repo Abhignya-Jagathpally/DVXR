@@ -24,6 +24,7 @@ _MODALITY_RULES = [
     ("openbci", ("eeg", "OpenBCI_GUI", "Galea_BoardGaleaBeta")),
     ("galea", ("eeg", "OpenBCI_GUI", "Galea_BoardGaleaBeta")),
     ("noneeg", ("wearable_phys", "physionet_noneeg", "wrist_noneeg")),
+    ("cgmacros", ("cgm", "cgmacros_physionet", "cgmacros")),  # before "cgm": "cgm" is a substring
     ("shanghai", ("cgm", "shanghai_diabetes", "cgm")),
     ("cgm", ("cgm", "shanghai_diabetes", "cgm")),
     ("mimic", ("ehr", "mimic_iv_demo", "ehr")),

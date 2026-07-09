@@ -136,7 +136,13 @@ def fetch_cgmacros() -> Path:
     out = REAL_DIR / "cgmacros"
     with zipfile.ZipFile(zip_path) as archive:
         archive.extractall(out)
-    print(f"CGMacros -> {out}")
+    # The PhysioNet archive is a zip-in-zip: unpack the inner CGMacros_dateshifted365.zip
+    # in place so per-subject CGMacros-XXX/CGMacros-XXX.csv + bio.csv become loadable.
+    for inner in out.glob("**/CGMacros_dateshifted365.zip"):
+        with zipfile.ZipFile(inner) as inner_zip:
+            inner_zip.extractall(inner.parent / "data")
+    n = len(list(out.glob("**/CGMacros-*.csv")))
+    print(f"CGMacros -> {out} ({n} subject CSVs)")
     return out
 
 
