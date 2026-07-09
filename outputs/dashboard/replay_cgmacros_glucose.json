@@ -1,0 +1,4849 @@
+{
+  "task": "cgmacros_glucose",
+  "title": "Glucose monitoring (CGMacros)",
+  "kind": "forecast",
+  "test_subject": "cgmacros_004",
+  "modalities": [
+    "CGM"
+  ],
+  "attribution_source": "single-modality (CGM)",
+  "forecast_interval": 26.33,
+  "runs": {
+    "full": {
+      "label": "Full modalities",
+      "dropped": null,
+      "drop_from_step": null,
+      "steps": [
+        {
+          "idx": 0,
+          "t": "2023-09-11 10:14:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 107.0,
+          "glucose_forecast": 119.62,
+          "glucose_lower": 93.29,
+          "glucose_upper": 145.95,
+          "glucose_target": 109.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 107 mg/dL, 30-min forecast 120 [93-146]. No action needed."
+        },
+        {
+          "idx": 1,
+          "t": "2023-09-11 12:14:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 120.0,
+          "glucose_forecast": 121.4,
+          "glucose_lower": 95.07,
+          "glucose_upper": 147.73,
+          "glucose_target": 161.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 120 mg/dL, 30-min forecast 121 [95-148]. No action needed."
+        },
+        {
+          "idx": 2,
+          "t": "2023-09-11 14:14:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 123.0,
+          "glucose_forecast": 121.22,
+          "glucose_lower": 94.89,
+          "glucose_upper": 147.55,
+          "glucose_target": 118.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 123 mg/dL, 30-min forecast 121 [95-148]. No action needed."
+        },
+        {
+          "idx": 3,
+          "t": "2023-09-11 16:14:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 99.0,
+          "glucose_forecast": 119.47,
+          "glucose_lower": 93.14,
+          "glucose_upper": 145.8,
+          "glucose_target": 101.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 99 mg/dL, 30-min forecast 119 [93-146]. No action needed."
+        },
+        {
+          "idx": 4,
+          "t": "2023-09-11 18:14:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 103.0,
+          "glucose_forecast": 119.66,
+          "glucose_lower": 93.33,
+          "glucose_upper": 145.99,
+          "glucose_target": 110.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 103 mg/dL, 30-min forecast 120 [93-146]. No action needed."
+        },
+        {
+          "idx": 5,
+          "t": "2023-09-11 20:14:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 154.0,
+          "glucose_forecast": 126.27,
+          "glucose_lower": 99.94,
+          "glucose_upper": 152.6,
+          "glucose_target": 164.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 154 mg/dL, 30-min forecast 126 [100-153]. No action needed."
+        },
+        {
+          "idx": 6,
+          "t": "2023-09-11 22:14:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 144.0,
+          "glucose_forecast": 124.03,
+          "glucose_lower": 97.7,
+          "glucose_upper": 150.36,
+          "glucose_target": 145.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 144 mg/dL, 30-min forecast 124 [98-150]. No action needed."
+        },
+        {
+          "idx": 7,
+          "t": "2023-09-12 00:14:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 138.0,
+          "glucose_forecast": 123.85,
+          "glucose_lower": 97.52,
+          "glucose_upper": 150.18,
+          "glucose_target": 127.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 138 mg/dL, 30-min forecast 124 [98-150]. No action needed."
+        },
+        {
+          "idx": 8,
+          "t": "2023-09-12 02:14:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 89.0,
+          "glucose_forecast": 119.57,
+          "glucose_lower": 93.24,
+          "glucose_upper": 145.9,
+          "glucose_target": 84.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [
+            "Glucose is dropping quickly \u2014 recheck within a few minutes."
+          ],
+          "narration": "Glucose 89 mg/dL, 30-min forecast 120 [93-146]. Glucose is dropping quickly \u2014 recheck within a few minutes."
+        },
+        {
+          "idx": 9,
+          "t": "2023-09-12 04:14:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 120.0,
+          "glucose_forecast": 120.84,
+          "glucose_lower": 94.51,
+          "glucose_upper": 147.17,
+          "glucose_target": 119.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 120 mg/dL, 30-min forecast 121 [95-147]. No action needed."
+        },
+        {
+          "idx": 10,
+          "t": "2023-09-12 06:04:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 115.0,
+          "glucose_forecast": 120.75,
+          "glucose_lower": 94.42,
+          "glucose_upper": 147.08,
+          "glucose_target": 124.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 115 mg/dL, 30-min forecast 121 [94-147]. No action needed."
+        },
+        {
+          "idx": 11,
+          "t": "2023-09-12 08:04:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 125.0,
+          "glucose_forecast": 121.22,
+          "glucose_lower": 94.89,
+          "glucose_upper": 147.55,
+          "glucose_target": 117.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 125 mg/dL, 30-min forecast 121 [95-148]. No action needed."
+        },
+        {
+          "idx": 12,
+          "t": "2023-09-12 10:04:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 119.0,
+          "glucose_forecast": 120.75,
+          "glucose_lower": 94.42,
+          "glucose_upper": 147.08,
+          "glucose_target": 194.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 119 mg/dL, 30-min forecast 121 [94-147]. No action needed."
+        },
+        {
+          "idx": 13,
+          "t": "2023-09-12 12:04:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 119.0,
+          "glucose_forecast": 122.73,
+          "glucose_lower": 96.4,
+          "glucose_upper": 149.06,
+          "glucose_target": 90.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 119 mg/dL, 30-min forecast 123 [96-149]. No action needed."
+        },
+        {
+          "idx": 14,
+          "t": "2023-09-12 14:04:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 137.0,
+          "glucose_forecast": 123.53,
+          "glucose_lower": 97.2,
+          "glucose_upper": 149.86,
+          "glucose_target": 151.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 137 mg/dL, 30-min forecast 124 [97-150]. No action needed."
+        },
+        {
+          "idx": 15,
+          "t": "2023-09-12 16:04:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 109.0,
+          "glucose_forecast": 120.25,
+          "glucose_lower": 93.92,
+          "glucose_upper": 146.58,
+          "glucose_target": 112.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 109 mg/dL, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 16,
+          "t": "2023-09-12 18:04:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 91.0,
+          "glucose_forecast": 118.68,
+          "glucose_lower": 92.34,
+          "glucose_upper": 145.01,
+          "glucose_target": 90.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 91 mg/dL, 30-min forecast 119 [92-145]. No action needed."
+        },
+        {
+          "idx": 17,
+          "t": "2023-09-12 20:04:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 99.0,
+          "glucose_forecast": 122.73,
+          "glucose_lower": 96.4,
+          "glucose_upper": 149.06,
+          "glucose_target": 112.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [
+            "Glucose is dropping quickly \u2014 recheck within a few minutes."
+          ],
+          "narration": "Glucose 99 mg/dL, 30-min forecast 123 [96-149]. Glucose is dropping quickly \u2014 recheck within a few minutes."
+        },
+        {
+          "idx": 18,
+          "t": "2023-09-12 22:04:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 140.0,
+          "glucose_forecast": 122.98,
+          "glucose_lower": 96.65,
+          "glucose_upper": 149.31,
+          "glucose_target": 105.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 140 mg/dL, 30-min forecast 123 [97-149]. No action needed."
+        },
+        {
+          "idx": 19,
+          "t": "2023-09-13 00:04:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 142.0,
+          "glucose_forecast": 123.17,
+          "glucose_lower": 96.84,
+          "glucose_upper": 149.5,
+          "glucose_target": 140.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 142 mg/dL, 30-min forecast 123 [97-149]. No action needed."
+        },
+        {
+          "idx": 20,
+          "t": "2023-09-13 02:04:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 146.0,
+          "glucose_forecast": 123.17,
+          "glucose_lower": 96.84,
+          "glucose_upper": 149.5,
+          "glucose_target": 127.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 146 mg/dL, 30-min forecast 123 [97-149]. No action needed."
+        },
+        {
+          "idx": 21,
+          "t": "2023-09-13 04:04:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 130.0,
+          "glucose_forecast": 122.33,
+          "glucose_lower": 95.99,
+          "glucose_upper": 148.66,
+          "glucose_target": 136.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 130 mg/dL, 30-min forecast 122 [96-149]. No action needed."
+        },
+        {
+          "idx": 22,
+          "t": "2023-09-13 06:04:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 127.0,
+          "glucose_forecast": 121.31,
+          "glucose_lower": 94.98,
+          "glucose_upper": 147.64,
+          "glucose_target": 130.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 127 mg/dL, 30-min forecast 121 [95-148]. No action needed."
+        },
+        {
+          "idx": 23,
+          "t": "2023-09-13 08:04:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 113.0,
+          "glucose_forecast": 120.71,
+          "glucose_lower": 94.38,
+          "glucose_upper": 147.04,
+          "glucose_target": 113.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 113 mg/dL, 30-min forecast 121 [94-147]. No action needed."
+        },
+        {
+          "idx": 24,
+          "t": "2023-09-13 10:04:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 103.0,
+          "glucose_forecast": 119.47,
+          "glucose_lower": 93.14,
+          "glucose_upper": 145.8,
+          "glucose_target": 156.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 103 mg/dL, 30-min forecast 119 [93-146]. No action needed."
+        },
+        {
+          "idx": 25,
+          "t": "2023-09-13 12:04:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 122.0,
+          "glucose_forecast": 121.98,
+          "glucose_lower": 95.65,
+          "glucose_upper": 148.31,
+          "glucose_target": 99.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 122 mg/dL, 30-min forecast 122 [96-148]. No action needed."
+        },
+        {
+          "idx": 26,
+          "t": "2023-09-13 14:04:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 91.0,
+          "glucose_forecast": 118.68,
+          "glucose_lower": 92.34,
+          "glucose_upper": 145.01,
+          "glucose_target": 101.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 91 mg/dL, 30-min forecast 119 [92-145]. No action needed."
+        },
+        {
+          "idx": 27,
+          "t": "2023-09-13 16:04:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 98.0,
+          "glucose_forecast": 119.1,
+          "glucose_lower": 92.77,
+          "glucose_upper": 145.43,
+          "glucose_target": 105.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 98 mg/dL, 30-min forecast 119 [93-145]. No action needed."
+        },
+        {
+          "idx": 28,
+          "t": "2023-09-13 18:04:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 142.0,
+          "glucose_forecast": 123.18,
+          "glucose_lower": 96.85,
+          "glucose_upper": 149.51,
+          "glucose_target": 109.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 142 mg/dL, 30-min forecast 123 [97-150]. No action needed."
+        },
+        {
+          "idx": 29,
+          "t": "2023-09-13 20:04:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 121.0,
+          "glucose_forecast": 121.4,
+          "glucose_lower": 95.07,
+          "glucose_upper": 147.73,
+          "glucose_target": 113.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 121 mg/dL, 30-min forecast 121 [95-148]. No action needed."
+        },
+        {
+          "idx": 30,
+          "t": "2023-09-13 21:54:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 142.0,
+          "glucose_forecast": 124.3,
+          "glucose_lower": 97.97,
+          "glucose_upper": 150.64,
+          "glucose_target": 103.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 142 mg/dL, 30-min forecast 124 [98-151]. No action needed."
+        },
+        {
+          "idx": 31,
+          "t": "2023-09-13 23:54:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 122.0,
+          "glucose_forecast": 121.4,
+          "glucose_lower": 95.07,
+          "glucose_upper": 147.73,
+          "glucose_target": 112.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 122 mg/dL, 30-min forecast 121 [95-148]. No action needed."
+        },
+        {
+          "idx": 32,
+          "t": "2023-09-14 01:54:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 121.0,
+          "glucose_forecast": 121.04,
+          "glucose_lower": 94.71,
+          "glucose_upper": 147.37,
+          "glucose_target": 120.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 121 mg/dL, 30-min forecast 121 [95-147]. No action needed."
+        },
+        {
+          "idx": 33,
+          "t": "2023-09-14 03:54:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 115.0,
+          "glucose_forecast": 120.75,
+          "glucose_lower": 94.42,
+          "glucose_upper": 147.08,
+          "glucose_target": 108.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 115 mg/dL, 30-min forecast 121 [94-147]. No action needed."
+        },
+        {
+          "idx": 34,
+          "t": "2023-09-14 05:54:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 119.0,
+          "glucose_forecast": 120.84,
+          "glucose_lower": 94.51,
+          "glucose_upper": 147.17,
+          "glucose_target": 121.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 119 mg/dL, 30-min forecast 121 [95-147]. No action needed."
+        },
+        {
+          "idx": 35,
+          "t": "2023-09-14 07:54:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 116.0,
+          "glucose_forecast": 120.75,
+          "glucose_lower": 94.42,
+          "glucose_upper": 147.08,
+          "glucose_target": 102.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 116 mg/dL, 30-min forecast 121 [94-147]. No action needed."
+        },
+        {
+          "idx": 36,
+          "t": "2023-09-14 09:54:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 159.0,
+          "glucose_forecast": 126.67,
+          "glucose_lower": 100.34,
+          "glucose_upper": 153.0,
+          "glucose_target": 169.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 159 mg/dL, 30-min forecast 127 [100-153]. No action needed."
+        },
+        {
+          "idx": 37,
+          "t": "2023-09-14 11:54:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 87.0,
+          "glucose_forecast": 119.57,
+          "glucose_lower": 93.24,
+          "glucose_upper": 145.9,
+          "glucose_target": 86.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [
+            "Glucose is dropping quickly \u2014 recheck within a few minutes."
+          ],
+          "narration": "Glucose 87 mg/dL, 30-min forecast 120 [93-146]. Glucose is dropping quickly \u2014 recheck within a few minutes."
+        },
+        {
+          "idx": 38,
+          "t": "2023-09-14 13:54:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 178.0,
+          "glucose_forecast": 128.93,
+          "glucose_lower": 102.6,
+          "glucose_upper": 155.26,
+          "glucose_target": 165.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 178 mg/dL, 30-min forecast 129 [103-155]. No action needed."
+        },
+        {
+          "idx": 39,
+          "t": "2023-09-14 15:54:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 116.0,
+          "glucose_forecast": 121.58,
+          "glucose_lower": 95.25,
+          "glucose_upper": 147.91,
+          "glucose_target": 120.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 116 mg/dL, 30-min forecast 122 [95-148]. No action needed."
+        },
+        {
+          "idx": 40,
+          "t": "2023-09-14 17:54:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 111.0,
+          "glucose_forecast": 121.33,
+          "glucose_lower": 95.0,
+          "glucose_upper": 147.66,
+          "glucose_target": 104.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 111 mg/dL, 30-min forecast 121 [95-148]. No action needed."
+        },
+        {
+          "idx": 41,
+          "t": "2023-09-14 19:54:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 100.0,
+          "glucose_forecast": 119.1,
+          "glucose_lower": 92.77,
+          "glucose_upper": 145.43,
+          "glucose_target": 99.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 100 mg/dL, 30-min forecast 119 [93-145]. No action needed."
+        },
+        {
+          "idx": 42,
+          "t": "2023-09-14 21:54:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 138.0,
+          "glucose_forecast": 122.45,
+          "glucose_lower": 96.12,
+          "glucose_upper": 148.78,
+          "glucose_target": 118.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 138 mg/dL, 30-min forecast 122 [96-149]. No action needed."
+        },
+        {
+          "idx": 43,
+          "t": "2023-09-14 23:54:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 131.0,
+          "glucose_forecast": 122.98,
+          "glucose_lower": 96.65,
+          "glucose_upper": 149.31,
+          "glucose_target": 133.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 131 mg/dL, 30-min forecast 123 [97-149]. No action needed."
+        },
+        {
+          "idx": 44,
+          "t": "2023-09-15 01:54:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 114.0,
+          "glucose_forecast": 120.23,
+          "glucose_lower": 93.9,
+          "glucose_upper": 146.56,
+          "glucose_target": 116.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 114 mg/dL, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 45,
+          "t": "2023-09-15 03:54:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 116.0,
+          "glucose_forecast": 120.51,
+          "glucose_lower": 94.18,
+          "glucose_upper": 146.84,
+          "glucose_target": 114.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 116 mg/dL, 30-min forecast 121 [94-147]. No action needed."
+        },
+        {
+          "idx": 46,
+          "t": "2023-09-15 05:54:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 114.0,
+          "glucose_forecast": 120.51,
+          "glucose_lower": 94.18,
+          "glucose_upper": 146.84,
+          "glucose_target": 119.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 114 mg/dL, 30-min forecast 121 [94-147]. No action needed."
+        },
+        {
+          "idx": 47,
+          "t": "2023-09-15 07:54:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 121.0,
+          "glucose_forecast": 121.04,
+          "glucose_lower": 94.71,
+          "glucose_upper": 147.37,
+          "glucose_target": 122.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 121 mg/dL, 30-min forecast 121 [95-147]. No action needed."
+        },
+        {
+          "idx": 48,
+          "t": "2023-09-15 09:54:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 139.0,
+          "glucose_forecast": 122.98,
+          "glucose_lower": 96.65,
+          "glucose_upper": 149.31,
+          "glucose_target": 136.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 139 mg/dL, 30-min forecast 123 [97-149]. No action needed."
+        },
+        {
+          "idx": 49,
+          "t": "2023-09-15 11:54:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 100.0,
+          "glucose_forecast": 121.33,
+          "glucose_lower": 95.0,
+          "glucose_upper": 147.66,
+          "glucose_target": 97.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 100 mg/dL, 30-min forecast 121 [95-148]. No action needed."
+        },
+        {
+          "idx": 50,
+          "t": "2023-09-15 13:44:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 93.0,
+          "glucose_forecast": 118.68,
+          "glucose_lower": 92.34,
+          "glucose_upper": 145.01,
+          "glucose_target": 91.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 93 mg/dL, 30-min forecast 119 [92-145]. No action needed."
+        },
+        {
+          "idx": 51,
+          "t": "2023-09-15 15:44:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 95.0,
+          "glucose_forecast": 118.68,
+          "glucose_lower": 92.34,
+          "glucose_upper": 145.01,
+          "glucose_target": 94.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 95 mg/dL, 30-min forecast 119 [92-145]. No action needed."
+        },
+        {
+          "idx": 52,
+          "t": "2023-09-15 17:44:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 126.0,
+          "glucose_forecast": 123.01,
+          "glucose_lower": 96.68,
+          "glucose_upper": 149.34,
+          "glucose_target": 113.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 126 mg/dL, 30-min forecast 123 [97-149]. No action needed."
+        },
+        {
+          "idx": 53,
+          "t": "2023-09-15 19:44:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 120.0,
+          "glucose_forecast": 121.4,
+          "glucose_lower": 95.07,
+          "glucose_upper": 147.73,
+          "glucose_target": 125.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 120 mg/dL, 30-min forecast 121 [95-148]. No action needed."
+        },
+        {
+          "idx": 54,
+          "t": "2023-09-15 21:44:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 125.0,
+          "glucose_forecast": 121.83,
+          "glucose_lower": 95.5,
+          "glucose_upper": 148.16,
+          "glucose_target": 129.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 125 mg/dL, 30-min forecast 122 [96-148]. No action needed."
+        },
+        {
+          "idx": 55,
+          "t": "2023-09-15 23:44:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 130.0,
+          "glucose_forecast": 121.92,
+          "glucose_lower": 95.59,
+          "glucose_upper": 148.25,
+          "glucose_target": 121.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 130 mg/dL, 30-min forecast 122 [96-148]. No action needed."
+        },
+        {
+          "idx": 56,
+          "t": "2023-09-16 01:44:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 118.0,
+          "glucose_forecast": 121.13,
+          "glucose_lower": 94.8,
+          "glucose_upper": 147.46,
+          "glucose_target": 116.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 118 mg/dL, 30-min forecast 121 [95-147]. No action needed."
+        },
+        {
+          "idx": 57,
+          "t": "2023-09-16 03:44:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 121.0,
+          "glucose_forecast": 121.22,
+          "glucose_lower": 94.89,
+          "glucose_upper": 147.55,
+          "glucose_target": 114.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 121 mg/dL, 30-min forecast 121 [95-148]. No action needed."
+        },
+        {
+          "idx": 58,
+          "t": "2023-09-16 05:44:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 115.0,
+          "glucose_forecast": 120.23,
+          "glucose_lower": 93.9,
+          "glucose_upper": 146.56,
+          "glucose_target": 113.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 115 mg/dL, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 59,
+          "t": "2023-09-16 07:44:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 115.0,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": 94.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 115 mg/dL, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 60,
+          "t": "2023-09-16 09:44:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 140.0,
+          "glucose_forecast": 125.18,
+          "glucose_lower": 98.85,
+          "glucose_upper": 151.51,
+          "glucose_target": 97.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 140 mg/dL, 30-min forecast 125 [99-152]. No action needed."
+        },
+        {
+          "idx": 61,
+          "t": "2023-09-16 11:44:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 87.0,
+          "glucose_forecast": 118.06,
+          "glucose_lower": 91.73,
+          "glucose_upper": 144.39,
+          "glucose_target": 94.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 87 mg/dL, 30-min forecast 118 [92-144]. No action needed."
+        },
+        {
+          "idx": 62,
+          "t": "2023-09-16 13:44:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 133.0,
+          "glucose_forecast": 122.98,
+          "glucose_lower": 96.65,
+          "glucose_upper": 149.31,
+          "glucose_target": 134.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 133 mg/dL, 30-min forecast 123 [97-149]. No action needed."
+        },
+        {
+          "idx": 63,
+          "t": "2023-09-16 15:44:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 107.0,
+          "glucose_forecast": 120.23,
+          "glucose_lower": 93.9,
+          "glucose_upper": 146.56,
+          "glucose_target": 113.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 107 mg/dL, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 64,
+          "t": "2023-09-16 17:44:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 92.0,
+          "glucose_forecast": 118.77,
+          "glucose_lower": 92.44,
+          "glucose_upper": 145.1,
+          "glucose_target": 109.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [
+            "Glucose is dropping quickly \u2014 recheck within a few minutes."
+          ],
+          "narration": "Glucose 92 mg/dL, 30-min forecast 119 [92-145]. Glucose is dropping quickly \u2014 recheck within a few minutes."
+        },
+        {
+          "idx": 65,
+          "t": "2023-09-16 19:44:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 109.0,
+          "glucose_forecast": 119.57,
+          "glucose_lower": 93.24,
+          "glucose_upper": 145.9,
+          "glucose_target": 101.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 109 mg/dL, 30-min forecast 120 [93-146]. No action needed."
+        },
+        {
+          "idx": 66,
+          "t": "2023-09-16 21:44:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 102.0,
+          "glucose_forecast": 119.53,
+          "glucose_lower": 93.19,
+          "glucose_upper": 145.86,
+          "glucose_target": 104.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 102 mg/dL, 30-min forecast 120 [93-146]. No action needed."
+        },
+        {
+          "idx": 67,
+          "t": "2023-09-16 23:44:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 120.0,
+          "glucose_forecast": 121.4,
+          "glucose_lower": 95.07,
+          "glucose_upper": 147.73,
+          "glucose_target": 107.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 120 mg/dL, 30-min forecast 121 [95-148]. No action needed."
+        },
+        {
+          "idx": 68,
+          "t": "2023-09-17 01:44:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 111.0,
+          "glucose_forecast": 119.93,
+          "glucose_lower": 93.6,
+          "glucose_upper": 146.26,
+          "glucose_target": 102.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 111 mg/dL, 30-min forecast 120 [94-146]. No action needed."
+        },
+        {
+          "idx": 69,
+          "t": "2023-09-17 03:44:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 110.0,
+          "glucose_forecast": 120.15,
+          "glucose_lower": 93.82,
+          "glucose_upper": 146.48,
+          "glucose_target": 112.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 110 mg/dL, 30-min forecast 120 [94-146]. No action needed."
+        },
+        {
+          "idx": 70,
+          "t": "2023-09-17 05:34:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 109.0,
+          "glucose_forecast": 119.93,
+          "glucose_lower": 93.6,
+          "glucose_upper": 146.26,
+          "glucose_target": 110.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 109 mg/dL, 30-min forecast 120 [94-146]. No action needed."
+        },
+        {
+          "idx": 71,
+          "t": "2023-09-17 07:34:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 114.0,
+          "glucose_forecast": 120.23,
+          "glucose_lower": 93.9,
+          "glucose_upper": 146.56,
+          "glucose_target": 115.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 114 mg/dL, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 72,
+          "t": "2023-09-17 09:34:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 145.0,
+          "glucose_forecast": 125.18,
+          "glucose_lower": 98.85,
+          "glucose_upper": 151.51,
+          "glucose_target": 163.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 145 mg/dL, 30-min forecast 125 [99-152]. No action needed."
+        },
+        {
+          "idx": 73,
+          "t": "2023-09-17 11:34:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 93.0,
+          "glucose_forecast": 119.57,
+          "glucose_lower": 93.24,
+          "glucose_upper": 145.9,
+          "glucose_target": 80.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [
+            "Glucose is dropping quickly \u2014 recheck within a few minutes."
+          ],
+          "narration": "Glucose 93 mg/dL, 30-min forecast 120 [93-146]. Glucose is dropping quickly \u2014 recheck within a few minutes."
+        },
+        {
+          "idx": 74,
+          "t": "2023-09-17 13:34:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 133.0,
+          "glucose_forecast": 124.3,
+          "glucose_lower": 97.97,
+          "glucose_upper": 150.64,
+          "glucose_target": 140.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 133 mg/dL, 30-min forecast 124 [98-151]. No action needed."
+        },
+        {
+          "idx": 75,
+          "t": "2023-09-17 15:34:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 105.0,
+          "glucose_forecast": 119.93,
+          "glucose_lower": 93.59,
+          "glucose_upper": 146.26,
+          "glucose_target": 115.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 105 mg/dL, 30-min forecast 120 [94-146]. No action needed."
+        },
+        {
+          "idx": 76,
+          "t": "2023-09-17 17:34:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 111.0,
+          "glucose_forecast": 120.71,
+          "glucose_lower": 94.38,
+          "glucose_upper": 147.04,
+          "glucose_target": 105.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 111 mg/dL, 30-min forecast 121 [94-147]. No action needed."
+        },
+        {
+          "idx": 77,
+          "t": "2023-09-17 19:34:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 122.0,
+          "glucose_forecast": 121.88,
+          "glucose_lower": 95.55,
+          "glucose_upper": 148.21,
+          "glucose_target": 140.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 122 mg/dL, 30-min forecast 122 [96-148]. No action needed."
+        },
+        {
+          "idx": 78,
+          "t": "2023-09-17 21:34:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 146.0,
+          "glucose_forecast": 124.03,
+          "glucose_lower": 97.7,
+          "glucose_upper": 150.36,
+          "glucose_target": 95.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 146 mg/dL, 30-min forecast 124 [98-150]. No action needed."
+        },
+        {
+          "idx": 79,
+          "t": "2023-09-17 23:34:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 111.0,
+          "glucose_forecast": 120.71,
+          "glucose_lower": 94.38,
+          "glucose_upper": 147.04,
+          "glucose_target": 122.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 111 mg/dL, 30-min forecast 121 [94-147]. No action needed."
+        },
+        {
+          "idx": 80,
+          "t": "2023-09-18 01:34:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 118.0,
+          "glucose_forecast": 120.51,
+          "glucose_lower": 94.18,
+          "glucose_upper": 146.84,
+          "glucose_target": 113.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 118 mg/dL, 30-min forecast 121 [94-147]. No action needed."
+        },
+        {
+          "idx": 81,
+          "t": "2023-09-18 03:34:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 110.0,
+          "glucose_forecast": 119.93,
+          "glucose_lower": 93.6,
+          "glucose_upper": 146.26,
+          "glucose_target": 110.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 110 mg/dL, 30-min forecast 120 [94-146]. No action needed."
+        },
+        {
+          "idx": 82,
+          "t": "2023-09-18 05:34:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 111.0,
+          "glucose_forecast": 119.93,
+          "glucose_lower": 93.6,
+          "glucose_upper": 146.26,
+          "glucose_target": 111.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 111 mg/dL, 30-min forecast 120 [94-146]. No action needed."
+        },
+        {
+          "idx": 83,
+          "t": "2023-09-18 07:34:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 96.0,
+          "glucose_forecast": 119.0,
+          "glucose_lower": 92.67,
+          "glucose_upper": 145.33,
+          "glucose_target": 95.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 96 mg/dL, 30-min forecast 119 [93-145]. No action needed."
+        },
+        {
+          "idx": 84,
+          "t": "2023-09-18 09:34:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 121.0,
+          "glucose_forecast": 121.88,
+          "glucose_lower": 95.55,
+          "glucose_upper": 148.21,
+          "glucose_target": 134.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 121 mg/dL, 30-min forecast 122 [96-148]. No action needed."
+        },
+        {
+          "idx": 85,
+          "t": "2023-09-18 11:34:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 114.0,
+          "glucose_forecast": 120.75,
+          "glucose_lower": 94.42,
+          "glucose_upper": 147.08,
+          "glucose_target": 88.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 114 mg/dL, 30-min forecast 121 [94-147]. No action needed."
+        },
+        {
+          "idx": 86,
+          "t": "2023-09-18 13:34:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 88.0,
+          "glucose_forecast": 118.06,
+          "glucose_lower": 91.73,
+          "glucose_upper": 144.39,
+          "glucose_target": 101.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 88 mg/dL, 30-min forecast 118 [92-144]. No action needed."
+        },
+        {
+          "idx": 87,
+          "t": "2023-09-18 15:34:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 102.0,
+          "glucose_forecast": 119.28,
+          "glucose_lower": 92.95,
+          "glucose_upper": 145.61,
+          "glucose_target": 104.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 102 mg/dL, 30-min forecast 119 [93-146]. No action needed."
+        },
+        {
+          "idx": 88,
+          "t": "2023-09-18 17:34:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 111.0,
+          "glucose_forecast": 120.71,
+          "glucose_lower": 94.38,
+          "glucose_upper": 147.04,
+          "glucose_target": 100.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 111 mg/dL, 30-min forecast 121 [94-147]. No action needed."
+        },
+        {
+          "idx": 89,
+          "t": "2023-09-18 19:34:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 114.0,
+          "glucose_forecast": 122.14,
+          "glucose_lower": 95.81,
+          "glucose_upper": 148.47,
+          "glucose_target": 104.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 114 mg/dL, 30-min forecast 122 [96-148]. No action needed."
+        },
+        {
+          "idx": 90,
+          "t": "2023-09-18 21:24:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 117.0,
+          "glucose_forecast": 121.58,
+          "glucose_lower": 95.25,
+          "glucose_upper": 147.91,
+          "glucose_target": 122.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 117 mg/dL, 30-min forecast 122 [95-148]. No action needed."
+        },
+        {
+          "idx": 91,
+          "t": "2023-09-18 23:24:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 108.0,
+          "glucose_forecast": 121.33,
+          "glucose_lower": 95.0,
+          "glucose_upper": 147.66,
+          "glucose_target": 114.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 108 mg/dL, 30-min forecast 121 [95-148]. No action needed."
+        },
+        {
+          "idx": 92,
+          "t": "2023-09-19 01:24:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 115.0,
+          "glucose_forecast": 120.51,
+          "glucose_lower": 94.18,
+          "glucose_upper": 146.84,
+          "glucose_target": 115.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 115 mg/dL, 30-min forecast 121 [94-147]. No action needed."
+        },
+        {
+          "idx": 93,
+          "t": "2023-09-19 03:24:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 115.0,
+          "glucose_forecast": 120.51,
+          "glucose_lower": 94.18,
+          "glucose_upper": 146.84,
+          "glucose_target": 110.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 115 mg/dL, 30-min forecast 121 [94-147]. No action needed."
+        },
+        {
+          "idx": 94,
+          "t": "2023-09-19 05:24:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 113.0,
+          "glucose_forecast": 120.23,
+          "glucose_lower": 93.9,
+          "glucose_upper": 146.56,
+          "glucose_target": 116.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 113 mg/dL, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 95,
+          "t": "2023-09-19 07:24:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 113.0,
+          "glucose_forecast": 120.22,
+          "glucose_lower": 93.89,
+          "glucose_upper": 146.56,
+          "glucose_target": 109.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 113 mg/dL, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 96,
+          "t": "2023-09-19 09:24:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 96.0,
+          "glucose_forecast": 119.32,
+          "glucose_lower": 92.99,
+          "glucose_upper": 145.65,
+          "glucose_target": 121.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 96 mg/dL, 30-min forecast 119 [93-146]. No action needed."
+        },
+        {
+          "idx": 97,
+          "t": "2023-09-19 11:24:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 140.0,
+          "glucose_forecast": 123.85,
+          "glucose_lower": 97.52,
+          "glucose_upper": 150.18,
+          "glucose_target": 126.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 140 mg/dL, 30-min forecast 124 [98-150]. No action needed."
+        },
+        {
+          "idx": 98,
+          "t": "2023-09-19 13:24:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 85.0,
+          "glucose_forecast": 118.06,
+          "glucose_lower": 91.73,
+          "glucose_upper": 144.39,
+          "glucose_target": 88.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 85 mg/dL, 30-min forecast 118 [92-144]. No action needed."
+        },
+        {
+          "idx": 99,
+          "t": "2023-09-19 15:24:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 98.0,
+          "glucose_forecast": 119.1,
+          "glucose_lower": 92.77,
+          "glucose_upper": 145.43,
+          "glucose_target": 122.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 98 mg/dL, 30-min forecast 119 [93-145]. No action needed."
+        },
+        {
+          "idx": 100,
+          "t": "2023-09-19 17:24:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 97.0,
+          "glucose_forecast": 119.32,
+          "glucose_lower": 92.99,
+          "glucose_upper": 145.65,
+          "glucose_target": 102.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [
+            "Glucose is dropping quickly \u2014 recheck within a few minutes."
+          ],
+          "narration": "Glucose 97 mg/dL, 30-min forecast 119 [93-146]. Glucose is dropping quickly \u2014 recheck within a few minutes."
+        },
+        {
+          "idx": 101,
+          "t": "2023-09-19 19:24:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 105.0,
+          "glucose_forecast": 120.25,
+          "glucose_lower": 93.92,
+          "glucose_upper": 146.58,
+          "glucose_target": 107.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 105 mg/dL, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 102,
+          "t": "2023-09-19 21:24:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 126.0,
+          "glucose_forecast": 122.98,
+          "glucose_lower": 96.65,
+          "glucose_upper": 149.31,
+          "glucose_target": 116.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 126 mg/dL, 30-min forecast 123 [97-149]. No action needed."
+        },
+        {
+          "idx": 103,
+          "t": "2023-09-19 23:24:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 113.0,
+          "glucose_forecast": 121.58,
+          "glucose_lower": 95.25,
+          "glucose_upper": 147.91,
+          "glucose_target": 101.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 113 mg/dL, 30-min forecast 122 [95-148]. No action needed."
+        },
+        {
+          "idx": 104,
+          "t": "2023-09-20 01:24:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 149.0,
+          "glucose_forecast": 124.16,
+          "glucose_lower": 97.83,
+          "glucose_upper": 150.49,
+          "glucose_target": 143.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 149 mg/dL, 30-min forecast 124 [98-150]. No action needed."
+        },
+        {
+          "idx": 105,
+          "t": "2023-09-20 03:24:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 131.0,
+          "glucose_forecast": 121.92,
+          "glucose_lower": 95.59,
+          "glucose_upper": 148.25,
+          "glucose_target": 127.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 131 mg/dL, 30-min forecast 122 [96-148]. No action needed."
+        },
+        {
+          "idx": 106,
+          "t": "2023-09-20 05:24:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 115.0,
+          "glucose_forecast": 121.13,
+          "glucose_lower": 94.8,
+          "glucose_upper": 147.46,
+          "glucose_target": 113.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 115 mg/dL, 30-min forecast 121 [95-147]. No action needed."
+        },
+        {
+          "idx": 107,
+          "t": "2023-09-20 07:24:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 112.0,
+          "glucose_forecast": 120.22,
+          "glucose_lower": 93.89,
+          "glucose_upper": 146.56,
+          "glucose_target": 105.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 112 mg/dL, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 108,
+          "t": "2023-09-20 09:24:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 95.0,
+          "glucose_forecast": 118.68,
+          "glucose_lower": 92.34,
+          "glucose_upper": 145.01,
+          "glucose_target": 114.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 95 mg/dL, 30-min forecast 119 [92-145]. No action needed."
+        },
+        {
+          "idx": 109,
+          "t": "2023-09-20 11:24:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 88.0,
+          "glucose_forecast": 118.06,
+          "glucose_lower": 91.73,
+          "glucose_upper": 144.39,
+          "glucose_target": 88.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 88 mg/dL, 30-min forecast 118 [92-144]. No action needed."
+        },
+        {
+          "idx": 110,
+          "t": "2023-09-20 13:14:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 90.0,
+          "glucose_forecast": 118.68,
+          "glucose_lower": 92.34,
+          "glucose_upper": 145.01,
+          "glucose_target": 110.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 90 mg/dL, 30-min forecast 119 [92-145]. No action needed."
+        },
+        {
+          "idx": 111,
+          "t": "2023-09-20 15:14:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 138.0,
+          "glucose_forecast": 124.48,
+          "glucose_lower": 98.15,
+          "glucose_upper": 150.81,
+          "glucose_target": 129.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 138 mg/dL, 30-min forecast 124 [98-151]. No action needed."
+        },
+        {
+          "idx": 112,
+          "t": "2023-09-20 17:14:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 118.0,
+          "glucose_forecast": 121.13,
+          "glucose_lower": 94.8,
+          "glucose_upper": 147.46,
+          "glucose_target": 105.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 118 mg/dL, 30-min forecast 121 [95-147]. No action needed."
+        },
+        {
+          "idx": 113,
+          "t": "2023-09-20 19:14:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 117.0,
+          "glucose_forecast": 120.34,
+          "glucose_lower": 94.01,
+          "glucose_upper": 146.67,
+          "glucose_target": 132.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 117 mg/dL, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 114,
+          "t": "2023-09-20 21:14:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 141.0,
+          "glucose_forecast": 124.3,
+          "glucose_lower": 97.97,
+          "glucose_upper": 150.64,
+          "glucose_target": 101.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 141 mg/dL, 30-min forecast 124 [98-151]. No action needed."
+        },
+        {
+          "idx": 115,
+          "t": "2023-09-20 23:14:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 143.0,
+          "glucose_forecast": 123.17,
+          "glucose_lower": 96.84,
+          "glucose_upper": 149.5,
+          "glucose_target": 137.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 143 mg/dL, 30-min forecast 123 [97-149]. No action needed."
+        },
+        {
+          "idx": 116,
+          "t": "2023-09-21 01:14:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 145.0,
+          "glucose_forecast": 124.3,
+          "glucose_lower": 97.97,
+          "glucose_upper": 150.64,
+          "glucose_target": 122.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 145 mg/dL, 30-min forecast 124 [98-151]. No action needed."
+        },
+        {
+          "idx": 117,
+          "t": "2023-09-21 03:14:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 112.0,
+          "glucose_forecast": 120.22,
+          "glucose_lower": 93.89,
+          "glucose_upper": 146.56,
+          "glucose_target": 109.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 112 mg/dL, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 118,
+          "t": "2023-09-21 05:14:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 113.0,
+          "glucose_forecast": 120.32,
+          "glucose_lower": 93.99,
+          "glucose_upper": 146.65,
+          "glucose_target": 116.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 113 mg/dL, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 119,
+          "t": "2023-09-21 07:14:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 116.0,
+          "glucose_forecast": 120.51,
+          "glucose_lower": 94.18,
+          "glucose_upper": 146.84,
+          "glucose_target": 113.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 116 mg/dL, 30-min forecast 121 [94-147]. No action needed."
+        }
+      ]
+    },
+    "dropout": {
+      "label": "Sensor dropout (CGM gap mid-stream)",
+      "dropped": "CGM",
+      "drop_from_step": 60,
+      "steps": [
+        {
+          "idx": 0,
+          "t": "2023-09-11 10:14:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 107.0,
+          "glucose_forecast": 119.62,
+          "glucose_lower": 93.29,
+          "glucose_upper": 145.95,
+          "glucose_target": 109.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 107 mg/dL, 30-min forecast 120 [93-146]. No action needed."
+        },
+        {
+          "idx": 1,
+          "t": "2023-09-11 12:14:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 120.0,
+          "glucose_forecast": 121.4,
+          "glucose_lower": 95.07,
+          "glucose_upper": 147.73,
+          "glucose_target": 161.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 120 mg/dL, 30-min forecast 121 [95-148]. No action needed."
+        },
+        {
+          "idx": 2,
+          "t": "2023-09-11 14:14:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 123.0,
+          "glucose_forecast": 121.22,
+          "glucose_lower": 94.89,
+          "glucose_upper": 147.55,
+          "glucose_target": 118.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 123 mg/dL, 30-min forecast 121 [95-148]. No action needed."
+        },
+        {
+          "idx": 3,
+          "t": "2023-09-11 16:14:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 99.0,
+          "glucose_forecast": 119.47,
+          "glucose_lower": 93.14,
+          "glucose_upper": 145.8,
+          "glucose_target": 101.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 99 mg/dL, 30-min forecast 119 [93-146]. No action needed."
+        },
+        {
+          "idx": 4,
+          "t": "2023-09-11 18:14:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 103.0,
+          "glucose_forecast": 119.66,
+          "glucose_lower": 93.33,
+          "glucose_upper": 145.99,
+          "glucose_target": 110.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 103 mg/dL, 30-min forecast 120 [93-146]. No action needed."
+        },
+        {
+          "idx": 5,
+          "t": "2023-09-11 20:14:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 154.0,
+          "glucose_forecast": 126.27,
+          "glucose_lower": 99.94,
+          "glucose_upper": 152.6,
+          "glucose_target": 164.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 154 mg/dL, 30-min forecast 126 [100-153]. No action needed."
+        },
+        {
+          "idx": 6,
+          "t": "2023-09-11 22:14:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 144.0,
+          "glucose_forecast": 124.03,
+          "glucose_lower": 97.7,
+          "glucose_upper": 150.36,
+          "glucose_target": 145.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 144 mg/dL, 30-min forecast 124 [98-150]. No action needed."
+        },
+        {
+          "idx": 7,
+          "t": "2023-09-12 00:14:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 138.0,
+          "glucose_forecast": 123.85,
+          "glucose_lower": 97.52,
+          "glucose_upper": 150.18,
+          "glucose_target": 127.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 138 mg/dL, 30-min forecast 124 [98-150]. No action needed."
+        },
+        {
+          "idx": 8,
+          "t": "2023-09-12 02:14:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 89.0,
+          "glucose_forecast": 119.57,
+          "glucose_lower": 93.24,
+          "glucose_upper": 145.9,
+          "glucose_target": 84.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [
+            "Glucose is dropping quickly \u2014 recheck within a few minutes."
+          ],
+          "narration": "Glucose 89 mg/dL, 30-min forecast 120 [93-146]. Glucose is dropping quickly \u2014 recheck within a few minutes."
+        },
+        {
+          "idx": 9,
+          "t": "2023-09-12 04:14:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 120.0,
+          "glucose_forecast": 120.84,
+          "glucose_lower": 94.51,
+          "glucose_upper": 147.17,
+          "glucose_target": 119.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 120 mg/dL, 30-min forecast 121 [95-147]. No action needed."
+        },
+        {
+          "idx": 10,
+          "t": "2023-09-12 06:04:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 115.0,
+          "glucose_forecast": 120.75,
+          "glucose_lower": 94.42,
+          "glucose_upper": 147.08,
+          "glucose_target": 124.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 115 mg/dL, 30-min forecast 121 [94-147]. No action needed."
+        },
+        {
+          "idx": 11,
+          "t": "2023-09-12 08:04:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 125.0,
+          "glucose_forecast": 121.22,
+          "glucose_lower": 94.89,
+          "glucose_upper": 147.55,
+          "glucose_target": 117.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 125 mg/dL, 30-min forecast 121 [95-148]. No action needed."
+        },
+        {
+          "idx": 12,
+          "t": "2023-09-12 10:04:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 119.0,
+          "glucose_forecast": 120.75,
+          "glucose_lower": 94.42,
+          "glucose_upper": 147.08,
+          "glucose_target": 194.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 119 mg/dL, 30-min forecast 121 [94-147]. No action needed."
+        },
+        {
+          "idx": 13,
+          "t": "2023-09-12 12:04:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 119.0,
+          "glucose_forecast": 122.73,
+          "glucose_lower": 96.4,
+          "glucose_upper": 149.06,
+          "glucose_target": 90.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 119 mg/dL, 30-min forecast 123 [96-149]. No action needed."
+        },
+        {
+          "idx": 14,
+          "t": "2023-09-12 14:04:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 137.0,
+          "glucose_forecast": 123.53,
+          "glucose_lower": 97.2,
+          "glucose_upper": 149.86,
+          "glucose_target": 151.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 137 mg/dL, 30-min forecast 124 [97-150]. No action needed."
+        },
+        {
+          "idx": 15,
+          "t": "2023-09-12 16:04:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 109.0,
+          "glucose_forecast": 120.25,
+          "glucose_lower": 93.92,
+          "glucose_upper": 146.58,
+          "glucose_target": 112.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 109 mg/dL, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 16,
+          "t": "2023-09-12 18:04:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 91.0,
+          "glucose_forecast": 118.68,
+          "glucose_lower": 92.34,
+          "glucose_upper": 145.01,
+          "glucose_target": 90.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 91 mg/dL, 30-min forecast 119 [92-145]. No action needed."
+        },
+        {
+          "idx": 17,
+          "t": "2023-09-12 20:04:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 99.0,
+          "glucose_forecast": 122.73,
+          "glucose_lower": 96.4,
+          "glucose_upper": 149.06,
+          "glucose_target": 112.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [
+            "Glucose is dropping quickly \u2014 recheck within a few minutes."
+          ],
+          "narration": "Glucose 99 mg/dL, 30-min forecast 123 [96-149]. Glucose is dropping quickly \u2014 recheck within a few minutes."
+        },
+        {
+          "idx": 18,
+          "t": "2023-09-12 22:04:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 140.0,
+          "glucose_forecast": 122.98,
+          "glucose_lower": 96.65,
+          "glucose_upper": 149.31,
+          "glucose_target": 105.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 140 mg/dL, 30-min forecast 123 [97-149]. No action needed."
+        },
+        {
+          "idx": 19,
+          "t": "2023-09-13 00:04:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 142.0,
+          "glucose_forecast": 123.17,
+          "glucose_lower": 96.84,
+          "glucose_upper": 149.5,
+          "glucose_target": 140.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 142 mg/dL, 30-min forecast 123 [97-149]. No action needed."
+        },
+        {
+          "idx": 20,
+          "t": "2023-09-13 02:04:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 146.0,
+          "glucose_forecast": 123.17,
+          "glucose_lower": 96.84,
+          "glucose_upper": 149.5,
+          "glucose_target": 127.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 146 mg/dL, 30-min forecast 123 [97-149]. No action needed."
+        },
+        {
+          "idx": 21,
+          "t": "2023-09-13 04:04:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 130.0,
+          "glucose_forecast": 122.33,
+          "glucose_lower": 95.99,
+          "glucose_upper": 148.66,
+          "glucose_target": 136.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 130 mg/dL, 30-min forecast 122 [96-149]. No action needed."
+        },
+        {
+          "idx": 22,
+          "t": "2023-09-13 06:04:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 127.0,
+          "glucose_forecast": 121.31,
+          "glucose_lower": 94.98,
+          "glucose_upper": 147.64,
+          "glucose_target": 130.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 127 mg/dL, 30-min forecast 121 [95-148]. No action needed."
+        },
+        {
+          "idx": 23,
+          "t": "2023-09-13 08:04:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 113.0,
+          "glucose_forecast": 120.71,
+          "glucose_lower": 94.38,
+          "glucose_upper": 147.04,
+          "glucose_target": 113.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 113 mg/dL, 30-min forecast 121 [94-147]. No action needed."
+        },
+        {
+          "idx": 24,
+          "t": "2023-09-13 10:04:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 103.0,
+          "glucose_forecast": 119.47,
+          "glucose_lower": 93.14,
+          "glucose_upper": 145.8,
+          "glucose_target": 156.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 103 mg/dL, 30-min forecast 119 [93-146]. No action needed."
+        },
+        {
+          "idx": 25,
+          "t": "2023-09-13 12:04:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 122.0,
+          "glucose_forecast": 121.98,
+          "glucose_lower": 95.65,
+          "glucose_upper": 148.31,
+          "glucose_target": 99.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 122 mg/dL, 30-min forecast 122 [96-148]. No action needed."
+        },
+        {
+          "idx": 26,
+          "t": "2023-09-13 14:04:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 91.0,
+          "glucose_forecast": 118.68,
+          "glucose_lower": 92.34,
+          "glucose_upper": 145.01,
+          "glucose_target": 101.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 91 mg/dL, 30-min forecast 119 [92-145]. No action needed."
+        },
+        {
+          "idx": 27,
+          "t": "2023-09-13 16:04:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 98.0,
+          "glucose_forecast": 119.1,
+          "glucose_lower": 92.77,
+          "glucose_upper": 145.43,
+          "glucose_target": 105.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 98 mg/dL, 30-min forecast 119 [93-145]. No action needed."
+        },
+        {
+          "idx": 28,
+          "t": "2023-09-13 18:04:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 142.0,
+          "glucose_forecast": 123.18,
+          "glucose_lower": 96.85,
+          "glucose_upper": 149.51,
+          "glucose_target": 109.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 142 mg/dL, 30-min forecast 123 [97-150]. No action needed."
+        },
+        {
+          "idx": 29,
+          "t": "2023-09-13 20:04:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 121.0,
+          "glucose_forecast": 121.4,
+          "glucose_lower": 95.07,
+          "glucose_upper": 147.73,
+          "glucose_target": 113.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 121 mg/dL, 30-min forecast 121 [95-148]. No action needed."
+        },
+        {
+          "idx": 30,
+          "t": "2023-09-13 21:54:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 142.0,
+          "glucose_forecast": 124.3,
+          "glucose_lower": 97.97,
+          "glucose_upper": 150.64,
+          "glucose_target": 103.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 142 mg/dL, 30-min forecast 124 [98-151]. No action needed."
+        },
+        {
+          "idx": 31,
+          "t": "2023-09-13 23:54:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 122.0,
+          "glucose_forecast": 121.4,
+          "glucose_lower": 95.07,
+          "glucose_upper": 147.73,
+          "glucose_target": 112.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 122 mg/dL, 30-min forecast 121 [95-148]. No action needed."
+        },
+        {
+          "idx": 32,
+          "t": "2023-09-14 01:54:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 121.0,
+          "glucose_forecast": 121.04,
+          "glucose_lower": 94.71,
+          "glucose_upper": 147.37,
+          "glucose_target": 120.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 121 mg/dL, 30-min forecast 121 [95-147]. No action needed."
+        },
+        {
+          "idx": 33,
+          "t": "2023-09-14 03:54:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 115.0,
+          "glucose_forecast": 120.75,
+          "glucose_lower": 94.42,
+          "glucose_upper": 147.08,
+          "glucose_target": 108.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 115 mg/dL, 30-min forecast 121 [94-147]. No action needed."
+        },
+        {
+          "idx": 34,
+          "t": "2023-09-14 05:54:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 119.0,
+          "glucose_forecast": 120.84,
+          "glucose_lower": 94.51,
+          "glucose_upper": 147.17,
+          "glucose_target": 121.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 119 mg/dL, 30-min forecast 121 [95-147]. No action needed."
+        },
+        {
+          "idx": 35,
+          "t": "2023-09-14 07:54:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 116.0,
+          "glucose_forecast": 120.75,
+          "glucose_lower": 94.42,
+          "glucose_upper": 147.08,
+          "glucose_target": 102.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 116 mg/dL, 30-min forecast 121 [94-147]. No action needed."
+        },
+        {
+          "idx": 36,
+          "t": "2023-09-14 09:54:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 159.0,
+          "glucose_forecast": 126.67,
+          "glucose_lower": 100.34,
+          "glucose_upper": 153.0,
+          "glucose_target": 169.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 159 mg/dL, 30-min forecast 127 [100-153]. No action needed."
+        },
+        {
+          "idx": 37,
+          "t": "2023-09-14 11:54:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 87.0,
+          "glucose_forecast": 119.57,
+          "glucose_lower": 93.24,
+          "glucose_upper": 145.9,
+          "glucose_target": 86.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [
+            "Glucose is dropping quickly \u2014 recheck within a few minutes."
+          ],
+          "narration": "Glucose 87 mg/dL, 30-min forecast 120 [93-146]. Glucose is dropping quickly \u2014 recheck within a few minutes."
+        },
+        {
+          "idx": 38,
+          "t": "2023-09-14 13:54:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 178.0,
+          "glucose_forecast": 128.93,
+          "glucose_lower": 102.6,
+          "glucose_upper": 155.26,
+          "glucose_target": 165.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 178 mg/dL, 30-min forecast 129 [103-155]. No action needed."
+        },
+        {
+          "idx": 39,
+          "t": "2023-09-14 15:54:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 116.0,
+          "glucose_forecast": 121.58,
+          "glucose_lower": 95.25,
+          "glucose_upper": 147.91,
+          "glucose_target": 120.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 116 mg/dL, 30-min forecast 122 [95-148]. No action needed."
+        },
+        {
+          "idx": 40,
+          "t": "2023-09-14 17:54:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 111.0,
+          "glucose_forecast": 121.33,
+          "glucose_lower": 95.0,
+          "glucose_upper": 147.66,
+          "glucose_target": 104.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 111 mg/dL, 30-min forecast 121 [95-148]. No action needed."
+        },
+        {
+          "idx": 41,
+          "t": "2023-09-14 19:54:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 100.0,
+          "glucose_forecast": 119.1,
+          "glucose_lower": 92.77,
+          "glucose_upper": 145.43,
+          "glucose_target": 99.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 100 mg/dL, 30-min forecast 119 [93-145]. No action needed."
+        },
+        {
+          "idx": 42,
+          "t": "2023-09-14 21:54:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 138.0,
+          "glucose_forecast": 122.45,
+          "glucose_lower": 96.12,
+          "glucose_upper": 148.78,
+          "glucose_target": 118.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 138 mg/dL, 30-min forecast 122 [96-149]. No action needed."
+        },
+        {
+          "idx": 43,
+          "t": "2023-09-14 23:54:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 131.0,
+          "glucose_forecast": 122.98,
+          "glucose_lower": 96.65,
+          "glucose_upper": 149.31,
+          "glucose_target": 133.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 131 mg/dL, 30-min forecast 123 [97-149]. No action needed."
+        },
+        {
+          "idx": 44,
+          "t": "2023-09-15 01:54:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 114.0,
+          "glucose_forecast": 120.23,
+          "glucose_lower": 93.9,
+          "glucose_upper": 146.56,
+          "glucose_target": 116.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 114 mg/dL, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 45,
+          "t": "2023-09-15 03:54:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 116.0,
+          "glucose_forecast": 120.51,
+          "glucose_lower": 94.18,
+          "glucose_upper": 146.84,
+          "glucose_target": 114.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 116 mg/dL, 30-min forecast 121 [94-147]. No action needed."
+        },
+        {
+          "idx": 46,
+          "t": "2023-09-15 05:54:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 114.0,
+          "glucose_forecast": 120.51,
+          "glucose_lower": 94.18,
+          "glucose_upper": 146.84,
+          "glucose_target": 119.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 114 mg/dL, 30-min forecast 121 [94-147]. No action needed."
+        },
+        {
+          "idx": 47,
+          "t": "2023-09-15 07:54:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 121.0,
+          "glucose_forecast": 121.04,
+          "glucose_lower": 94.71,
+          "glucose_upper": 147.37,
+          "glucose_target": 122.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 121 mg/dL, 30-min forecast 121 [95-147]. No action needed."
+        },
+        {
+          "idx": 48,
+          "t": "2023-09-15 09:54:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 139.0,
+          "glucose_forecast": 122.98,
+          "glucose_lower": 96.65,
+          "glucose_upper": 149.31,
+          "glucose_target": 136.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 139 mg/dL, 30-min forecast 123 [97-149]. No action needed."
+        },
+        {
+          "idx": 49,
+          "t": "2023-09-15 11:54:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 100.0,
+          "glucose_forecast": 121.33,
+          "glucose_lower": 95.0,
+          "glucose_upper": 147.66,
+          "glucose_target": 97.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 100 mg/dL, 30-min forecast 121 [95-148]. No action needed."
+        },
+        {
+          "idx": 50,
+          "t": "2023-09-15 13:44:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 93.0,
+          "glucose_forecast": 118.68,
+          "glucose_lower": 92.34,
+          "glucose_upper": 145.01,
+          "glucose_target": 91.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 93 mg/dL, 30-min forecast 119 [92-145]. No action needed."
+        },
+        {
+          "idx": 51,
+          "t": "2023-09-15 15:44:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 95.0,
+          "glucose_forecast": 118.68,
+          "glucose_lower": 92.34,
+          "glucose_upper": 145.01,
+          "glucose_target": 94.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 95 mg/dL, 30-min forecast 119 [92-145]. No action needed."
+        },
+        {
+          "idx": 52,
+          "t": "2023-09-15 17:44:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 126.0,
+          "glucose_forecast": 123.01,
+          "glucose_lower": 96.68,
+          "glucose_upper": 149.34,
+          "glucose_target": 113.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 126 mg/dL, 30-min forecast 123 [97-149]. No action needed."
+        },
+        {
+          "idx": 53,
+          "t": "2023-09-15 19:44:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 120.0,
+          "glucose_forecast": 121.4,
+          "glucose_lower": 95.07,
+          "glucose_upper": 147.73,
+          "glucose_target": 125.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 120 mg/dL, 30-min forecast 121 [95-148]. No action needed."
+        },
+        {
+          "idx": 54,
+          "t": "2023-09-15 21:44:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 125.0,
+          "glucose_forecast": 121.83,
+          "glucose_lower": 95.5,
+          "glucose_upper": 148.16,
+          "glucose_target": 129.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 125 mg/dL, 30-min forecast 122 [96-148]. No action needed."
+        },
+        {
+          "idx": 55,
+          "t": "2023-09-15 23:44:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 130.0,
+          "glucose_forecast": 121.92,
+          "glucose_lower": 95.59,
+          "glucose_upper": 148.25,
+          "glucose_target": 121.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 130 mg/dL, 30-min forecast 122 [96-148]. No action needed."
+        },
+        {
+          "idx": 56,
+          "t": "2023-09-16 01:44:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 118.0,
+          "glucose_forecast": 121.13,
+          "glucose_lower": 94.8,
+          "glucose_upper": 147.46,
+          "glucose_target": 116.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 118 mg/dL, 30-min forecast 121 [95-147]. No action needed."
+        },
+        {
+          "idx": 57,
+          "t": "2023-09-16 03:44:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 121.0,
+          "glucose_forecast": 121.22,
+          "glucose_lower": 94.89,
+          "glucose_upper": 147.55,
+          "glucose_target": 114.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 121 mg/dL, 30-min forecast 121 [95-148]. No action needed."
+        },
+        {
+          "idx": 58,
+          "t": "2023-09-16 05:44:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 115.0,
+          "glucose_forecast": 120.23,
+          "glucose_lower": 93.9,
+          "glucose_upper": 146.56,
+          "glucose_target": 113.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 115 mg/dL, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 59,
+          "t": "2023-09-16 07:44:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": 115.0,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": 94.0,
+          "present_modalities": [
+            "CGM"
+          ],
+          "attribution": {
+            "CGM": 1.0
+          },
+          "interventions": [],
+          "narration": "Glucose 115 mg/dL, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 60,
+          "t": "2023-09-16 09:44:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 61,
+          "t": "2023-09-16 11:44:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 62,
+          "t": "2023-09-16 13:44:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 63,
+          "t": "2023-09-16 15:44:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 64,
+          "t": "2023-09-16 17:44:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 65,
+          "t": "2023-09-16 19:44:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 66,
+          "t": "2023-09-16 21:44:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 67,
+          "t": "2023-09-16 23:44:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 68,
+          "t": "2023-09-17 01:44:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 69,
+          "t": "2023-09-17 03:44:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 70,
+          "t": "2023-09-17 05:34:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 71,
+          "t": "2023-09-17 07:34:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 72,
+          "t": "2023-09-17 09:34:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 73,
+          "t": "2023-09-17 11:34:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 74,
+          "t": "2023-09-17 13:34:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 75,
+          "t": "2023-09-17 15:34:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 76,
+          "t": "2023-09-17 17:34:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 77,
+          "t": "2023-09-17 19:34:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 78,
+          "t": "2023-09-17 21:34:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 79,
+          "t": "2023-09-17 23:34:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 80,
+          "t": "2023-09-18 01:34:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 81,
+          "t": "2023-09-18 03:34:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 82,
+          "t": "2023-09-18 05:34:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 83,
+          "t": "2023-09-18 07:34:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 84,
+          "t": "2023-09-18 09:34:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 85,
+          "t": "2023-09-18 11:34:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 86,
+          "t": "2023-09-18 13:34:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 87,
+          "t": "2023-09-18 15:34:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 88,
+          "t": "2023-09-18 17:34:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 89,
+          "t": "2023-09-18 19:34:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 90,
+          "t": "2023-09-18 21:24:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 91,
+          "t": "2023-09-18 23:24:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 92,
+          "t": "2023-09-19 01:24:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 93,
+          "t": "2023-09-19 03:24:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 94,
+          "t": "2023-09-19 05:24:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 95,
+          "t": "2023-09-19 07:24:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 96,
+          "t": "2023-09-19 09:24:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 97,
+          "t": "2023-09-19 11:24:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 98,
+          "t": "2023-09-19 13:24:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 99,
+          "t": "2023-09-19 15:24:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 100,
+          "t": "2023-09-19 17:24:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 101,
+          "t": "2023-09-19 19:24:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 102,
+          "t": "2023-09-19 21:24:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 103,
+          "t": "2023-09-19 23:24:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 104,
+          "t": "2023-09-20 01:24:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 105,
+          "t": "2023-09-20 03:24:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 106,
+          "t": "2023-09-20 05:24:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 107,
+          "t": "2023-09-20 07:24:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 108,
+          "t": "2023-09-20 09:24:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 109,
+          "t": "2023-09-20 11:24:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 110,
+          "t": "2023-09-20 13:14:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 111,
+          "t": "2023-09-20 15:14:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 112,
+          "t": "2023-09-20 17:14:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 113,
+          "t": "2023-09-20 19:14:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 114,
+          "t": "2023-09-20 21:14:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 115,
+          "t": "2023-09-20 23:14:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 116,
+          "t": "2023-09-21 01:14:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 117,
+          "t": "2023-09-21 03:14:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 118,
+          "t": "2023-09-21 05:14:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        },
+        {
+          "idx": 119,
+          "t": "2023-09-21 07:14:00+00:00",
+          "stress_prob": null,
+          "stress_band": null,
+          "stress_label": null,
+          "y_true": null,
+          "glucose_now": null,
+          "glucose_forecast": 120.45,
+          "glucose_lower": 94.12,
+          "glucose_upper": 146.78,
+          "glucose_target": null,
+          "present_modalities": [],
+          "attribution": {},
+          "interventions": [],
+          "narration": "CGM sensor gap, 30-min forecast 120 [94-147]. No action needed."
+        }
+      ]
+    }
+  },
+  "insight": "Personal health summary (grounded):\n- glucose now 178.0 mg/dL, short-horizon forecast 128.9 [102.6, 155.3]\n- most influential modality: CGM\n\nCaveat: this is a research prototype. Values are calibrated-model estimates and documented proxy signals, not a diagnosis; consult a qualified clinician for any medical decision.",
+  "grounded_facts": "- glucose now 178.0 mg/dL, short-horizon forecast 128.9 [102.6, 155.3]\n- most influential modality: CGM",
+  "n_steps": 120,
+  "capped": true
+}

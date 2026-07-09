@@ -1,0 +1,3332 @@
+{
+  "task": "wesad_stress",
+  "title": "Stress monitoring (WESAD)",
+  "kind": "classification",
+  "test_subject": "S9",
+  "modalities": [
+    "ECG",
+    "EDA",
+    "EMG",
+    "Motion",
+    "PPG",
+    "Resp",
+    "Temp"
+  ],
+  "attribution_source": "occlusion (trained CACMF)",
+  "llm_attribution": {
+    "ECG": 0.219,
+    "EDA": 0.1798,
+    "EMG": 0.2544,
+    "Motion": 0.1077,
+    "PPG": 0.0964,
+    "Resp": 0.0664,
+    "Temp": 0.0761
+  },
+  "runs": {
+    "full": {
+      "label": "Full modalities",
+      "dropped": null,
+      "drop_from_step": null,
+      "steps": [
+        {
+          "idx": 0,
+          "t": "2026-01-01 00:01:00+00:00",
+          "stress_prob": 0.5208,
+          "stress_band": "elevated",
+          "stress_label": "stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.1047,
+            "EDA": 0.081,
+            "EMG": 0.1782,
+            "Motion": 0.041,
+            "PPG": 0.0489,
+            "Resp": 0.456,
+            "Temp": 0.0902
+          },
+          "interventions": [
+            "Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+          ],
+          "narration": "Stress 52% (elevated); top driver Resp. Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+        },
+        {
+          "idx": 1,
+          "t": "2026-01-01 00:02:00+00:00",
+          "stress_prob": 0.4763,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.157,
+            "EDA": 0.2188,
+            "EMG": 0.2912,
+            "Motion": 0.052,
+            "PPG": 0.023,
+            "Resp": 0.1253,
+            "Temp": 0.1328
+          },
+          "interventions": [],
+          "narration": "Stress 48% (watch); top driver EMG. No action needed."
+        },
+        {
+          "idx": 2,
+          "t": "2026-01-01 00:03:00+00:00",
+          "stress_prob": 0.5025,
+          "stress_band": "elevated",
+          "stress_label": "stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.3756,
+            "EDA": 0.1427,
+            "EMG": 0.1631,
+            "Motion": 0.0551,
+            "PPG": 0.0042,
+            "Resp": 0.1556,
+            "Temp": 0.1037
+          },
+          "interventions": [
+            "Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+          ],
+          "narration": "Stress 50% (elevated); top driver ECG. Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+        },
+        {
+          "idx": 3,
+          "t": "2026-01-01 00:04:00+00:00",
+          "stress_prob": 0.492,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.129,
+            "EDA": 0.3438,
+            "EMG": 0.1317,
+            "Motion": 0.102,
+            "PPG": 0.0132,
+            "Resp": 0.0,
+            "Temp": 0.2802
+          },
+          "interventions": [],
+          "narration": "Stress 49% (watch); top driver EDA. No action needed."
+        },
+        {
+          "idx": 4,
+          "t": "2026-01-01 00:05:00+00:00",
+          "stress_prob": 0.4895,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.0687,
+            "EDA": 0.1783,
+            "EMG": 0.2493,
+            "Motion": 0.0852,
+            "PPG": 0.0073,
+            "Resp": 0.2734,
+            "Temp": 0.1378
+          },
+          "interventions": [],
+          "narration": "Stress 49% (watch); top driver Resp. No action needed."
+        },
+        {
+          "idx": 5,
+          "t": "2026-01-01 00:06:00+00:00",
+          "stress_prob": 0.4888,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.3319,
+            "EDA": 0.167,
+            "EMG": 0.0171,
+            "Motion": 0.074,
+            "PPG": 0.0079,
+            "Resp": 0.2675,
+            "Temp": 0.1347
+          },
+          "interventions": [],
+          "narration": "Stress 49% (watch); top driver ECG. No action needed."
+        },
+        {
+          "idx": 6,
+          "t": "2026-01-01 00:07:00+00:00",
+          "stress_prob": 0.4701,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.0702,
+            "EDA": 0.2119,
+            "EMG": 0.293,
+            "Motion": 0.0821,
+            "PPG": 0.0859,
+            "Resp": 0.2472,
+            "Temp": 0.0097
+          },
+          "interventions": [],
+          "narration": "Stress 47% (watch); top driver EMG. No action needed."
+        },
+        {
+          "idx": 7,
+          "t": "2026-01-01 00:08:00+00:00",
+          "stress_prob": 0.4877,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.1071,
+            "EDA": 0.2922,
+            "EMG": 0.0,
+            "Motion": 0.1127,
+            "PPG": 0.1249,
+            "Resp": 0.1758,
+            "Temp": 0.1872
+          },
+          "interventions": [],
+          "narration": "Stress 49% (watch); top driver EDA. No action needed."
+        },
+        {
+          "idx": 8,
+          "t": "2026-01-01 00:09:00+00:00",
+          "stress_prob": 0.474,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.2723,
+            "EDA": 0.2115,
+            "EMG": 0.0309,
+            "Motion": 0.0371,
+            "PPG": 0.0043,
+            "Resp": 0.2057,
+            "Temp": 0.2381
+          },
+          "interventions": [],
+          "narration": "Stress 47% (watch); top driver ECG. No action needed."
+        },
+        {
+          "idx": 9,
+          "t": "2026-01-01 00:10:00+00:00",
+          "stress_prob": 0.4774,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.1169,
+            "EDA": 0.219,
+            "EMG": 0.1766,
+            "Motion": 0.0821,
+            "PPG": 0.0976,
+            "Resp": 0.2478,
+            "Temp": 0.06
+          },
+          "interventions": [],
+          "narration": "Stress 48% (watch); top driver Resp. No action needed."
+        },
+        {
+          "idx": 10,
+          "t": "2026-01-01 00:11:00+00:00",
+          "stress_prob": 0.5017,
+          "stress_band": "elevated",
+          "stress_label": "stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.453,
+            "EDA": 0.186,
+            "EMG": 0.0,
+            "Motion": 0.0551,
+            "PPG": 0.0911,
+            "Resp": 0.087,
+            "Temp": 0.1277
+          },
+          "interventions": [
+            "Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+          ],
+          "narration": "Stress 50% (elevated); top driver ECG. Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+        },
+        {
+          "idx": 11,
+          "t": "2026-01-01 00:12:00+00:00",
+          "stress_prob": 0.5177,
+          "stress_band": "elevated",
+          "stress_label": "stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.1264,
+            "EDA": 0.1493,
+            "EMG": 0.0501,
+            "Motion": 0.0506,
+            "PPG": 0.1627,
+            "Resp": 0.4547,
+            "Temp": 0.0062
+          },
+          "interventions": [
+            "Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+          ],
+          "narration": "Stress 52% (elevated); top driver Resp. Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+        },
+        {
+          "idx": 12,
+          "t": "2026-01-01 00:13:00+00:00",
+          "stress_prob": 0.4935,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.1867,
+            "EDA": 0.2128,
+            "EMG": 0.1752,
+            "Motion": 0.0712,
+            "PPG": 0.0759,
+            "Resp": 0.1417,
+            "Temp": 0.1365
+          },
+          "interventions": [],
+          "narration": "Stress 49% (watch); top driver EDA. No action needed."
+        },
+        {
+          "idx": 13,
+          "t": "2026-01-01 00:14:00+00:00",
+          "stress_prob": 0.5132,
+          "stress_band": "elevated",
+          "stress_label": "stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.0431,
+            "EDA": 0.1491,
+            "EMG": 0.0537,
+            "Motion": 0.398,
+            "PPG": 0.0662,
+            "Resp": 0.2867,
+            "Temp": 0.0031
+          },
+          "interventions": [
+            "Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+          ],
+          "narration": "Stress 51% (elevated); top driver Motion. Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+        },
+        {
+          "idx": 14,
+          "t": "2026-01-01 00:15:00+00:00",
+          "stress_prob": 0.5145,
+          "stress_band": "elevated",
+          "stress_label": "stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.1183,
+            "EDA": 0.1586,
+            "EMG": 0.0523,
+            "Motion": 0.0811,
+            "PPG": 0.0476,
+            "Resp": 0.5133,
+            "Temp": 0.0288
+          },
+          "interventions": [
+            "Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+          ],
+          "narration": "Stress 51% (elevated); top driver Resp. Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+        },
+        {
+          "idx": 15,
+          "t": "2026-01-01 00:16:00+00:00",
+          "stress_prob": 0.4954,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.3606,
+            "EDA": 0.1163,
+            "EMG": 0.121,
+            "Motion": 0.017,
+            "PPG": 0.0557,
+            "Resp": 0.1865,
+            "Temp": 0.1428
+          },
+          "interventions": [],
+          "narration": "Stress 50% (watch); top driver ECG. No action needed."
+        },
+        {
+          "idx": 16,
+          "t": "2026-01-01 00:17:00+00:00",
+          "stress_prob": 0.502,
+          "stress_band": "elevated",
+          "stress_label": "stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.2342,
+            "EDA": 0.165,
+            "EMG": 0.0919,
+            "Motion": 0.033,
+            "PPG": 0.0426,
+            "Resp": 0.2921,
+            "Temp": 0.1412
+          },
+          "interventions": [
+            "Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+          ],
+          "narration": "Stress 50% (elevated); top driver Resp. Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+        },
+        {
+          "idx": 17,
+          "t": "2026-01-01 00:18:00+00:00",
+          "stress_prob": 0.4818,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.2083,
+            "EDA": 0.159,
+            "EMG": 0.2638,
+            "Motion": 0.0463,
+            "PPG": 0.018,
+            "Resp": 0.1182,
+            "Temp": 0.1864
+          },
+          "interventions": [],
+          "narration": "Stress 48% (watch); top driver EMG. No action needed."
+        },
+        {
+          "idx": 18,
+          "t": "2026-01-01 00:19:00+00:00",
+          "stress_prob": 0.5213,
+          "stress_band": "elevated",
+          "stress_label": "stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.3758,
+            "EDA": 0.1358,
+            "EMG": 0.1984,
+            "Motion": 0.0983,
+            "PPG": 0.0122,
+            "Resp": 0.0743,
+            "Temp": 0.1053
+          },
+          "interventions": [
+            "Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+          ],
+          "narration": "Stress 52% (elevated); top driver ECG. Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+        },
+        {
+          "idx": 19,
+          "t": "2026-01-01 00:20:00+00:00",
+          "stress_prob": 0.5113,
+          "stress_band": "elevated",
+          "stress_label": "stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.393,
+            "EDA": 0.1513,
+            "EMG": 0.0589,
+            "Motion": 0.0533,
+            "PPG": 0.0289,
+            "Resp": 0.0878,
+            "Temp": 0.2267
+          },
+          "interventions": [
+            "Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+          ],
+          "narration": "Stress 51% (elevated); top driver ECG. Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+        },
+        {
+          "idx": 20,
+          "t": "2026-01-01 00:31:00+00:00",
+          "stress_prob": 0.553,
+          "stress_band": "elevated",
+          "stress_label": "stress",
+          "y_true": 1,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.1243,
+            "EDA": 0.0077,
+            "EMG": 0.5313,
+            "Motion": 0.0147,
+            "PPG": 0.0057,
+            "Resp": 0.1962,
+            "Temp": 0.1201
+          },
+          "interventions": [
+            "Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+          ],
+          "narration": "Stress 55% (elevated); top driver EMG. Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+        },
+        {
+          "idx": 21,
+          "t": "2026-01-01 00:32:00+00:00",
+          "stress_prob": 0.5217,
+          "stress_band": "elevated",
+          "stress_label": "stress",
+          "y_true": 1,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.2332,
+            "EDA": 0.0083,
+            "EMG": 0.0906,
+            "Motion": 0.0341,
+            "PPG": 0.1342,
+            "Resp": 0.341,
+            "Temp": 0.1585
+          },
+          "interventions": [
+            "Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+          ],
+          "narration": "Stress 52% (elevated); top driver Resp. Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+        },
+        {
+          "idx": 22,
+          "t": "2026-01-01 00:33:00+00:00",
+          "stress_prob": 0.5012,
+          "stress_band": "elevated",
+          "stress_label": "stress",
+          "y_true": 1,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.2279,
+            "EDA": 0.1173,
+            "EMG": 0.1689,
+            "Motion": 0.0327,
+            "PPG": 0.1847,
+            "Resp": 0.104,
+            "Temp": 0.1645
+          },
+          "interventions": [
+            "Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+          ],
+          "narration": "Stress 50% (elevated); top driver ECG. Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+        },
+        {
+          "idx": 23,
+          "t": "2026-01-01 00:34:00+00:00",
+          "stress_prob": 0.558,
+          "stress_band": "elevated",
+          "stress_label": "stress",
+          "y_true": 1,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.0991,
+            "EDA": 0.0277,
+            "EMG": 0.3173,
+            "Motion": 0.0042,
+            "PPG": 0.0404,
+            "Resp": 0.4522,
+            "Temp": 0.0592
+          },
+          "interventions": [
+            "Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+          ],
+          "narration": "Stress 56% (elevated); top driver Resp. Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+        },
+        {
+          "idx": 24,
+          "t": "2026-01-01 00:35:00+00:00",
+          "stress_prob": 0.5418,
+          "stress_band": "elevated",
+          "stress_label": "stress",
+          "y_true": 1,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.0399,
+            "EDA": 0.0712,
+            "EMG": 0.1878,
+            "Motion": 0.0352,
+            "PPG": 0.1131,
+            "Resp": 0.4543,
+            "Temp": 0.0986
+          },
+          "interventions": [
+            "Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+          ],
+          "narration": "Stress 54% (elevated); top driver Resp. Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+        },
+        {
+          "idx": 25,
+          "t": "2026-01-01 00:36:00+00:00",
+          "stress_prob": 0.5076,
+          "stress_band": "elevated",
+          "stress_label": "stress",
+          "y_true": 1,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.1863,
+            "EDA": 0.0503,
+            "EMG": 0.2044,
+            "Motion": 0.028,
+            "PPG": 0.0,
+            "Resp": 0.3964,
+            "Temp": 0.1347
+          },
+          "interventions": [
+            "Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+          ],
+          "narration": "Stress 51% (elevated); top driver Resp. Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+        },
+        {
+          "idx": 26,
+          "t": "2026-01-01 00:37:00+00:00",
+          "stress_prob": 0.501,
+          "stress_band": "elevated",
+          "stress_label": "stress",
+          "y_true": 1,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.2859,
+            "EDA": 0.0217,
+            "EMG": 0.2127,
+            "Motion": 0.0404,
+            "PPG": 0.1584,
+            "Resp": 0.133,
+            "Temp": 0.1479
+          },
+          "interventions": [
+            "Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+          ],
+          "narration": "Stress 50% (elevated); top driver ECG. Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+        },
+        {
+          "idx": 27,
+          "t": "2026-01-01 00:38:00+00:00",
+          "stress_prob": 0.4799,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 1,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.1328,
+            "EDA": 0.1201,
+            "EMG": 0.2465,
+            "Motion": 0.035,
+            "PPG": 0.1178,
+            "Resp": 0.1803,
+            "Temp": 0.1675
+          },
+          "interventions": [],
+          "narration": "Stress 48% (watch); top driver EMG. No action needed."
+        },
+        {
+          "idx": 28,
+          "t": "2026-01-01 00:39:00+00:00",
+          "stress_prob": 0.4963,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 1,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.3274,
+            "EDA": 0.0125,
+            "EMG": 0.2419,
+            "Motion": 0.0521,
+            "PPG": 0.0222,
+            "Resp": 0.1167,
+            "Temp": 0.2273
+          },
+          "interventions": [],
+          "narration": "Stress 50% (watch); top driver ECG. No action needed."
+        },
+        {
+          "idx": 29,
+          "t": "2026-01-01 00:40:00+00:00",
+          "stress_prob": 0.5108,
+          "stress_band": "elevated",
+          "stress_label": "stress",
+          "y_true": 1,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.1299,
+            "EDA": 0.0099,
+            "EMG": 0.0938,
+            "Motion": 0.0267,
+            "PPG": 0.0235,
+            "Resp": 0.5928,
+            "Temp": 0.1233
+          },
+          "interventions": [
+            "Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+          ],
+          "narration": "Stress 51% (elevated); top driver Resp. Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+        },
+        {
+          "idx": 30,
+          "t": "2026-01-01 00:41:00+00:00",
+          "stress_prob": 0.5403,
+          "stress_band": "elevated",
+          "stress_label": "stress",
+          "y_true": 1,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.1413,
+            "EDA": 0.0123,
+            "EMG": 0.0061,
+            "Motion": 0.0228,
+            "PPG": 0.088,
+            "Resp": 0.6251,
+            "Temp": 0.1045
+          },
+          "interventions": [
+            "Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+          ],
+          "narration": "Stress 54% (elevated); top driver Resp. Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+        },
+        {
+          "idx": 31,
+          "t": "2026-01-01 00:58:00+00:00",
+          "stress_prob": 0.4792,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.2871,
+            "EDA": 0.152,
+            "EMG": 0.05,
+            "Motion": 0.0827,
+            "PPG": 0.0265,
+            "Resp": 0.1546,
+            "Temp": 0.2471
+          },
+          "interventions": [],
+          "narration": "Stress 48% (watch); top driver ECG. No action needed."
+        },
+        {
+          "idx": 32,
+          "t": "2026-01-01 00:59:00+00:00",
+          "stress_prob": 0.4752,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.2466,
+            "EDA": 0.1969,
+            "EMG": 0.2359,
+            "Motion": 0.0656,
+            "PPG": 0.0267,
+            "Resp": 0.1676,
+            "Temp": 0.0607
+          },
+          "interventions": [],
+          "narration": "Stress 48% (watch); top driver ECG. No action needed."
+        },
+        {
+          "idx": 33,
+          "t": "2026-01-01 01:00:00+00:00",
+          "stress_prob": 0.4721,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.2049,
+            "EDA": 0.1829,
+            "EMG": 0.1494,
+            "Motion": 0.062,
+            "PPG": 0.0979,
+            "Resp": 0.1487,
+            "Temp": 0.1542
+          },
+          "interventions": [],
+          "narration": "Stress 47% (watch); top driver ECG. No action needed."
+        },
+        {
+          "idx": 34,
+          "t": "2026-01-01 01:01:00+00:00",
+          "stress_prob": 0.4835,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.0739,
+            "EDA": 0.2354,
+            "EMG": 0.0981,
+            "Motion": 0.0793,
+            "PPG": 0.0844,
+            "Resp": 0.2237,
+            "Temp": 0.2053
+          },
+          "interventions": [],
+          "narration": "Stress 48% (watch); top driver EDA. No action needed."
+        },
+        {
+          "idx": 35,
+          "t": "2026-01-01 01:02:00+00:00",
+          "stress_prob": 0.4779,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.1878,
+            "EDA": 0.1853,
+            "EMG": 0.1761,
+            "Motion": 0.0617,
+            "PPG": 0.0657,
+            "Resp": 0.1639,
+            "Temp": 0.1595
+          },
+          "interventions": [],
+          "narration": "Stress 48% (watch); top driver ECG. No action needed."
+        },
+        {
+          "idx": 36,
+          "t": "2026-01-01 01:03:00+00:00",
+          "stress_prob": 0.4836,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.2417,
+            "EDA": 0.1902,
+            "EMG": 0.1755,
+            "Motion": 0.0622,
+            "PPG": 0.0068,
+            "Resp": 0.1733,
+            "Temp": 0.1504
+          },
+          "interventions": [],
+          "narration": "Stress 48% (watch); top driver ECG. No action needed."
+        },
+        {
+          "idx": 37,
+          "t": "2026-01-01 01:04:00+00:00",
+          "stress_prob": 0.4737,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.1322,
+            "EDA": 0.1799,
+            "EMG": 0.1708,
+            "Motion": 0.0614,
+            "PPG": 0.0644,
+            "Resp": 0.2461,
+            "Temp": 0.1452
+          },
+          "interventions": [],
+          "narration": "Stress 47% (watch); top driver Resp. No action needed."
+        },
+        {
+          "idx": 38,
+          "t": "2026-01-01 01:08:00+00:00",
+          "stress_prob": 0.4811,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.1289,
+            "EDA": 0.3958,
+            "EMG": 0.1369,
+            "Motion": 0.0003,
+            "PPG": 0.1983,
+            "Resp": 0.0314,
+            "Temp": 0.1084
+          },
+          "interventions": [],
+          "narration": "Stress 48% (watch); top driver EDA. No action needed."
+        },
+        {
+          "idx": 39,
+          "t": "2026-01-01 01:09:00+00:00",
+          "stress_prob": 0.4777,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.4031,
+            "EDA": 0.2142,
+            "EMG": 0.0033,
+            "Motion": 0.0015,
+            "PPG": 0.0902,
+            "Resp": 0.2333,
+            "Temp": 0.0543
+          },
+          "interventions": [],
+          "narration": "Stress 48% (watch); top driver ECG. No action needed."
+        },
+        {
+          "idx": 40,
+          "t": "2026-01-01 01:10:00+00:00",
+          "stress_prob": 0.4862,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.1772,
+            "EDA": 0.3681,
+            "EMG": 0.0498,
+            "Motion": 0.0106,
+            "PPG": 0.0956,
+            "Resp": 0.2356,
+            "Temp": 0.063
+          },
+          "interventions": [],
+          "narration": "Stress 49% (watch); top driver EDA. No action needed."
+        },
+        {
+          "idx": 41,
+          "t": "2026-01-01 01:11:00+00:00",
+          "stress_prob": 0.4883,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.2724,
+            "EDA": 0.3,
+            "EMG": 0.0847,
+            "Motion": 0.0091,
+            "PPG": 0.0774,
+            "Resp": 0.1855,
+            "Temp": 0.0709
+          },
+          "interventions": [],
+          "narration": "Stress 49% (watch); top driver EDA. No action needed."
+        },
+        {
+          "idx": 42,
+          "t": "2026-01-01 01:12:00+00:00",
+          "stress_prob": 0.5146,
+          "stress_band": "elevated",
+          "stress_label": "stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.0514,
+            "EDA": 0.1627,
+            "EMG": 0.3099,
+            "Motion": 0.0011,
+            "PPG": 0.0795,
+            "Resp": 0.376,
+            "Temp": 0.0194
+          },
+          "interventions": [
+            "Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+          ],
+          "narration": "Stress 51% (elevated); top driver Resp. Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+        },
+        {
+          "idx": 43,
+          "t": "2026-01-01 01:13:00+00:00",
+          "stress_prob": 0.5014,
+          "stress_band": "elevated",
+          "stress_label": "stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.2042,
+            "EDA": 0.1618,
+            "EMG": 0.1131,
+            "Motion": 0.0086,
+            "PPG": 0.0935,
+            "Resp": 0.3799,
+            "Temp": 0.0388
+          },
+          "interventions": [
+            "Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+          ],
+          "narration": "Stress 50% (elevated); top driver Resp. Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+        },
+        {
+          "idx": 44,
+          "t": "2026-01-01 01:18:00+00:00",
+          "stress_prob": 0.4831,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.2942,
+            "EDA": 0.0172,
+            "EMG": 0.2766,
+            "Motion": 0.0466,
+            "PPG": 0.0331,
+            "Resp": 0.2133,
+            "Temp": 0.119
+          },
+          "interventions": [],
+          "narration": "Stress 48% (watch); top driver ECG. No action needed."
+        },
+        {
+          "idx": 45,
+          "t": "2026-01-01 01:19:00+00:00",
+          "stress_prob": 0.5092,
+          "stress_band": "elevated",
+          "stress_label": "stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.0752,
+            "EDA": 0.1307,
+            "EMG": 0.0757,
+            "Motion": 0.0327,
+            "PPG": 0.0113,
+            "Resp": 0.5303,
+            "Temp": 0.1441
+          },
+          "interventions": [
+            "Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+          ],
+          "narration": "Stress 51% (elevated); top driver Resp. Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+        },
+        {
+          "idx": 46,
+          "t": "2026-01-01 01:20:00+00:00",
+          "stress_prob": 0.4824,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.2483,
+            "EDA": 0.1972,
+            "EMG": 0.2631,
+            "Motion": 0.0386,
+            "PPG": 0.0096,
+            "Resp": 0.091,
+            "Temp": 0.1523
+          },
+          "interventions": [],
+          "narration": "Stress 48% (watch); top driver EMG. No action needed."
+        },
+        {
+          "idx": 47,
+          "t": "2026-01-01 01:21:00+00:00",
+          "stress_prob": 0.4752,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.3086,
+            "EDA": 0.2259,
+            "EMG": 0.0711,
+            "Motion": 0.0433,
+            "PPG": 0.0794,
+            "Resp": 0.0895,
+            "Temp": 0.1821
+          },
+          "interventions": [],
+          "narration": "Stress 48% (watch); top driver ECG. No action needed."
+        },
+        {
+          "idx": 48,
+          "t": "2026-01-01 01:22:00+00:00",
+          "stress_prob": 0.4601,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.2426,
+            "EDA": 0.1832,
+            "EMG": 0.2401,
+            "Motion": 0.0348,
+            "PPG": 0.0092,
+            "Resp": 0.1526,
+            "Temp": 0.1376
+          },
+          "interventions": [],
+          "narration": "Stress 46% (watch); top driver ECG. No action needed."
+        },
+        {
+          "idx": 49,
+          "t": "2026-01-01 01:23:00+00:00",
+          "stress_prob": 0.4712,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.0782,
+            "EDA": 0.2358,
+            "EMG": 0.2347,
+            "Motion": 0.0422,
+            "PPG": 0.0326,
+            "Resp": 0.1898,
+            "Temp": 0.1868
+          },
+          "interventions": [],
+          "narration": "Stress 47% (watch); top driver EDA. No action needed."
+        },
+        {
+          "idx": 50,
+          "t": "2026-01-01 01:24:00+00:00",
+          "stress_prob": 0.5028,
+          "stress_band": "elevated",
+          "stress_label": "stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.2388,
+            "EDA": 0.2123,
+            "EMG": 0.0078,
+            "Motion": 0.0492,
+            "PPG": 0.0671,
+            "Resp": 0.2728,
+            "Temp": 0.152
+          },
+          "interventions": [
+            "Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+          ],
+          "narration": "Stress 50% (elevated); top driver Resp. Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+        }
+      ]
+    },
+    "dropout": {
+      "label": "Sensor dropout (Resp lost mid-stream)",
+      "dropped": "Resp",
+      "drop_from_step": 25,
+      "steps": [
+        {
+          "idx": 0,
+          "t": "2026-01-01 00:01:00+00:00",
+          "stress_prob": 0.5208,
+          "stress_band": "elevated",
+          "stress_label": "stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.1047,
+            "EDA": 0.081,
+            "EMG": 0.1782,
+            "Motion": 0.041,
+            "PPG": 0.0489,
+            "Resp": 0.456,
+            "Temp": 0.0902
+          },
+          "interventions": [
+            "Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+          ],
+          "narration": "Stress 52% (elevated); top driver Resp. Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+        },
+        {
+          "idx": 1,
+          "t": "2026-01-01 00:02:00+00:00",
+          "stress_prob": 0.4763,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.157,
+            "EDA": 0.2188,
+            "EMG": 0.2912,
+            "Motion": 0.052,
+            "PPG": 0.023,
+            "Resp": 0.1253,
+            "Temp": 0.1328
+          },
+          "interventions": [],
+          "narration": "Stress 48% (watch); top driver EMG. No action needed."
+        },
+        {
+          "idx": 2,
+          "t": "2026-01-01 00:03:00+00:00",
+          "stress_prob": 0.5025,
+          "stress_band": "elevated",
+          "stress_label": "stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.3756,
+            "EDA": 0.1427,
+            "EMG": 0.1631,
+            "Motion": 0.0551,
+            "PPG": 0.0042,
+            "Resp": 0.1556,
+            "Temp": 0.1037
+          },
+          "interventions": [
+            "Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+          ],
+          "narration": "Stress 50% (elevated); top driver ECG. Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+        },
+        {
+          "idx": 3,
+          "t": "2026-01-01 00:04:00+00:00",
+          "stress_prob": 0.492,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.129,
+            "EDA": 0.3438,
+            "EMG": 0.1317,
+            "Motion": 0.102,
+            "PPG": 0.0132,
+            "Resp": 0.0,
+            "Temp": 0.2802
+          },
+          "interventions": [],
+          "narration": "Stress 49% (watch); top driver EDA. No action needed."
+        },
+        {
+          "idx": 4,
+          "t": "2026-01-01 00:05:00+00:00",
+          "stress_prob": 0.4895,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.0687,
+            "EDA": 0.1783,
+            "EMG": 0.2493,
+            "Motion": 0.0852,
+            "PPG": 0.0073,
+            "Resp": 0.2734,
+            "Temp": 0.1378
+          },
+          "interventions": [],
+          "narration": "Stress 49% (watch); top driver Resp. No action needed."
+        },
+        {
+          "idx": 5,
+          "t": "2026-01-01 00:06:00+00:00",
+          "stress_prob": 0.4888,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.3319,
+            "EDA": 0.167,
+            "EMG": 0.0171,
+            "Motion": 0.074,
+            "PPG": 0.0079,
+            "Resp": 0.2675,
+            "Temp": 0.1347
+          },
+          "interventions": [],
+          "narration": "Stress 49% (watch); top driver ECG. No action needed."
+        },
+        {
+          "idx": 6,
+          "t": "2026-01-01 00:07:00+00:00",
+          "stress_prob": 0.4701,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.0702,
+            "EDA": 0.2119,
+            "EMG": 0.293,
+            "Motion": 0.0821,
+            "PPG": 0.0859,
+            "Resp": 0.2472,
+            "Temp": 0.0097
+          },
+          "interventions": [],
+          "narration": "Stress 47% (watch); top driver EMG. No action needed."
+        },
+        {
+          "idx": 7,
+          "t": "2026-01-01 00:08:00+00:00",
+          "stress_prob": 0.4877,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.1071,
+            "EDA": 0.2922,
+            "EMG": 0.0,
+            "Motion": 0.1127,
+            "PPG": 0.1249,
+            "Resp": 0.1758,
+            "Temp": 0.1872
+          },
+          "interventions": [],
+          "narration": "Stress 49% (watch); top driver EDA. No action needed."
+        },
+        {
+          "idx": 8,
+          "t": "2026-01-01 00:09:00+00:00",
+          "stress_prob": 0.474,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.2723,
+            "EDA": 0.2115,
+            "EMG": 0.0309,
+            "Motion": 0.0371,
+            "PPG": 0.0043,
+            "Resp": 0.2057,
+            "Temp": 0.2381
+          },
+          "interventions": [],
+          "narration": "Stress 47% (watch); top driver ECG. No action needed."
+        },
+        {
+          "idx": 9,
+          "t": "2026-01-01 00:10:00+00:00",
+          "stress_prob": 0.4774,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.1169,
+            "EDA": 0.219,
+            "EMG": 0.1766,
+            "Motion": 0.0821,
+            "PPG": 0.0976,
+            "Resp": 0.2478,
+            "Temp": 0.06
+          },
+          "interventions": [],
+          "narration": "Stress 48% (watch); top driver Resp. No action needed."
+        },
+        {
+          "idx": 10,
+          "t": "2026-01-01 00:11:00+00:00",
+          "stress_prob": 0.5017,
+          "stress_band": "elevated",
+          "stress_label": "stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.453,
+            "EDA": 0.186,
+            "EMG": 0.0,
+            "Motion": 0.0551,
+            "PPG": 0.0911,
+            "Resp": 0.087,
+            "Temp": 0.1277
+          },
+          "interventions": [
+            "Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+          ],
+          "narration": "Stress 50% (elevated); top driver ECG. Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+        },
+        {
+          "idx": 11,
+          "t": "2026-01-01 00:12:00+00:00",
+          "stress_prob": 0.5177,
+          "stress_band": "elevated",
+          "stress_label": "stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.1264,
+            "EDA": 0.1493,
+            "EMG": 0.0501,
+            "Motion": 0.0506,
+            "PPG": 0.1627,
+            "Resp": 0.4547,
+            "Temp": 0.0062
+          },
+          "interventions": [
+            "Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+          ],
+          "narration": "Stress 52% (elevated); top driver Resp. Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+        },
+        {
+          "idx": 12,
+          "t": "2026-01-01 00:13:00+00:00",
+          "stress_prob": 0.4935,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.1867,
+            "EDA": 0.2128,
+            "EMG": 0.1752,
+            "Motion": 0.0712,
+            "PPG": 0.0759,
+            "Resp": 0.1417,
+            "Temp": 0.1365
+          },
+          "interventions": [],
+          "narration": "Stress 49% (watch); top driver EDA. No action needed."
+        },
+        {
+          "idx": 13,
+          "t": "2026-01-01 00:14:00+00:00",
+          "stress_prob": 0.5132,
+          "stress_band": "elevated",
+          "stress_label": "stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.0431,
+            "EDA": 0.1491,
+            "EMG": 0.0537,
+            "Motion": 0.398,
+            "PPG": 0.0662,
+            "Resp": 0.2867,
+            "Temp": 0.0031
+          },
+          "interventions": [
+            "Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+          ],
+          "narration": "Stress 51% (elevated); top driver Motion. Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+        },
+        {
+          "idx": 14,
+          "t": "2026-01-01 00:15:00+00:00",
+          "stress_prob": 0.5145,
+          "stress_band": "elevated",
+          "stress_label": "stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.1183,
+            "EDA": 0.1586,
+            "EMG": 0.0523,
+            "Motion": 0.0811,
+            "PPG": 0.0476,
+            "Resp": 0.5133,
+            "Temp": 0.0288
+          },
+          "interventions": [
+            "Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+          ],
+          "narration": "Stress 51% (elevated); top driver Resp. Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+        },
+        {
+          "idx": 15,
+          "t": "2026-01-01 00:16:00+00:00",
+          "stress_prob": 0.4954,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.3606,
+            "EDA": 0.1163,
+            "EMG": 0.121,
+            "Motion": 0.017,
+            "PPG": 0.0557,
+            "Resp": 0.1865,
+            "Temp": 0.1428
+          },
+          "interventions": [],
+          "narration": "Stress 50% (watch); top driver ECG. No action needed."
+        },
+        {
+          "idx": 16,
+          "t": "2026-01-01 00:17:00+00:00",
+          "stress_prob": 0.502,
+          "stress_band": "elevated",
+          "stress_label": "stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.2342,
+            "EDA": 0.165,
+            "EMG": 0.0919,
+            "Motion": 0.033,
+            "PPG": 0.0426,
+            "Resp": 0.2921,
+            "Temp": 0.1412
+          },
+          "interventions": [
+            "Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+          ],
+          "narration": "Stress 50% (elevated); top driver Resp. Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+        },
+        {
+          "idx": 17,
+          "t": "2026-01-01 00:18:00+00:00",
+          "stress_prob": 0.4818,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.2083,
+            "EDA": 0.159,
+            "EMG": 0.2638,
+            "Motion": 0.0463,
+            "PPG": 0.018,
+            "Resp": 0.1182,
+            "Temp": 0.1864
+          },
+          "interventions": [],
+          "narration": "Stress 48% (watch); top driver EMG. No action needed."
+        },
+        {
+          "idx": 18,
+          "t": "2026-01-01 00:19:00+00:00",
+          "stress_prob": 0.5213,
+          "stress_band": "elevated",
+          "stress_label": "stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.3758,
+            "EDA": 0.1358,
+            "EMG": 0.1984,
+            "Motion": 0.0983,
+            "PPG": 0.0122,
+            "Resp": 0.0743,
+            "Temp": 0.1053
+          },
+          "interventions": [
+            "Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+          ],
+          "narration": "Stress 52% (elevated); top driver ECG. Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+        },
+        {
+          "idx": 19,
+          "t": "2026-01-01 00:20:00+00:00",
+          "stress_prob": 0.5113,
+          "stress_band": "elevated",
+          "stress_label": "stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.393,
+            "EDA": 0.1513,
+            "EMG": 0.0589,
+            "Motion": 0.0533,
+            "PPG": 0.0289,
+            "Resp": 0.0878,
+            "Temp": 0.2267
+          },
+          "interventions": [
+            "Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+          ],
+          "narration": "Stress 51% (elevated); top driver ECG. Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+        },
+        {
+          "idx": 20,
+          "t": "2026-01-01 00:31:00+00:00",
+          "stress_prob": 0.553,
+          "stress_band": "elevated",
+          "stress_label": "stress",
+          "y_true": 1,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.1243,
+            "EDA": 0.0077,
+            "EMG": 0.5313,
+            "Motion": 0.0147,
+            "PPG": 0.0057,
+            "Resp": 0.1962,
+            "Temp": 0.1201
+          },
+          "interventions": [
+            "Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+          ],
+          "narration": "Stress 55% (elevated); top driver EMG. Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+        },
+        {
+          "idx": 21,
+          "t": "2026-01-01 00:32:00+00:00",
+          "stress_prob": 0.5217,
+          "stress_band": "elevated",
+          "stress_label": "stress",
+          "y_true": 1,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.2332,
+            "EDA": 0.0083,
+            "EMG": 0.0906,
+            "Motion": 0.0341,
+            "PPG": 0.1342,
+            "Resp": 0.341,
+            "Temp": 0.1585
+          },
+          "interventions": [
+            "Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+          ],
+          "narration": "Stress 52% (elevated); top driver Resp. Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+        },
+        {
+          "idx": 22,
+          "t": "2026-01-01 00:33:00+00:00",
+          "stress_prob": 0.5012,
+          "stress_band": "elevated",
+          "stress_label": "stress",
+          "y_true": 1,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.2279,
+            "EDA": 0.1173,
+            "EMG": 0.1689,
+            "Motion": 0.0327,
+            "PPG": 0.1847,
+            "Resp": 0.104,
+            "Temp": 0.1645
+          },
+          "interventions": [
+            "Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+          ],
+          "narration": "Stress 50% (elevated); top driver ECG. Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+        },
+        {
+          "idx": 23,
+          "t": "2026-01-01 00:34:00+00:00",
+          "stress_prob": 0.558,
+          "stress_band": "elevated",
+          "stress_label": "stress",
+          "y_true": 1,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.0991,
+            "EDA": 0.0277,
+            "EMG": 0.3173,
+            "Motion": 0.0042,
+            "PPG": 0.0404,
+            "Resp": 0.4522,
+            "Temp": 0.0592
+          },
+          "interventions": [
+            "Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+          ],
+          "narration": "Stress 56% (elevated); top driver Resp. Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+        },
+        {
+          "idx": 24,
+          "t": "2026-01-01 00:35:00+00:00",
+          "stress_prob": 0.5418,
+          "stress_band": "elevated",
+          "stress_label": "stress",
+          "y_true": 1,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Resp",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.0399,
+            "EDA": 0.0712,
+            "EMG": 0.1878,
+            "Motion": 0.0352,
+            "PPG": 0.1131,
+            "Resp": 0.4543,
+            "Temp": 0.0986
+          },
+          "interventions": [
+            "Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+          ],
+          "narration": "Stress 54% (elevated); top driver Resp. Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+        },
+        {
+          "idx": 25,
+          "t": "2026-01-01 00:36:00+00:00",
+          "stress_prob": 0.4896,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 1,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.3248,
+            "EDA": 0.0755,
+            "EMG": 0.3266,
+            "Motion": 0.0442,
+            "PPG": 0.0,
+            "Temp": 0.2289
+          },
+          "interventions": [],
+          "narration": "Stress 49% (watch); top driver EMG. No action needed."
+        },
+        {
+          "idx": 26,
+          "t": "2026-01-01 00:37:00+00:00",
+          "stress_prob": 0.4968,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 1,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.333,
+            "EDA": 0.0254,
+            "EMG": 0.2444,
+            "Motion": 0.0455,
+            "PPG": 0.1798,
+            "Temp": 0.1718
+          },
+          "interventions": [],
+          "narration": "Stress 50% (watch); top driver ECG. No action needed."
+        },
+        {
+          "idx": 27,
+          "t": "2026-01-01 00:38:00+00:00",
+          "stress_prob": 0.4868,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 1,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.1532,
+            "EDA": 0.1492,
+            "EMG": 0.3046,
+            "Motion": 0.0459,
+            "PPG": 0.1446,
+            "Temp": 0.2025
+          },
+          "interventions": [],
+          "narration": "Stress 49% (watch); top driver EMG. No action needed."
+        },
+        {
+          "idx": 28,
+          "t": "2026-01-01 00:39:00+00:00",
+          "stress_prob": 0.493,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 1,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.3715,
+            "EDA": 0.0139,
+            "EMG": 0.2725,
+            "Motion": 0.0585,
+            "PPG": 0.0252,
+            "Temp": 0.2584
+          },
+          "interventions": [],
+          "narration": "Stress 49% (watch); top driver ECG. No action needed."
+        },
+        {
+          "idx": 29,
+          "t": "2026-01-01 00:40:00+00:00",
+          "stress_prob": 0.4804,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 1,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.3403,
+            "EDA": 0.0154,
+            "EMG": 0.2196,
+            "Motion": 0.0587,
+            "PPG": 0.0542,
+            "Temp": 0.3118
+          },
+          "interventions": [],
+          "narration": "Stress 48% (watch); top driver ECG. No action needed."
+        },
+        {
+          "idx": 30,
+          "t": "2026-01-01 00:41:00+00:00",
+          "stress_prob": 0.5057,
+          "stress_band": "elevated",
+          "stress_label": "stress",
+          "y_true": 1,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.4006,
+            "EDA": 0.0278,
+            "EMG": 0.016,
+            "Motion": 0.0538,
+            "PPG": 0.219,
+            "Temp": 0.2827
+          },
+          "interventions": [
+            "Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+          ],
+          "narration": "Stress 51% (elevated); top driver ECG. Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause."
+        },
+        {
+          "idx": 31,
+          "t": "2026-01-01 00:58:00+00:00",
+          "stress_prob": 0.484,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.3438,
+            "EDA": 0.1774,
+            "EMG": 0.0547,
+            "Motion": 0.0973,
+            "PPG": 0.0296,
+            "Temp": 0.2971
+          },
+          "interventions": [],
+          "narration": "Stress 48% (watch); top driver ECG. No action needed."
+        },
+        {
+          "idx": 32,
+          "t": "2026-01-01 00:59:00+00:00",
+          "stress_prob": 0.4813,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.2941,
+            "EDA": 0.2382,
+            "EMG": 0.2828,
+            "Motion": 0.0784,
+            "PPG": 0.033,
+            "Temp": 0.0735
+          },
+          "interventions": [],
+          "narration": "Stress 48% (watch); top driver ECG. No action needed."
+        },
+        {
+          "idx": 33,
+          "t": "2026-01-01 01:00:00+00:00",
+          "stress_prob": 0.4781,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.2359,
+            "EDA": 0.2175,
+            "EMG": 0.1764,
+            "Motion": 0.073,
+            "PPG": 0.1163,
+            "Temp": 0.181
+          },
+          "interventions": [],
+          "narration": "Stress 48% (watch); top driver ECG. No action needed."
+        },
+        {
+          "idx": 34,
+          "t": "2026-01-01 01:01:00+00:00",
+          "stress_prob": 0.4904,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.0871,
+            "EDA": 0.3119,
+            "EMG": 0.133,
+            "Motion": 0.1013,
+            "PPG": 0.109,
+            "Temp": 0.2576
+          },
+          "interventions": [],
+          "narration": "Stress 49% (watch); top driver EDA. No action needed."
+        },
+        {
+          "idx": 35,
+          "t": "2026-01-01 01:02:00+00:00",
+          "stress_prob": 0.4717,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.2224,
+            "EDA": 0.2195,
+            "EMG": 0.2111,
+            "Motion": 0.0743,
+            "PPG": 0.0792,
+            "Temp": 0.1936
+          },
+          "interventions": [],
+          "narration": "Stress 47% (watch); top driver ECG. No action needed."
+        },
+        {
+          "idx": 36,
+          "t": "2026-01-01 01:03:00+00:00",
+          "stress_prob": 0.4902,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.2888,
+            "EDA": 0.234,
+            "EMG": 0.2163,
+            "Motion": 0.0752,
+            "PPG": 0.008,
+            "Temp": 0.1775
+          },
+          "interventions": [],
+          "narration": "Stress 49% (watch); top driver ECG. No action needed."
+        },
+        {
+          "idx": 37,
+          "t": "2026-01-01 01:04:00+00:00",
+          "stress_prob": 0.4833,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.165,
+            "EDA": 0.2459,
+            "EMG": 0.2329,
+            "Motion": 0.0817,
+            "PPG": 0.0854,
+            "Temp": 0.1891
+          },
+          "interventions": [],
+          "narration": "Stress 48% (watch); top driver EDA. No action needed."
+        },
+        {
+          "idx": 38,
+          "t": "2026-01-01 01:08:00+00:00",
+          "stress_prob": 0.4806,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.1168,
+            "EDA": 0.4137,
+            "EMG": 0.145,
+            "Motion": 0.0097,
+            "PPG": 0.2025,
+            "Temp": 0.1123
+          },
+          "interventions": [],
+          "narration": "Stress 48% (watch); top driver EDA. No action needed."
+        },
+        {
+          "idx": 39,
+          "t": "2026-01-01 01:09:00+00:00",
+          "stress_prob": 0.4725,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.5231,
+            "EDA": 0.2715,
+            "EMG": 0.0023,
+            "Motion": 0.0034,
+            "PPG": 0.1132,
+            "Temp": 0.0865
+          },
+          "interventions": [],
+          "narration": "Stress 47% (watch); top driver ECG. No action needed."
+        },
+        {
+          "idx": 40,
+          "t": "2026-01-01 01:10:00+00:00",
+          "stress_prob": 0.4815,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.2239,
+            "EDA": 0.4741,
+            "EMG": 0.0654,
+            "Motion": 0.0137,
+            "PPG": 0.1209,
+            "Temp": 0.102
+          },
+          "interventions": [],
+          "narration": "Stress 48% (watch); top driver EDA. No action needed."
+        },
+        {
+          "idx": 41,
+          "t": "2026-01-01 01:11:00+00:00",
+          "stress_prob": 0.4837,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.3326,
+            "EDA": 0.3642,
+            "EMG": 0.1018,
+            "Motion": 0.0117,
+            "PPG": 0.0921,
+            "Temp": 0.0976
+          },
+          "interventions": [],
+          "narration": "Stress 48% (watch); top driver EDA. No action needed."
+        },
+        {
+          "idx": 42,
+          "t": "2026-01-01 01:12:00+00:00",
+          "stress_prob": 0.497,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.0833,
+            "EDA": 0.259,
+            "EMG": 0.4872,
+            "Motion": 0.0045,
+            "PPG": 0.1228,
+            "Temp": 0.0432
+          },
+          "interventions": [],
+          "narration": "Stress 50% (watch); top driver EMG. No action needed."
+        },
+        {
+          "idx": 43,
+          "t": "2026-01-01 01:13:00+00:00",
+          "stress_prob": 0.4856,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.3291,
+            "EDA": 0.2626,
+            "EMG": 0.1779,
+            "Motion": 0.0076,
+            "PPG": 0.1475,
+            "Temp": 0.0753
+          },
+          "interventions": [],
+          "narration": "Stress 49% (watch); top driver ECG. No action needed."
+        },
+        {
+          "idx": 44,
+          "t": "2026-01-01 01:18:00+00:00",
+          "stress_prob": 0.4775,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.3735,
+            "EDA": 0.0287,
+            "EMG": 0.3475,
+            "Motion": 0.0512,
+            "PPG": 0.0431,
+            "Temp": 0.1559
+          },
+          "interventions": [],
+          "narration": "Stress 48% (watch); top driver ECG. No action needed."
+        },
+        {
+          "idx": 45,
+          "t": "2026-01-01 01:19:00+00:00",
+          "stress_prob": 0.4892,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.1835,
+            "EDA": 0.2553,
+            "EMG": 0.1574,
+            "Motion": 0.0738,
+            "PPG": 0.0258,
+            "Temp": 0.3043
+          },
+          "interventions": [],
+          "narration": "Stress 49% (watch); top driver Temp. No action needed."
+        },
+        {
+          "idx": 46,
+          "t": "2026-01-01 01:20:00+00:00",
+          "stress_prob": 0.4858,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.2688,
+            "EDA": 0.2201,
+            "EMG": 0.292,
+            "Motion": 0.0432,
+            "PPG": 0.0113,
+            "Temp": 0.1647
+          },
+          "interventions": [],
+          "narration": "Stress 49% (watch); top driver EMG. No action needed."
+        },
+        {
+          "idx": 47,
+          "t": "2026-01-01 01:21:00+00:00",
+          "stress_prob": 0.4723,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.3356,
+            "EDA": 0.247,
+            "EMG": 0.0801,
+            "Motion": 0.0493,
+            "PPG": 0.0874,
+            "Temp": 0.2005
+          },
+          "interventions": [],
+          "narration": "Stress 47% (watch); top driver ECG. No action needed."
+        },
+        {
+          "idx": 48,
+          "t": "2026-01-01 01:22:00+00:00",
+          "stress_prob": 0.4665,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.2848,
+            "EDA": 0.2184,
+            "EMG": 0.283,
+            "Motion": 0.0415,
+            "PPG": 0.0105,
+            "Temp": 0.1618
+          },
+          "interventions": [],
+          "narration": "Stress 47% (watch); top driver ECG. No action needed."
+        },
+        {
+          "idx": 49,
+          "t": "2026-01-01 01:23:00+00:00",
+          "stress_prob": 0.4775,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.0913,
+            "EDA": 0.2923,
+            "EMG": 0.2929,
+            "Motion": 0.0524,
+            "PPG": 0.0414,
+            "Temp": 0.2296
+          },
+          "interventions": [],
+          "narration": "Stress 48% (watch); top driver EMG. No action needed."
+        },
+        {
+          "idx": 50,
+          "t": "2026-01-01 01:24:00+00:00",
+          "stress_prob": 0.4928,
+          "stress_band": "watch",
+          "stress_label": "non_stress",
+          "y_true": 0,
+          "glucose_now": null,
+          "glucose_forecast": null,
+          "glucose_lower": null,
+          "glucose_upper": null,
+          "present_modalities": [
+            "ECG",
+            "EDA",
+            "EMG",
+            "Motion",
+            "PPG",
+            "Temp"
+          ],
+          "attribution": {
+            "ECG": 0.333,
+            "EDA": 0.2892,
+            "EMG": 0.008,
+            "Motion": 0.0684,
+            "PPG": 0.0925,
+            "Temp": 0.2089
+          },
+          "interventions": [],
+          "narration": "Stress 49% (watch); top driver ECG. No action needed."
+        }
+      ]
+    }
+  },
+  "insight": "Personal health summary (grounded):\n- stress: probability 0.56, band elevated\n- most influential modality: Resp\n- suggested action: Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause.\n\nCaveat: this is a research prototype. Values are calibrated-model estimates and documented proxy signals, not a diagnosis; consult a qualified clinician for any medical decision.",
+  "grounded_facts": "- stress: probability 0.56, band elevated\n- most influential modality: Resp\n- suggested action: Stress is elevated \u2014 try a 2-minute paced-breathing or a short pause.",
+  "monitor_replay_steps": 235,
+  "n_steps": 51,
+  "capped": false
+}
