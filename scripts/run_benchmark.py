@@ -32,6 +32,8 @@ def main(argv=None) -> int:
                     choices=list(TASK_BUILDERS))
     ap.add_argument("--repeats", type=int, default=5)
     ap.add_argument("--folds", type=int, default=5)
+    ap.add_argument("--loso", action="store_true",
+                    help="true leave-one-subject-out: n_folds = #subjects, n_repeats = 1")
     ap.add_argument("--seed", type=int, default=7)
     ap.add_argument("--no-sota", action="store_true", help="skip real SOTA encoders")
     ap.add_argument("--ablate", action="store_true",
@@ -43,9 +45,13 @@ def main(argv=None) -> int:
     for name in args.tasks:
         print(f"[bench] building task {name!r} ...", flush=True)
         task = TASK_BUILDERS[name]()
-        print(f"[bench] running {name}: n={task.n} subjects={len(set(task.subject_ids))} "
-              f"modalities={task.modalities}", flush=True)
-        res = run_task(task, n_repeats=args.repeats, n_folds=args.folds,
+        n_subj = len(set(task.subject_ids))
+        repeats, folds = args.repeats, args.folds
+        if args.loso:
+            repeats, folds = 1, n_subj  # true leave-one-subject-out
+        print(f"[bench] running {name}: n={task.n} subjects={n_subj} "
+              f"modalities={task.modalities} (repeats={repeats}, folds={folds})", flush=True)
+        res = run_task(task, n_repeats=repeats, n_folds=folds,
                        seed=args.seed, include_sota=not args.no_sota)
         r = res.relativity
         print(f"[bench]   best_baseline={res.best_baseline} RER={r.rer_pct:.1f}% "
