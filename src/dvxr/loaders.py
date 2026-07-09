@@ -297,6 +297,33 @@ def load_wesad_subject_pickle(path: str | Path, max_samples_per_channel: int | N
     return validate_events(pd.DataFrame(rows))
 
 
+# WESAD protocol condition codes (Schmidt et al. 2018); 5-7 are ignore/transient states.
+WESAD_CONDITION_LABELS = {0: "transient", 1: "baseline", 2: "stress", 3: "amusement", 4: "meditation"}
+
+
+def load_wesad_dataset(
+    data_dir: str | Path,
+    subjects: int | None = None,
+    max_samples_per_channel: int | None = 5000,
+) -> pd.DataFrame:
+    """Load and concatenate official WESAD subject pickles into one canonical table.
+
+    Expects the official archive layout ``<data_dir>/S<n>/S<n>.pkl`` (as shipped in the
+    Siegen ``WESAD.zip``). ``subjects`` caps how many subject pickles are read.
+    """
+    data_dir = Path(data_dir)
+    pickles = sorted(
+        data_dir.glob("S*/S*.pkl"),
+        key=lambda p: int("".join(ch for ch in p.stem if ch.isdigit()) or 0),
+    )
+    if not pickles:
+        raise ValueError(f"No WESAD subject pickles (S*/S*.pkl) found in {data_dir}")
+    if subjects is not None:
+        pickles = pickles[:subjects]
+    frames = [load_wesad_subject_pickle(p, max_samples_per_channel) for p in pickles]
+    return validate_events(pd.concat(frames, ignore_index=True))
+
+
 def load_deap_preprocessed_pickle(path: str | Path, max_trials: int | None = 3) -> pd.DataFrame:
     """Load one DEAP preprocessed subject file into the canonical schema."""
     path = Path(path)

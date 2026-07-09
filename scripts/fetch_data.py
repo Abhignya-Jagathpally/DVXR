@@ -21,11 +21,22 @@ MIMIC_FILES = ["patients.csv.gz", "admissions.csv.gz", "d_labitems.csv.gz", "lab
 # the article archive is a zip-in-zip of per-patient Excel CGM files.
 SHANGHAI_URL = "https://ndownloader.figshare.com/articles/20444397/versions/3"
 
+# WESAD wearable stress/affect dataset (Schmidt et al. 2018). Official ~2 GB share hosted on
+# the University of Siegen sciebo instance; the ``/download`` endpoint returns WESAD.zip.
+WESAD_SIEGEN_URL = "https://uni-siegen.sciebo.de/s/HGdUkoNlW1Ub0Gx/download"
+
+# CGMacros multimodal CGM + diet + wearable dataset (PhysioNet, open CC-BY-NC-SA 4.0).
+CGMACROS_ZIP_URL = "https://physionet.org/content/cgmacros/get-zip/1.0.0/"
+
 
 def _download(url: str, dest: Path) -> int:
+    """Stream a URL to disk (urllib uses HTTP/1.1, avoiding the HTTP/2 stream errors some
+    large mirrors return). Returns the byte count written."""
+    import shutil
+
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-    with urllib.request.urlopen(req, timeout=120) as response, dest.open("wb") as handle:
-        handle.write(response.read())
+    with urllib.request.urlopen(req, timeout=300) as response, dest.open("wb") as handle:
+        shutil.copyfileobj(response, handle, length=1024 * 1024)
     return dest.stat().st_size
 
 
@@ -90,6 +101,45 @@ def fetch_mimic_demo() -> Path:
     return out
 
 
+def fetch_wesad_siegen() -> Path:
+    """Download the official WESAD dataset (~2 GB) from the Siegen sciebo share and extract it.
+
+    The archive extracts to ``<REAL_DIR>/WESAD/S<n>/S<n>.pkl``, the layout expected by
+    ``dvxr.loaders.load_wesad_dataset``. Credential-free.
+    """
+    import zipfile
+
+    REAL_DIR.mkdir(parents=True, exist_ok=True)
+    zip_path = REAL_DIR / "_wesad.zip"
+    if not (zip_path.exists() and zipfile.is_zipfile(zip_path)):
+        print("Downloading WESAD (~2 GB, may take several minutes)...")
+        size = _download(WESAD_SIEGEN_URL, zip_path)
+        print(f"  downloaded {size / 1e6:.0f} MB")
+    with zipfile.ZipFile(zip_path) as archive:
+        archive.extractall(REAL_DIR)
+    out = REAL_DIR / "WESAD"
+    n = len(list(out.glob("S*/S*.pkl")))
+    print(f"WESAD -> {out} ({n} subject pickles)")
+    return out
+
+
+def fetch_cgmacros() -> Path:
+    """Download the open CGMacros dataset (~628 MB) from PhysioNet and extract it."""
+    import zipfile
+
+    REAL_DIR.mkdir(parents=True, exist_ok=True)
+    zip_path = REAL_DIR / "_cgmacros.zip"
+    if not (zip_path.exists() and zipfile.is_zipfile(zip_path)):
+        print("Downloading CGMacros (~628 MB)...")
+        size = _download(CGMACROS_ZIP_URL, zip_path)
+        print(f"  downloaded {size / 1e6:.0f} MB")
+    out = REAL_DIR / "cgmacros"
+    with zipfile.ZipFile(zip_path) as archive:
+        archive.extractall(out)
+    print(f"CGMacros -> {out}")
+    return out
+
+
 def fetch_kaggle(slug: str) -> Path:
     """Download a Kaggle dataset via kagglehub. Requires Kaggle credentials."""
     try:
@@ -114,7 +164,8 @@ def fetch_kaggle(slug: str) -> Path:
 
 KAGGLE_SLUGS = {
     "kaggle-wesad": "orvile/wesad-wearable-stress-affect-detection-dataset",
-    "kaggle-deap": "manh123df/deap-dataset",
+    # DEAP raw data (BioSemi .bdf) as requested for the refactor.
+    "kaggle-deap": "sayuksh/deap-datasetraw-data",
 }
 
 
@@ -122,8 +173,20 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Download real public datasets for the pipeline.")
     parser.add_argument(
         "source",
-        choices=["noneeg", "mimic-demo", "shanghai-cgm", "kaggle-wesad", "kaggle-deap", "all-free"],
-        help="'all-free' downloads the credential-free sources (noneeg + mimic-demo + shanghai-cgm).",
+        choices=[
+            "noneeg",
+            "mimic-demo",
+            "shanghai-cgm",
+            "wesad",
+            "cgmacros",
+            "kaggle-wesad",
+            "kaggle-deap",
+            "all-free",
+        ],
+        help=(
+            "'all-free' downloads every credential-free source "
+            "(noneeg + mimic-demo + shanghai-cgm + wesad + cgmacros)."
+        ),
     )
     parser.add_argument("--subjects", type=int, default=4, help="Number of Non-EEG subjects to fetch.")
     args = parser.parse_args()
@@ -134,6 +197,10 @@ def main() -> None:
         fetch_mimic_demo()
     if args.source in ("shanghai-cgm", "all-free"):
         fetch_shanghai_cgm()
+    if args.source in ("wesad", "all-free"):
+        fetch_wesad_siegen()
+    if args.source in ("cgmacros", "all-free"):
+        fetch_cgmacros()
     if args.source in KAGGLE_SLUGS:
         fetch_kaggle(KAGGLE_SLUGS[args.source])
 
