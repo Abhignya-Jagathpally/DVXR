@@ -24,6 +24,14 @@ offline/CPU/deterministic guardrails and honest reporting.
   `cgmacros_diabetes`, `deap_arousal` run under held-out-subject CV. Honest result — CACMF
   fusion does **not** beat baselines (RER: WESAD stress -81.7%, CGMacros diabetes -10.6%,
   CGMacros glucose -7.3%, DEAP arousal -3.2%); see `outputs/benchmark_scoreboard.md`.
+- **Data-cleanliness fixes** (value-level audit): raw DEAP `.bdf` now drops the `Status`
+  trigger channel, band-passes (0.5-45 Hz) and average-references the EEG (removing the
+  large BioSemi DC offsets), and keeps the file's real channel names — EEG comes out
+  mean~0, ±hundreds µV instead of ±tens of thousands. WESAD chest/wrist channels are now
+  location-prefixed (`chest_eda`/`wrist_eda`) so same-modality streams no longer collide,
+  and ACC units are honest (`counts` vs `counts_1_64g`). Documented the intentional
+  Libre+Dexcom dual-CGM rows in CGMacros (disambiguated by `glucose_source`).
+  `tests/test_data_cleanliness.py` guards all three.
 
 ---
 

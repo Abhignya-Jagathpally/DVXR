@@ -311,6 +311,11 @@ def load_cgmacros_subject(csv_path: str | Path, diabetes_status: str = "") -> pd
     column), `wearable_phys` (Fitbit HR / activity calories / METs), and `behavior`
     (per-meal macronutrients, with `meal_type` and `meal_photo_path` extras). Uses the
     relaxed schema so those dataset-specific extra columns are preserved.
+
+    Note: CGMacros records two simultaneous CGMs (Libre + Dexcom), so each glucose
+    timestamp yields two `(cgm, glucose)` rows that share the canonical key and differ
+    only by `glucose_source`. This is intentional; filter to one source (as the glucose
+    benchmark task does) to avoid double-counting.
     """
     csv_path = Path(csv_path)
     subject_id = f"cgmacros_{_cgmacros_subject_num(csv_path)}"
@@ -532,9 +537,11 @@ def load_wesad_subject_pickle(path: str | Path, max_samples_per_channel: int | N
                             "source_system": "wesad",
                             "device": f"wesad_{device_name}",
                             "modality": WESAD_MODALITIES.get(signal_name, signal_name.lower()),
-                            "channel": channel,
+                            # prefix with the sensor location so chest and wrist streams of
+                            # the same modality (both have EDA/TEMP/ACC) never collide.
+                            "channel": f"{device_name}_{channel}",
                             "value": float(values[sample_idx, dim_idx]),
-                            "unit": _unit_for_signal(signal_name),
+                            "unit": _unit_for_signal(signal_name, device_name),
                             "sampling_rate_hz": rate,
                             "quality_flag": "ok",
                             "label_name": "wesad_label",
@@ -655,11 +662,23 @@ def load_deap_raw_bdf(
 ) -> pd.DataFrame:
     """Load one raw DEAP BioSemi ``.bdf`` recording into the canonical schema.
 
-    Raw DEAP is 48-channel BioSemi at 512 Hz (32 EEG 10-20 + peripheral). We read via
-    ``mne``, keep the first 32 channels as ``eeg`` and the rest as ``physiology``,
-    downsample to ``target_rate_hz`` to keep event volume sane, and attach the arousal
-    label from ``ratings`` (participant/trial parsed from the filename ``sXX`` / ``trialNN``)
-    when available. Requires ``mne`` (``pip install mne``).
+    Raw BioSemi ActiveTwo is DC-coupled and reference-free, so the signals carry large
+    per-channel DC offsets and are NOT analysis-ready as read. This applies the standard
+    minimal preprocessing before emitting events:
+
+    * drop the ``Status`` trigger/stim channel (not a biosignal),
+    * band-pass filter the EEG (``0.5-45 Hz``) to remove the DC offset and drift,
+    * average re-reference the EEG,
+    * downsample to ``target_rate_hz``.
+
+    EEG channels keep the montage names stored in the file (BioSemi order); the remaining
+    external channels (EXG/GSR/Resp/Plet/Temp) are emitted as ``physiology`` under their
+    own names. Arousal label is attached from ``ratings`` when available. Requires ``mne``.
+
+    Note: the raw Kaggle set (``sayuksh/deap-datasetraw-data``) ships ``.bdf`` signals
+    ONLY — no ratings file — so it loads unlabeled and cannot drive the supervised
+    ``deap_arousal`` task on its own; supply the official ``participant_ratings.csv`` or
+    use the preprocessed set for labels.
     """
     import re
 
@@ -667,12 +686,31 @@ def load_deap_raw_bdf(
 
     bdf_path = Path(bdf_path)
     raw = mne.io.read_raw_bdf(bdf_path, preload=True, verbose="ERROR")
+
+    # 1. drop Status/stim trigger channels (not biosignals)
+    stim = [ch for ch, t in zip(raw.ch_names, raw.get_channel_types()) if t == "stim"]
+    if stim:
+        raw.drop_channels(stim)
+
+    # BDF stores no channel types, so mne types every channel 'eeg'. In DEAP the first 32
+    # are the real EEG montage; the rest are external sensors (EXG/GSR/Resp/Plet/Temp).
+    # Re-type the peripherals to 'misc' so the EEG filter + average reference touch ONLY
+    # the 32 EEG channels (mixing GSR's huge values into the reference would corrupt it).
+    eeg_names = raw.ch_names[:32]
+    periph = raw.ch_names[32:]
+    if periph:
+        raw.set_channel_types({ch: "misc" for ch in periph}, verbose="ERROR")
+    eeg_set = set(eeg_names)
+
+    # 2. band-pass the EEG to strip the DC offset/drift, then 3. average re-reference
+    raw.filter(l_freq=0.5, h_freq=45.0, picks="eeg", verbose="ERROR")
+    raw.set_eeg_reference("average", projection=False, verbose="ERROR")
+
+    # 4. downsample
     if target_rate_hz and raw.info["sfreq"] > target_rate_hz:
         raw.resample(target_rate_hz, verbose="ERROR")
     rate = float(raw.info["sfreq"])
-    data = raw.get_data()  # (n_channels, n_samples)
-    if max_seconds:
-        data = data[:, : int(max_seconds * rate)]
+    n_keep = int(max_seconds * rate) if max_seconds else None
 
     pmatch = re.search(r"s(\d+)", bdf_path.stem, re.I)
     tmatch = re.search(r"trial[_-]?(\d+)", bdf_path.stem, re.I)
@@ -685,32 +723,34 @@ def load_deap_raw_bdf(
     if arousal is not None:
         label_name, label_value = "arousal", ("high_arousal" if arousal >= 5 else "low_arousal")
 
-    ch_names = _deap_channel_names(data.shape[0])
     start = pd.Timestamp("2026-01-01T00:00:00Z")
-    step = max(1, int(rate) // int(target_rate_hz)) if target_rate_hz else 1
-    rows: list[dict] = []
-    for ch_idx, channel in enumerate(ch_names):
-        modality = "eeg" if ch_idx < 32 else "physiology"
+    data = raw.get_data()  # Volts; EEG now filtered + average-referenced
+    parts: list[pd.DataFrame] = []
+    for ch_idx, channel in enumerate(raw.ch_names):
         series = data[ch_idx]
-        for sample_idx in range(0, len(series), step):
-            rows.append(
+        if n_keep:
+            series = series[:n_keep]
+        is_eeg = channel in eeg_set
+        parts.append(
+            pd.DataFrame(
                 {
                     "subject_id": subject_id,
                     "session_id": f"deap_trial_{trial:02d}",
-                    "timestamp_utc": start + pd.Timedelta(seconds=sample_idx / rate),
+                    "timestamp_utc": start + pd.to_timedelta(np.arange(len(series)) / rate, unit="s"),
                     "source_system": "deap_raw",
                     "device": "biosemi_activetwo",
-                    "modality": modality,
+                    "modality": "eeg" if is_eeg else "physiology",
                     "channel": channel,
-                    "value": float(series[sample_idx]) * (1e6 if modality == "eeg" else 1.0),
-                    "unit": "uV" if modality == "eeg" else "a.u.",
+                    "value": series * (1e6 if is_eeg else 1.0),  # EEG Volts -> uV
+                    "unit": "uV" if is_eeg else "a.u.",
                     "sampling_rate_hz": rate,
                     "quality_flag": "ok",
                     "label_name": label_name,
                     "label_value": label_value,
                 }
             )
-    return validate_events(pd.DataFrame(rows))
+        )
+    return validate_events(pd.concat(parts, ignore_index=True))
 
 
 def load_deap_dataset(
@@ -765,7 +805,10 @@ def _channel_names(signal_name: str, width: int) -> list[str]:
     return [f"{signal_name.lower()}_{i}" for i in range(width)]
 
 
-def _unit_for_signal(signal_name: str) -> str:
+def _unit_for_signal(signal_name: str, location: str = "") -> str:
+    if signal_name == "ACC":
+        # Empatica E4 (wrist) reports ACC in 1/64 g counts; RespiBAN (chest) in raw counts.
+        return "counts_1_64g" if location == "wrist" else "counts"
     return {
         "ECG": "mV",
         "EDA": "uS",
@@ -774,7 +817,6 @@ def _unit_for_signal(signal_name: str) -> str:
         "Temp": "C",
         "TEMP": "C",
         "BVP": "a.u.",
-        "ACC": "g",
     }.get(signal_name, "value")
 
 
