@@ -217,13 +217,27 @@ def cgmacros_glucose_task(data_dir: str = "data/real/cgmacros", subjects: Option
 
 
 # -------------------------------------------------------- CGMacros diabetes
+# Diagnostic glycemic labs that DEFINE the diabetes label or are direct diagnostic
+# synonyms for it. The label is diabetes = int(HbA1c >= 6.5), so handing the model the
+# HbA1c channel (or fasting glucose/insulin, which are the other ADA glycemic diagnostics)
+# leaks the target and produces a spuriously near-perfect AUROC. These channels are
+# excluded from the diabetes feature matrix; the task then predicts A1c-defined status
+# from glucose dynamics + non-defining physiology/covariates, matching the proposal's
+# "glucose instability / diabetes risk progression" framing. Canonical channel names come
+# from loaders.CGMACROS_BIO_NUMERIC. Non-glycemic labs (lipids) and demographics are kept
+# as legitimate correlated covariates, not leakage.
+DIABETES_EHR_DENYLIST = frozenset({"hba1c", "fasting_glucose", "fasting_insulin"})
+
+
 def cgmacros_diabetes_task(data_dir: str = "data/real/cgmacros",
                            subjects: Optional[int] = None) -> BenchTask:
     """CGMacros diabetes classification — REAL A1c-derived strata (diabetes vs not).
 
-    Per-subject multimodal vectors: cgm (glucose summary), wearable_phys (Fitbit
-    summary), ehr (bio labs). Label = HbA1c-derived diabetes status (diabetes vs
-    healthy/prediabetes). Multimodal → usable for the modality ablation.
+    Per-subject multimodal vectors: cgm (glucose summary + variability), wearable_phys
+    (Fitbit summary), ehr (bio labs). Label = HbA1c-derived diabetes status (diabetes vs
+    healthy/prediabetes). The defining glycemic labs (HbA1c, fasting glucose, fasting
+    insulin) are removed from the ehr features to avoid target leakage — see
+    ``DIABETES_EHR_DENYLIST``. Multimodal → usable for the modality ablation.
     """
     assert_no_fabrication()
     events = load_cgmacros_dataset(data_dir, subjects=subjects, include_bio=True)
@@ -247,6 +261,10 @@ def cgmacros_diabetes_task(data_dir: str = "data/real/cgmacros",
         if modality == "cgm":  # add per-subject glucose variability (CV)
             cv = sub.groupby("subject_id")["value"].agg(lambda s: float(np.std(s) / (np.mean(s) + 1e-9)))
             piv["glucose_cv"] = cv
+        if modality == "ehr":  # drop diagnostic glycemic labs that define/leak the label
+            piv = piv.drop(columns=[c for c in piv.columns if c in DIABETES_EHR_DENYLIST])
+            if piv.shape[1] == 0:
+                continue
         piv = piv.loc[[s for s in piv.index if s in y_map]].sort_index()
         piv = piv.fillna(piv.median())
         if index is None:
@@ -254,6 +272,12 @@ def cgmacros_diabetes_task(data_dir: str = "data/real/cgmacros",
         piv = piv.reindex(index).fillna(piv.median())
         feats[modality] = piv.to_numpy(dtype=float)
         names[modality] = [f"{modality}_{c}" for c in piv.columns]
+
+    # Leak guard: the defining glycemic labs must never reach the feature matrix.
+    leaked = [n for ns in names.values() for n in ns
+              if n.split("_", 1)[-1] in DIABETES_EHR_DENYLIST]
+    if leaked:
+        raise RuntimeError(f"diabetes target leak: defining labs present as features: {leaked}")
 
     y = np.array([y_map[s] for s in index], dtype=int)
     return BenchTask(

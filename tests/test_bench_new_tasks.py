@@ -44,6 +44,17 @@ class CGMacrosTaskTest(unittest.TestCase):
         self.assertTrue({"cgm", "wearable_phys", "ehr"}.issubset(set(d.modalities)))
         self.assertEqual(set(d.y.tolist()) <= {0, 1}, True)
 
+    def test_diabetes_task_has_no_target_leak(self):
+        # The label is int(HbA1c >= 6.5); the defining glycemic labs must never appear
+        # as features (regression guard for the B2a leak).
+        from dvxr.bench.tasks import DIABETES_EHR_DENYLIST
+        d = cgmacros_diabetes_task()
+        feature_channels = {
+            n.split("_", 1)[-1] for names in d.feature_names.values() for n in names
+        }
+        self.assertTrue(feature_channels.isdisjoint(DIABETES_EHR_DENYLIST))
+        self.assertNotIn("ehr_hba1c", [n for ns in d.feature_names.values() for n in ns])
+
 
 def _deap_present() -> bool:
     # DEAP may be symlinked into data/real/deap; ** does not traverse dir symlinks,

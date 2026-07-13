@@ -74,7 +74,8 @@ than seven suspicious 0.99s.
 | # | finding | status |
 |---|---|---|
 | B1 | encoder/fusion never fed the heads | **Fixed** — `rep:fused` = trained encoder+VQ+fusion latent → shared head; `cacmf_e2e` also reported (own head). |
-| B2 | 6/7 labels were circular median-splits | **Fixed** — only real external labels (Non-EEG annotations, real future glucose, MIMIC mortality); proxies excluded from the benchmark path. |
+| B2 | 6/7 labels were circular median-splits | **Fixed** — only real external labels (Non-EEG annotations, real future glucose, MIMIC mortality, DEAP self-report, CGMacros A1c strata); proxies excluded from the benchmark path. |
+| B2a | `cgmacros_diabetes` feature/target leak | **Fixed** — the label is a real ADA threshold (`int(HbA1c ≥ 6.5)`), *not* a median-split, so it was not a B2 violation — but the defining glycemic labs (`hba1c`, `fasting_glucose`, `fasting_insulin`) were still emitted as `ehr` features, handing the model its own label. Now excluded via `DIABETES_EHR_DENYLIST` (`bench/tasks.py`) with an assertion guard. Effect: XGBoost floor AUROC 0.98→0.80 and `single:ehr` 0.89→0.58 (near chance), confirming the prior EHR "signal" was the leaked label. The honest task predicts A1c-defined status from CGM glucose dynamics + non-defining covariates; fusion still loses (single:cgm is the strongest opponent). |
 | B3 | label fabrication (class-flip, subject-dup) | **Fixed** — `assert_no_fabrication()`; the bench path never calls those helpers. |
 | B4 | synthetic-fixture 0.99s as the story | **Replaced** — headline is now real held-out numbers; fixtures are validation-only. |
 | M1 | single split, no CIs/significance | **Fixed** — 5×5 grouped CV, bootstrap CIs, paired Wilcoxon, Holm, Cliff's δ. |
