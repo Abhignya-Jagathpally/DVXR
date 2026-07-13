@@ -31,21 +31,27 @@ raw files ─▶ ingest/validate (13-col canonical schema) ─▶ per-modality f
    └─ LLM INSIGHT (explains, never predicts; offline-safe)      (dvxr/llm/)
 ```
 
-**Real foundation-model weights** (verified, CPU-runnable; see `dvxr.config.FOUNDATION_MODELS`).
-Where the POW's named model has no usable open weights, a verified substitute is wired
-(the original is recorded), and an always-runnable baseline keeps the offline test suite green:
+**Foundation-model weights — what actually loads** (verified on CPU; see
+`dvxr.config.FOUNDATION_MODELS`). The config *names* a POW-aligned primary per modality, but
+only some primaries have a real loader wired here; the rest degrade to an always-runnable
+baseline behind capability checks. The **"Runs here"** column is the ground truth (probe:
+`make_primary_backend(modality, cfg)`), not the aspiration:
 
-| Modality | Primary (real weights) | Fallback | Baseline |
+| Modality | Configured primary | Runs here (CPU, no extra deps) | Notes |
 |---|---|---|---|
-| EEG | LaBraM `braindecode/labram-pretrained` | EEGPT | band-power + VQ encoder |
-| Wearable | MOMENT `AutonLab/MOMENT-1-large` | TimesFM | neural encoder / PCA |
-| CGM | CGM-JEPA `CRUISEResearchGroup/CGM-JEPA` | Chronos-Bolt | conformal Ridge |
-| EHR | CEHR-BERT-style (train-local) | Bio_ClinicalBERT | tokenized-code timeline |
-| Omics | Geneformer `ctheodoris/Geneformer` | — | omics features |
-| Insight LLM | Anthropic Claude API | Qwen2.5-7B (local) | deterministic template |
+| Wearable | MOMENT `AutonLab/MOMENT-1-large` | ✅ **MOMENT real weights** | Loaded via `momentfm`; fed summary-stat pseudo-series (ceiling C2). |
+| EHR | CEHR-BERT-style (train-local) | ✅ **Bio_ClinicalBERT real weights** | Loaded via `transformers`; fed pseudo-text of summary stats. |
+| Omics | Geneformer `ctheodoris/Geneformer` | ✅ **Geneformer real weights** | Loaded via `transformers`. |
+| EEG | LaBraM `braindecode/labram-pretrained` | ⚠️ **band-power + VQ baseline** | LaBraM is **not wired** — there is no `braindecode` loader, so `make_primary_backend("eeg")` returns `None`. Wiring it needs `braindecode[hug]` **and** a raw-signal path (LaBraM cannot consume the summary-stat table). |
+| CGM | CGM-JEPA `CRUISEResearchGroup/CGM-JEPA` | ⚠️ **conformal Ridge baseline** | CGM-JEPA has no HF-text-loadable weights; the primary returns `None` and the baseline runs. |
+| Insight LLM | Anthropic Claude API / Qwen2.5 (local) | template / Qwen | **Insight only — explains, never predicts.** |
 
-Real weights are the primary path (`config.use_real_weights=True`); they degrade to the
-baseline behind capability checks, so **the whole pipeline runs with no network and no GPU**.
+So real pretrained weights are live for **wearable, EHR, and omics**; **EEG and CGM run the
+baseline** (honestly labeled — not faked). `config.use_real_weights=True` is the intent, but
+capability checks mean **the whole pipeline runs with no network and no GPU**. The BCI/EEG
+modality — central to the proposal — currently rides the band-power + VQ baseline; a real EEG
+foundation model (LaBraM/EEGPT) is future work gated on the raw-signal path (see
+`BENCHMARK_FINDINGS.md` finding C2).
 
 ### Run CACMF (one command, offline/CPU/deterministic)
 

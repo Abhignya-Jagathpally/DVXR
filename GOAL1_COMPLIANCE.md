@@ -135,7 +135,12 @@ importable via re-export shims. Run everything with `python3 scripts/run_mmf_ful
 ## CACMF honest limitations
 - Ablation uses a frozen-encoder linear-probe protocol on synthetic fixtures — it
   validates the harness, not scientific performance; real metrics need real labeled data.
-- `EEG-X`, `GluFormer`, `Med-BERT`, and `PH-LLM` have **no usable open weights**; verified
-  real substitutes are wired (LaBraM, MOMENT/CGM-JEPA, Bio_ClinicalBERT, Claude API) and the
-  originals recorded in `dvxr.config.FOUNDATION_MODELS`.
+- `EEG-X`, `GluFormer`, `Med-BERT`, and `PH-LLM` have **no usable open weights**. Verified
+  real substitutes are **named** in `dvxr.config.FOUNDATION_MODELS`, but only some have a
+  loader wired here: **MOMENT (wearable), Bio_ClinicalBERT (EHR), and Geneformer (omics) load
+  real weights**; **LaBraM (EEG) and CGM-JEPA (CGM) are NOT wired** — there is no
+  `braindecode` loader and CGM-JEPA has no HF-text-loadable weights, so
+  `make_primary_backend` returns `None` for both and the band-power+VQ / conformal-Ridge
+  baselines run instead (see the README "Runs here" table and finding C2). Wiring LaBraM
+  needs `braindecode[hug]` plus a raw-signal path.
 - Paper prose is placeholder TODO; only the result tables are auto-generated.

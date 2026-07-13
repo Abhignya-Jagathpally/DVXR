@@ -52,7 +52,10 @@ FOUNDATION_MODELS: Dict[str, FoundationModel] = {
         "eeg", "braindecode/labram-pretrained", "braindecode",
         "figshare:eegpt_mcae_58chs_4s_large4E.ckpt", "repo",
         "bandpower+per-channel-stats -> VQBiosignalEncoder", "BSD-3", "open",
-        "EEG-X (→LaBraM)", "EEG-X repo 404/unreleased; LaBraM public, EEGPT fallback"),
+        "EEG-X (→LaBraM)", "EEG-X repo 404/unreleased; LaBraM public, EEGPT fallback. "
+        "NOT WIRED AT RUNTIME: no braindecode loader in make_primary_backend, so this "
+        "returns None and the bandpower+VQ baseline runs. Wiring needs braindecode[hug] "
+        "+ a raw-signal path (LaBraM cannot consume the summary-stat table)."),
     "wearable_phys": FoundationModel(
         "wearable_phys", "AutonLab/MOMENT-1-large", "momentfm",
         "google/timesfm-2.0-500m-pytorch", "transformers",
@@ -62,7 +65,9 @@ FOUNDATION_MODELS: Dict[str, FoundationModel] = {
         "cgm", "CRUISEResearchGroup/CGM-JEPA", "transformers",
         "amazon/chronos-bolt-small", "chronos",
         "conformalized Ridge forecaster + latent summary", "MIT", "open",
-        "CGM-JEPA (GluFormer had no weights)", "CGM-JEPA now public; Chronos-Bolt fallback"),
+        "CGM-JEPA (GluFormer had no weights)", "CGM-JEPA now public; Chronos-Bolt fallback. "
+        "NOT WIRED AT RUNTIME: no HF-text-loadable weights for the transformers loader, so "
+        "this returns None and the conformal-Ridge baseline runs."),
     "ehr": FoundationModel(
         "ehr", "local:cehrbert_style", "local",
         "emilyalsentzer/Bio_ClinicalBERT", "transformers",
