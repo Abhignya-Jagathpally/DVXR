@@ -19,3 +19,10 @@ outputs/*events*.csv
 
 # scratch: BCI pipeline run on the committed sample (smoke test)
 outputs/bci/metrics_sample.json
+
+# Vendored agent skills library — not part of the deliverable
+.claude/skills/
+.claude/settings.local.json
+
+# Standalone autoresearch experiment — not part of the deliverable
+third_party/

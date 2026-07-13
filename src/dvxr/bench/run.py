@@ -23,8 +23,9 @@ UNSTABLE_NAN_FRAC = 0.20
 # Headline protocol label (M3): the current headline is single-level repeated CV;
 # selection of the best opponent and RER evaluation share the folds. A nested-CV /
 # frozen-test headline is DEFERRED (see CHANGES.md) — this string keeps that honest.
-PROTOCOL_LABEL = "repeated subject/patient-held-out 5x5 CV (single-level; " \
-                 "opponent selection and RER share folds — nested CV deferred)"
+PROTOCOL_LABEL = "repeated subject/patient-held-out grouped CV (single-level; " \
+                 "opponent selection and RER share folds — nested CV deferred; " \
+                 "exact repeats×folds in the Run params line above)"
 
 from dvxr.bench.baselines import baseline_configs, error_metric
 from dvxr.bench.protocol import RelativityResult, holm_correction, relativity, repeated_group_folds
