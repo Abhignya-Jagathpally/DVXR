@@ -50,7 +50,11 @@ CLINICAL_TASKS: List[ClinicalTask] = [
             "(low ppg/heart_rate standard deviation). Windows where eda_mean "
             "> median(eda_mean) AND hrv_proxy < median(hrv_proxy) are labelled "
             "high_anxiety; otherwise low_anxiety. Threshold is set at the median "
-            "of each feature to guarantee both classes."
+            "of each feature to guarantee both classes. SCAFFOLDING ONLY (circular "
+            "median-split, no ground truth). For an evaluative anxiety result use the "
+            "real-labeled 'deap_anxiety' benchmark task (bench/tasks.py), which derives "
+            "the label from DEAP self-report SAM ratings (high-arousal + low-valence "
+            "quadrant) rather than from the signal it predicts."
         ),
         source_modalities=["eda", "ppg"],
     ),
@@ -64,7 +68,10 @@ CLINICAL_TASKS: List[ClinicalTask] = [
             "(motion_accel_mag_energy) < median AND ppg HRV proxy "
             "(heart_rate_std) < median are labelled high_depression_risk; "
             "otherwise low_depression_risk. Median thresholding guarantees "
-            "both classes appear."
+            "both classes appear. SCAFFOLDING ONLY — no labeled depression cohort is "
+            "present on disk or fetchable via scripts/fetch_data.py (DAIC-WOZ requires "
+            "credentialed application), so this proxy has no ground-truth evaluation and "
+            "must not be cited as a predictive result."
         ),
         source_modalities=["motion", "ppg"],
     ),
@@ -77,7 +84,10 @@ CLINICAL_TASKS: List[ClinicalTask] = [
             "band-power ratio. For each window and available EEG channel, the "
             "ratio beta_power / (alpha_power + 1e-9) is computed. Windows where "
             "the mean ratio across channels exceeds the median are labelled "
-            "high_workload; otherwise low_workload."
+            "high_workload; otherwise low_workload. SCAFFOLDING ONLY — no "
+            "workload-labeled cohort (e.g. n-back / MATB task-load annotations) is "
+            "present on disk or fetchable, so this proxy has no ground-truth evaluation "
+            "and must not be cited as a predictive result."
         ),
         source_modalities=["eeg"],
     ),

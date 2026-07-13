@@ -16,6 +16,7 @@ DEAP = ROOT / "data" / "real" / "deap"
 from dvxr.bench.tasks import (  # noqa: E402
     cgmacros_diabetes_task,
     cgmacros_glucose_task,
+    deap_anxiety_task,
     deap_arousal_task,
     wesad_stress_task,
 )
@@ -74,6 +75,25 @@ class DeapTaskTest(unittest.TestCase):
         self.assertGreater(t.n, 0)
         self.assertIn("eeg", t.modalities)
         self.assertEqual(set(t.y.tolist()) <= {0, 1}, True)
+
+    def test_anxiety_task_real_label(self):
+        # Real self-report label (high-arousal + low-valence quadrant), not a proxy.
+        t = deap_anxiety_task(subjects=3, max_trials=None)
+        self.assertEqual(t.kind, "classification")
+        self.assertGreater(t.n, 0)
+        self.assertIn("eeg", t.modalities)
+        self.assertEqual(set(t.y.tolist()) <= {0, 1}, True)
+        # both classes must be present so the task is scorable
+        self.assertEqual(set(t.y.tolist()), {0, 1})
+
+    def test_anxiety_label_derivation(self):
+        from dvxr.loaders import _deap_affect_label
+        # high arousal + low valence -> anxiety positive; other quadrants negative
+        self.assertEqual(_deap_affect_label(3.0, 7.0, "anxiety"), ("anxiety", "high_anxiety"))
+        self.assertEqual(_deap_affect_label(7.0, 7.0, "anxiety"), ("anxiety", "low_anxiety"))
+        self.assertEqual(_deap_affect_label(3.0, 2.0, "anxiety"), ("anxiety", "low_anxiety"))
+        # arousal scheme is unchanged
+        self.assertEqual(_deap_affect_label(1.0, 8.0, "arousal"), ("arousal", "high_arousal"))
 
 
 if __name__ == "__main__":

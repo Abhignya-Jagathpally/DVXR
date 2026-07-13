@@ -579,8 +579,29 @@ def load_wesad_dataset(
     return validate_events(pd.concat(frames, ignore_index=True))
 
 
-def load_deap_preprocessed_pickle(path: str | Path, max_trials: int | None = 3) -> pd.DataFrame:
-    """Load one DEAP preprocessed subject file into the canonical schema."""
+def _deap_affect_label(valence: float, arousal: float, scheme: str = "arousal") -> tuple[str, str]:
+    """Derive a REAL self-report affect label from DEAP SAM ratings (1-9 scale).
+
+    ``scheme="arousal"`` — the original binary arousal split (high vs low, threshold 5).
+    ``scheme="anxiety"`` — negative-affect / anxiety operationalized as the high-arousal +
+    low-valence quadrant of Russell's affective circumplex (arousal >= 5 AND valence < 5),
+    which is where anxiety/fear/tension sit. Both labels come from the participant's own SAM
+    ratings, so neither is a proxy/median-split — they are genuine ground truth.
+    """
+    if scheme == "anxiety":
+        positive = arousal >= 5 and valence < 5
+        return "anxiety", "high_anxiety" if positive else "low_anxiety"
+    return "arousal", "high_arousal" if arousal >= 5 else "low_arousal"
+
+
+def load_deap_preprocessed_pickle(path: str | Path, max_trials: int | None = 3,
+                                  label_scheme: str = "arousal") -> pd.DataFrame:
+    """Load one DEAP preprocessed subject file into the canonical schema.
+
+    ``label_scheme`` selects which real self-report label to attach: ``"arousal"`` (high vs
+    low arousal) or ``"anxiety"`` (high-arousal + low-valence quadrant). Both draw on the
+    participant's SAM valence/arousal ratings — see ``_deap_affect_label``.
+    """
     path = Path(path)
     with path.open("rb") as handle:
         payload = pickle.load(handle, encoding="latin1")
@@ -596,7 +617,7 @@ def load_deap_preprocessed_pickle(path: str | Path, max_trials: int | None = 3) 
 
     for trial_idx in range(trial_count):
         valence, arousal = labels[trial_idx, 0], labels[trial_idx, 1]
-        label = "high_arousal" if arousal >= 5 else "low_arousal"
+        label_name, label = _deap_affect_label(valence, arousal, label_scheme)
         trial_start = start + pd.Timedelta(minutes=trial_idx * 2)
 
         for channel_idx, channel in enumerate(channel_names):
@@ -617,7 +638,7 @@ def load_deap_preprocessed_pickle(path: str | Path, max_trials: int | None = 3) 
                         "unit": "uV" if modality == "eeg" else "a.u.",
                         "sampling_rate_hz": rate,
                         "quality_flag": "ok",
-                        "label_name": "arousal",
+                        "label_name": label_name,
                         "label_value": label,
                     }
                 )
@@ -757,12 +778,17 @@ def load_deap_dataset(
     data_dir: str | Path,
     subjects: int | None = None,
     max_trials: int | None = 3,
+    label_scheme: str = "arousal",
 ) -> pd.DataFrame:
     """Load DEAP into the canonical schema, auto-detecting preprocessed vs raw layout.
 
     Prefers the preprocessed ``data_preprocessed_python/sXX.dat`` pickles (one file per
     participant, includes valence/arousal labels). Falls back to raw ``.bdf`` recordings
     (joined to the participant_ratings sheet) when no ``.dat`` files are present.
+
+    ``label_scheme`` (``"arousal"`` | ``"anxiety"``) selects which real self-report label to
+    attach; only the preprocessed path carries valence, so ``"anxiety"`` requires the ``.dat``
+    set (the raw ``.bdf`` ratings sheet has arousal only).
 
     Note: the raw Kaggle set (``sayuksh/deap-datasetraw-data``) ships ``.bdf`` signals
     ONLY — no ratings file — so it loads unlabeled and cannot drive the supervised
@@ -777,9 +803,15 @@ def load_deap_dataset(
     if dats:
         if subjects is not None:
             dats = dats[:subjects]
-        frames = [load_deap_preprocessed_pickle(p, max_trials=max_trials) for p in dats]
+        frames = [load_deap_preprocessed_pickle(p, max_trials=max_trials,
+                                                label_scheme=label_scheme) for p in dats]
         return validate_events(pd.concat(frames, ignore_index=True))
 
+    if label_scheme == "anxiety":
+        raise ValueError(
+            "label_scheme='anxiety' needs DEAP valence, which only the preprocessed "
+            "(.dat) set carries; the raw .bdf ratings sheet has arousal only."
+        )
     bdfs = sorted(data_dir.glob("**/*.bdf"))
     if not bdfs:
         raise ValueError(f"No DEAP .dat or .bdf files found under {data_dir}")

@@ -50,7 +50,17 @@ and affective/stress systems. `scripts/compare_sota_models.py` writes the scored
 ⚠️ Where a dataset has no ground-truth label, the task uses a **transparent, documented
 proxy** (see `clinical_tasks.clinical_tasks_table()` — e.g. cognitive workload = EEG
 beta/alpha ratio; glucose instability = CGM coefficient of variation; clinical risk =
-abnormal-lab fraction). Replacing proxies with labeled cohorts is the next data step.
+abnormal-lab fraction). These proxies are **scaffolding only** (circular median-splits with
+no ground truth) and must not be cited as predictive results. Which mental-health tasks are
+scaffolding vs. real:
+
+| Task | Label status |
+|---|---|
+| **anxiety** | Real label now available — the `deap_anxiety` benchmark task uses DEAP self-report SAM ratings (high-arousal + low-valence quadrant). The `clinical_tasks.anxiety_prediction` median-split remains scaffolding; prefer `deap_anxiety` for any claim. |
+| **depression** | Scaffolding only — no labeled cohort on disk or in `scripts/fetch_data.py` (DAIC-WOZ needs credentialed application). No evaluative result. |
+| **cognitive workload** | Scaffolding only — no workload-labeled cohort (n-back / MATB) present or fetchable. No evaluative result. |
+
+Replacing the remaining proxies with labeled cohorts is the next data step.
 
 ⚠️ "Fine-tune the selected models": the neural encoder is **trained** (self-supervised
 masked-feature reconstruction), not fine-tuned from published EEG-X/BIOT weights — those

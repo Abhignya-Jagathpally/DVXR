@@ -313,6 +313,36 @@ def deap_arousal_task(data_dir: str = "data/real/deap", subjects: int = 8,
     )
 
 
+# ------------------------------------------------------------- DEAP anxiety
+def deap_anxiety_task(data_dir: str = "data/real/deap", subjects: int = 8,
+                      max_trials: Optional[int] = None, window_seconds: int = 8) -> BenchTask:
+    """DEAP EEG+peripheral anxiety / negative affect — REAL self-report label.
+
+    Anxiety is operationalized as the high-arousal + low-valence quadrant of the affective
+    circumplex (arousal >= 5 AND valence < 5), computed from the participant's own SAM
+    ratings — genuine ground truth, not a proxy/median-split. This is the mental-health
+    task grounded in real labels (depression and cognitive workload have no labeled cohort
+    on disk and remain documented proxies in ``clinical_tasks.py``). Same EEG band-power +
+    peripheral-physiology windowing and subject-held-out CV as ``deap_arousal_task``.
+    """
+    assert_no_fabrication()
+    events = load_deap_dataset(data_dir, subjects=subjects, max_trials=max_trials,
+                               label_scheme="anxiety")
+    win = build_signal_windows(events, window_seconds=window_seconds,
+                               step_seconds=window_seconds, label_name="anxiety")
+    win = win[win["target"].astype(str).str.len() > 0].reset_index(drop=True)
+    y = (win["target"].astype(str) == "high_anxiety").astype(int).to_numpy()
+    groups = _split_by_modality(win)
+    feats = {m: win[cols].to_numpy(dtype=float) for m, cols in groups.items()}
+    return BenchTask(
+        name="deap_anxiety", kind="classification", features=feats,
+        feature_names=groups, y=y, subject_ids=win["subject_id"].to_numpy(),
+        metric="1-AUROC", baseline_hint="majority", raw_windows=win,
+        extra={"events": events, "window_seconds": window_seconds,
+               "label": "high-arousal+low-valence quadrant (real SAM ratings)"},
+    )
+
+
 def sleep_edf_stage_task(n_recordings: int = 20, target: str = "rem",
                          max_epochs_per_rec: Optional[int] = 400) -> BenchTask:
     """Sleep-EDF Expanded multimodal sleep staging — REAL expert hypnogram labels.
@@ -342,6 +372,7 @@ TASK_BUILDERS = {
     "cgmacros_glucose": cgmacros_glucose_task,
     "cgmacros_diabetes": cgmacros_diabetes_task,
     "deap_arousal": deap_arousal_task,
+    "deap_anxiety": deap_anxiety_task,
     "sleep_edf_rem": lambda: sleep_edf_stage_task(target="rem"),
     "sleep_edf_deep": lambda: sleep_edf_stage_task(target="deep"),
     "sleep_edf_wake": lambda: sleep_edf_stage_task(target="wake_sleep"),
