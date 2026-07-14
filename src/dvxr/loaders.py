@@ -861,3 +861,78 @@ def _deap_channel_names(width: int) -> list[str]:
     ]
     peripheral = [f"peripheral_{i}" for i in range(max(0, width - len(eeg)))]
     return (eeg + peripheral)[:width]
+
+
+def load_eegmat_dataset(
+    data_dir: str | Path = "data/real/eegmat",
+    subjects: int | None = None,
+    target_rate_hz: float = 64.0,
+    max_seconds: float = 60.0,
+) -> pd.DataFrame:
+    """Load the PhysioNet EEG-during-Mental-Arithmetic cohort (``eegmat``) into canonical events.
+
+    REAL cognitive-workload label (not a proxy): every subject has a resting-baseline
+    recording (``_1`` → ``low_workload``) and a serial-subtraction mental-arithmetic recording
+    (``_2`` → ``high_workload``). 19-channel 10-20 EEG + ECG @ 500 Hz; the EEG is band-passed
+    (0.5-45 Hz) and average-referenced, and every channel is downsampled to ``target_rate_hz``
+    (64 Hz keeps δ/θ/α/β intact for band-power). The ~3-min rest is truncated to its **last**
+    ``max_seconds`` to match the ~60 s task, so neither class dominates by sheer duration.
+    Each subject contributes two sessions and stays a single CV group.
+    Source: https://physionet.org/content/eegmat/1.0.0/ (Zyma et al., 2019).
+    """
+    import mne
+
+    data_dir = Path(data_dir)
+    subs = sorted({p.stem.rsplit("_", 1)[0] for p in data_dir.glob("Subject*_*.edf")})
+    if subjects:
+        subs = subs[:subjects]
+    start = pd.Timestamp("2026-01-01T00:00:00Z")
+    parts: list[pd.DataFrame] = []
+    for sid in subs:
+        for cond, label in (("1", "low_workload"), ("2", "high_workload")):
+            edf = data_dir / f"{sid}_{cond}.edf"
+            if not edf.exists():
+                continue
+            raw = mne.io.read_raw_edf(edf, preload=True, verbose="ERROR")
+            # canonical names: strip the 'EEG '/'ECG ' prefixes; drop the linked-ear reference.
+            raw.rename_channels({ch: ch.split(" ", 1)[1] if " " in ch else ch
+                                 for ch in raw.ch_names})
+            if "A2-A1" in raw.ch_names:
+                raw.drop_channels(["A2-A1"])
+            eeg_names = [c for c in raw.ch_names if c.upper() != "ECG"]
+            ecg_names = [c for c in raw.ch_names if c.upper() == "ECG"]
+            raw.set_channel_types({**{c: "eeg" for c in eeg_names},
+                                   **{c: "ecg" for c in ecg_names}}, verbose="ERROR")
+            raw.filter(l_freq=0.5, h_freq=45.0, picks="eeg", verbose="ERROR")
+            raw.set_eeg_reference("average", projection=False, verbose="ERROR")
+            if target_rate_hz and raw.info["sfreq"] > target_rate_hz:
+                raw.resample(target_rate_hz, verbose="ERROR")
+            rate = float(raw.info["sfreq"])
+            data = raw.get_data()  # Volts (EEG filtered + avg-referenced)
+            n = data.shape[1]
+            keep = int(max_seconds * rate) if max_seconds else n
+            # rest: last `keep`; task: first `keep` (both ≈ max_seconds long).
+            sl = slice(max(0, n - keep), n) if cond == "1" else slice(0, min(n, keep))
+            eeg_set = set(eeg_names)
+            for ci, ch in enumerate(raw.ch_names):
+                series = data[ci, sl]
+                is_eeg = ch in eeg_set
+                parts.append(pd.DataFrame({
+                    "subject_id": sid,
+                    "session_id": f"eegmat_{cond}",
+                    "timestamp_utc": start + pd.to_timedelta(np.arange(len(series)) / rate, unit="s"),
+                    "source_system": "eegmat",
+                    "device": "neurocom_eeg",
+                    "modality": "eeg" if is_eeg else "physiology",
+                    "channel": ch if is_eeg else ch.lower(),
+                    "value": series * (1e6 if is_eeg else 1.0),  # EEG Volts -> uV
+                    "unit": "uV" if is_eeg else "a.u.",
+                    "sampling_rate_hz": rate,
+                    "quality_flag": "ok",
+                    "label_name": "cognitive_workload",
+                    "label_value": label,
+                }))
+    if not parts:
+        raise FileNotFoundError(
+            f"No eegmat EDFs under {data_dir}. Fetch with: python3 scripts/fetch_data.py eegmat")
+    return validate_events(pd.concat(parts, ignore_index=True))

@@ -84,10 +84,11 @@ CLINICAL_TASKS: List[ClinicalTask] = [
             "band-power ratio. For each window and available EEG channel, the "
             "ratio beta_power / (alpha_power + 1e-9) is computed. Windows where "
             "the mean ratio across channels exceeds the median are labelled "
-            "high_workload; otherwise low_workload. SCAFFOLDING ONLY — no "
-            "workload-labeled cohort (e.g. n-back / MATB task-load annotations) is "
-            "present on disk or fetchable, so this proxy has no ground-truth evaluation "
-            "and must not be cited as a predictive result."
+            "high_workload; otherwise low_workload. SCAFFOLDING ONLY (median-split "
+            "proxy) — do not cite as a predictive result. For a REAL workload-labeled "
+            "evaluation use the ``eegmat_workload`` benchmark task (PhysioNet EEG "
+            "mental-arithmetic: resting baseline vs serial-subtraction), which replaces "
+            "this proxy with ground-truth rest-vs-task labels."
         ),
         source_modalities=["eeg"],
     ),

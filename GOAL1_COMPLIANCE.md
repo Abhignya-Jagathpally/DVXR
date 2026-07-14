@@ -58,9 +58,10 @@ scaffolding vs. real:
 |---|---|
 | **anxiety** | Real label now available — the `deap_anxiety` benchmark task uses DEAP self-report SAM ratings (high-arousal + low-valence quadrant). The `clinical_tasks.anxiety_prediction` median-split remains scaffolding; prefer `deap_anxiety` for any claim. |
 | **depression** | Scaffolding only — no labeled cohort on disk or in `scripts/fetch_data.py` (DAIC-WOZ needs credentialed application). No evaluative result. |
-| **cognitive workload** | Scaffolding only — no workload-labeled cohort (n-back / MATB) present or fetchable. No evaluative result. |
+| **cognitive workload** | Real label now available — the `eegmat_workload` benchmark task uses the PhysioNet EEG mental-arithmetic cohort (resting baseline vs serial-subtraction; `scripts/fetch_data.py eegmat`, `load_eegmat_dataset`, 19-ch EEG + ECG @ 64 Hz). The `clinical_tasks.cognitive_workload` beta/alpha median-split remains scaffolding; prefer `eegmat_workload`. Evaluated result: real-decodable (best single modality ECG ≈ 0.74 AUROC), learned fusion still loses. |
+| **depression** | Scaffolding only — no labeled cohort on disk or in `scripts/fetch_data.py` (DAIC-WOZ needs credentialed application). No evaluative result. |
 
-Replacing the remaining proxies with labeled cohorts is the next data step.
+Only **depression** remains a proxy; anxiety and cognitive workload now have real labeled cohorts.
 
 ⚠️ "Fine-tune the selected models": the neural encoder is **trained** (self-supervised
 masked-feature reconstruction), not fine-tuned from published EEG-X/BIOT weights — those
@@ -141,6 +142,14 @@ importable via re-export shims. Run everything with `python3 scripts/run_mmf_ful
   real weights**; **LaBraM (EEG) and CGM-JEPA (CGM) are NOT wired** — there is no
   `braindecode` loader and CGM-JEPA has no HF-text-loadable weights, so
   `make_primary_backend` returns `None` for both and the band-power+VQ / conformal-Ridge
-  baselines run instead (see the README "Runs here" table and finding C2). Wiring LaBraM
-  needs `braindecode[hug]` plus a raw-signal path.
+  baselines run instead (see the README "Runs here" table and finding C2).
+- **LaBraM wiring — attempted, blocked by an env incompatibility (documented, not hidden).**
+  `braindecode` installs but **cannot import** under the pinned `torch==2.12.0`: it hard-imports
+  `torchaudio.functional`, and there is **no torchaudio build for torch 2.12** (PyPI/pytorch-cpu
+  cap at torchaudio 2.11, which needs torch 2.11 and ABI-fails against 2.12). Downgrading torch
+  would destabilize MOMENT/CACMF, which run on 2.12. So LaBraM is **not runnable in this env** and
+  the band-power+VQ baseline stands as the truthful EEG path (config == what runs). Wiring LaBraM
+  is future work gated on a torch/torchaudio-compatible env **plus** the raw-signal path (Slice H)
+  — LaBraM cannot consume the summary-stat table. The one HF weights repo found
+  (`eeg-telecom-paris/labram-base-official`) is unverified.
 - Paper prose is placeholder TODO; only the result tables are auto-generated.

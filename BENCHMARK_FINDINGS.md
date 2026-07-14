@@ -12,11 +12,13 @@ Clinical profile: `--profile clinical` (stress/glucose/mortality). Legacy defaul
 
 ## Mental-health concentration: fusion does NOT win (and DEAP is near-chance)
 
-The `mh` profile is the real-label mental-health emphasis: stress (peripheral physiology)
-plus the DEAP EEG+peripheral **affective/BCI** tasks with genuine self-report (SAM) labels —
-`deap_anxiety` (high-arousal + low-valence quadrant) and `deap_arousal`. Depression and
-cognitive workload have **no labeled cohort on disk** and remain documented proxies in
-`clinical_tasks.py` (not benchmarked; not cited as predictive results). 5×5 subject-held-out CV:
+The `mh` profile is the real-label mental-health emphasis: stress (peripheral physiology),
+the DEAP EEG+peripheral **affective/BCI** tasks with genuine self-report (SAM) labels —
+`deap_anxiety` (high-arousal + low-valence quadrant) and `deap_arousal` — and `eegmat_workload`,
+a **real cognitive-workload** cohort (PhysioNet EEG mental-arithmetic: resting baseline vs
+serial-subtraction, 19-ch EEG + ECG @ 64 Hz) that replaces the old beta/alpha proxy. Only
+**depression** now lacks a labeled cohort on disk (DAIC-WOZ is credentialed) and remains a
+documented proxy in `clinical_tasks.py` (not benchmarked; not cited). 5×5 subject-held-out CV:
 
 | task | metric | best baseline | base err | fused err | RER% | 95% CI | meets ≥50%? |
 |---|---|---|---|---|---|---|---|
@@ -24,6 +26,7 @@ cognitive workload have **no labeled cohort on disk** and remain documented prox
 | wesad_stress | 1−AUROC | xgboost | 0.045 | 0.129 | **−185.9%** | −441.6 … −80.5 | **No** |
 | deap_anxiety | 1−AUROC | single:physiology | 0.466 | 0.469 | **−0.6%** | −6.4 … 5.4 | **No** |
 | deap_arousal | 1−AUROC | single:physiology | 0.452 | 0.458 | **−1.2%** | −7.0 … 4.7 | **No** |
+| eegmat_workload | 1−AUROC | single:physiology (ECG) | 0.260 | 0.365 | **−40.4%** | −56.7 … −26.8 | **No** |
 
 Two honest observations. (1) The learned CACMF fusion never beats the strongest floor on
 any MH task — same negative result as the clinical profile. (2) On DEAP, **every** config —
@@ -40,11 +43,25 @@ whether waveform structure, not summary stats, carries the affective signal. Res
 summary-stat `single:physiology` floor (0.466 / 0.452). So raw signal does **not** rescue DEAP
 here. The reason is concrete and disclosed: DEAP's canonical events are the loader's *decimated*
 preprocessed signal (~8 Hz effective), which aliases away the EEG oscillations (α/β) that carry
-affect — so the raw window is a coarse waveform, not the 128 Hz signal. The lever is real (it
-beats the GBM floor on Sleep-EDF's full-rate raw), but it needs signal fidelity DEAP's decimated
-events don't provide. That is exactly why the **cognitive-workload** task uses the eegmat cohort
-loaded at a proper 64 Hz (δ/θ/α/β intact) — the fidelity DEAP lacks. Full-rate raw DEAP is
-future work.
+affect — so the raw window is a coarse waveform, not the 128 Hz signal.
+
+**The fidelity contrast is the point.** On `eegmat_workload`, loaded at a proper 64 Hz (δ/θ/α/β
+intact), the *same* `raw_cnn` reaches **AUROC ≈ 0.66** (1−AUROC 0.343) — far above its chance
+0.50 on decimated DEAP, on par with MOMENT-SOTA (0.338) and ahead of the fused CACMF (0.365),
+though still below the ECG floor (0.260). So the raw lever demonstrably extracts real biosignal
+**when the sampling supports it**; DEAP's decimation, not the method, is the ceiling there.
+Full-rate raw DEAP is future work.
+
+### Cognitive workload is real-decodable — and fusion still loses
+
+`eegmat_workload` is the honest replacement for the beta/alpha proxy, and unlike DEAP it carries
+clear signal: the best single modality — **ECG** (`single:physiology`, the cardiac response to
+mental arithmetic) — reaches **AUROC ≈ 0.74** (1−AUROC 0.260), and `raw_cnn` on the EEG+ECG
+waveform reaches AUROC ≈ 0.66. Yet the learned CACMF fusion (0.365) **loses to the single ECG
+modality by −40.4%** (CI −56.7…−26.8) — the same verdict as every other task: concatenative/
+single-modality baselines beat the learned cross-modal fusion. Physiologically sensible, too:
+autonomic (heart-rate) response to arithmetic load is a stronger, lower-variance workload signal
+than cross-subject EEG band-power.
 
 ## Headline (clinical profile): the fused model does NOT win
 

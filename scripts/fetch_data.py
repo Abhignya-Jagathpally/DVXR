@@ -28,6 +28,11 @@ WESAD_SIEGEN_URL = "https://uni-siegen.sciebo.de/s/HGdUkoNlW1Ub0Gx/download"
 # CGMacros multimodal CGM + diet + wearable dataset (PhysioNet, open CC-BY-NC-SA 4.0).
 CGMACROS_ZIP_URL = "https://physionet.org/content/cgmacros/get-zip/1.0.0/"
 
+# EEG-during-Mental-Arithmetic (eegmat, PhysioNet, Zyma et al. 2019). REAL cognitive-workload
+# label: SubjectNN_1.edf = resting baseline (low workload); SubjectNN_2.edf = serial subtraction
+# (high workload). 19-ch 10-20 EEG + ECG @ 500 Hz.
+EEGMAT_BASE = "https://physionet.org/files/eegmat/1.0.0"
+
 
 def _download(url: str, dest: Path) -> int:
     """Stream a URL to disk (urllib uses HTTP/1.1, avoiding the HTTP/2 stream errors some
@@ -87,6 +92,28 @@ def fetch_noneeg(subjects: int) -> Path:
         print(f"  Subject{subject}: {total / 1e3:.0f} KB")
     print(f"Fetched {fetched} subjects.")
     print(f"Non-EEG stress dataset -> {out}")
+    return out
+
+
+def fetch_eegmat() -> Path:
+    """Download the PhysioNet EEG mental-arithmetic cohort (real cognitive-workload labels)."""
+    out = REAL_DIR / "eegmat"
+    out.mkdir(parents=True, exist_ok=True)
+    records = urllib.request.urlopen(f"{EEGMAT_BASE}/RECORDS", timeout=60).read().decode().split()
+    edfs = [r for r in records if r.endswith(".edf")]
+    fetched = 0
+    for name in edfs:
+        dest = out / name
+        if dest.exists() and dest.stat().st_size > 1000:  # resume: skip already-present files
+            fetched += 1
+            continue
+        _download(f"{EEGMAT_BASE}/{name}", dest)
+        fetched += 1
+    try:  # subject-info.csv carries count-quality metadata (good/bad counter)
+        _download(f"{EEGMAT_BASE}/subject-info.csv", out / "subject-info.csv")
+    except urllib.error.HTTPError:
+        pass
+    print(f"Fetched {fetched}/{len(edfs)} eegmat recordings -> {out}")
     return out
 
 
@@ -207,6 +234,7 @@ def main() -> None:
         "source",
         choices=[
             "noneeg",
+            "eegmat",
             "mimic-demo",
             "shanghai-cgm",
             "wesad",
@@ -217,7 +245,7 @@ def main() -> None:
         ],
         help=(
             "'all-free' downloads every credential-free source "
-            "(noneeg + mimic-demo + shanghai-cgm + wesad + cgmacros)."
+            "(noneeg + eegmat + mimic-demo + shanghai-cgm + wesad + cgmacros)."
         ),
     )
     parser.add_argument("--subjects", type=int, default=4, help="Number of Non-EEG subjects to fetch.")
@@ -225,6 +253,8 @@ def main() -> None:
 
     if args.source in ("noneeg", "all-free"):
         fetch_noneeg(args.subjects)
+    if args.source in ("eegmat", "all-free"):
+        fetch_eegmat()
     if args.source in ("mimic-demo", "all-free"):
         fetch_mimic_demo()
     if args.source in ("shanghai-cgm", "all-free"):

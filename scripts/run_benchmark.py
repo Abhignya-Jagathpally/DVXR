@@ -32,7 +32,7 @@ from dvxr.bench.tasks import TASK_BUILDERS  # noqa: E402
 # documented proxies in clinical_tasks.py (not benchmarked here).
 TASK_PROFILES = {
     "clinical": ["stress", "glucose", "mortality"],
-    "mh": ["stress", "wesad_stress", "deap_anxiety", "deap_arousal"],
+    "mh": ["stress", "wesad_stress", "deap_anxiety", "deap_arousal", "eegmat_workload"],
 }
 
 

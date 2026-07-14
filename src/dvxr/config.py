@@ -53,9 +53,11 @@ FOUNDATION_MODELS: Dict[str, FoundationModel] = {
         "figshare:eegpt_mcae_58chs_4s_large4E.ckpt", "repo",
         "bandpower+per-channel-stats -> VQBiosignalEncoder", "BSD-3", "open",
         "EEG-X (→LaBraM)", "EEG-X repo 404/unreleased; LaBraM public, EEGPT fallback. "
-        "NOT WIRED AT RUNTIME: no braindecode loader in make_primary_backend, so this "
-        "returns None and the bandpower+VQ baseline runs. Wiring needs braindecode[hug] "
-        "+ a raw-signal path (LaBraM cannot consume the summary-stat table)."),
+        "NOT RUNNABLE IN THIS ENV: make_primary_backend has no braindecode loader AND "
+        "braindecode won't import under torch 2.12 (no compatible torchaudio; max 2.11). "
+        "So this returns None and the bandpower+VQ baseline runs — config == what runs. "
+        "Wiring needs a torch/torchaudio-compatible env + a raw-signal path (LaBraM cannot "
+        "consume the summary-stat table)."),
     "wearable_phys": FoundationModel(
         "wearable_phys", "AutonLab/MOMENT-1-large", "momentfm",
         "google/timesfm-2.0-500m-pytorch", "transformers",

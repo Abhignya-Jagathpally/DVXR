@@ -32,6 +32,7 @@ from dvxr.loaders import (
     load_cgmacros_bio,
     load_cgmacros_dataset,
     load_deap_dataset,
+    load_eegmat_dataset,
     load_mimic_demo_ehr,
     load_noneeg_dataset,
     load_shanghai_cgm_dataset,
@@ -298,22 +299,19 @@ _DEAP_RAW_NOTE = ("decimated preprocessed DEAP signal (~8 Hz effective); "
                   "raw waveform vs the summary-stat floor on the same signal")
 
 
-def _deap_affect_task(name: str, label_scheme: str, positive: str,
-                      data_dir: str, subjects: int, max_trials: Optional[int],
-                      window_seconds: int, extra: Optional[dict] = None) -> BenchTask:
-    """Shared builder for the DEAP EEG+peripheral affect tasks (arousal, anxiety).
+def _windowed_signal_task(name: str, events, label_name: str, positive: str,
+                          window_seconds: int, raw_note: str,
+                          extra: Optional[dict] = None) -> BenchTask:
+    """Shared builder for windowed EEG+peripheral classification tasks with a raw-signal path.
 
-    Both draw REAL self-report (SAM) labels and share the identical windowing, feature
-    extraction, raw-signal path, and subject-held-out CV — only ``label_scheme`` and the
-    positive-class name differ. ``label_scheme`` names both the loader scheme and the window
-    label column (see ``_deap_affect_label`` in loaders.py). Non-overlapping windows; one
-    ~60 s trial yields several windows while the subject remains the CV group.
+    Used by the DEAP affect tasks and the eegmat workload task: non-overlapping windows →
+    per-modality summary features (the floor's input) + aligned raw windows (``extra["raw"]``,
+    the ``raw_cnn`` lever) → subject-held-out ``BenchTask``. Only the pre-loaded ``events``,
+    the window label column, and the positive-class name differ across tasks.
     """
     assert_no_fabrication()
-    events = load_deap_dataset(data_dir, subjects=subjects, max_trials=max_trials,
-                               label_scheme=label_scheme)
     win = build_signal_windows(events, window_seconds=window_seconds,
-                               step_seconds=window_seconds, label_name=label_scheme)
+                               step_seconds=window_seconds, label_name=label_name)
     win = win[win["target"].astype(str).str.len() > 0].reset_index(drop=True)
     y = (win["target"].astype(str) == positive).astype(int).to_numpy()
     groups = _split_by_modality(win)
@@ -324,9 +322,23 @@ def _deap_affect_task(name: str, label_scheme: str, positive: str,
         feature_names=groups, y=y, subject_ids=win["subject_id"].to_numpy(),
         metric="1-AUROC", baseline_hint="majority", raw_windows=win,
         extra={"events": events, "window_seconds": window_seconds,
-               "raw": raw, "raw_channels": raw_ch, "raw_note": _DEAP_RAW_NOTE,
+               "raw": raw, "raw_channels": raw_ch, "raw_note": raw_note,
                **(extra or {})},
     )
+
+
+def _deap_affect_task(name: str, label_scheme: str, positive: str,
+                      data_dir: str, subjects: int, max_trials: Optional[int],
+                      window_seconds: int, extra: Optional[dict] = None) -> BenchTask:
+    """DEAP EEG+peripheral affect tasks (arousal, anxiety): REAL self-report (SAM) labels.
+
+    ``label_scheme`` names both the loader scheme and the window label column (see
+    ``_deap_affect_label`` in loaders.py); only it and the positive-class name differ.
+    """
+    events = load_deap_dataset(data_dir, subjects=subjects, max_trials=max_trials,
+                               label_scheme=label_scheme)
+    return _windowed_signal_task(name, events, label_scheme, positive, window_seconds,
+                                 _DEAP_RAW_NOTE, extra)
 
 
 def deap_arousal_task(data_dir: str = "data/real/deap", subjects: int = 8,
@@ -372,6 +384,23 @@ def sleep_edf_stage_task(n_recordings: int = 20, target: str = "rem",
     )
 
 
+def eegmat_workload_task(data_dir: str = "data/real/eegmat", subjects: int = 20,
+                         window_seconds: int = 4) -> BenchTask:
+    """PhysioNet EEG mental-arithmetic — REAL cognitive-workload label (rest vs arithmetic).
+
+    Replaces the documented EEG beta/alpha *proxy* (clinical_tasks.py) with a labeled cohort:
+    resting baseline (low workload) vs serial-subtraction mental arithmetic (high workload),
+    per subject. 19-ch 10-20 EEG + ECG at 64 Hz → band-power + peripheral windows, with the
+    raw-signal path (``raw_cnn``) on properly-sampled signal (δ/θ/α/β intact — the fidelity the
+    decimated DEAP events lack). Subject-held-out CV; each subject is one CV group.
+    """
+    events = load_eegmat_dataset(data_dir, subjects=subjects)
+    return _windowed_signal_task(
+        "eegmat_workload", events, "cognitive_workload", "high_workload", window_seconds,
+        "eegmat 64 Hz EEG+ECG raw windows (α/β intact)",
+        extra={"label": "rest (low) vs serial-subtraction (high) — real workload label"})
+
+
 TASK_BUILDERS = {
     "stress": noneeg_stress_task,
     "glucose": shanghai_glucose_task,
@@ -381,6 +410,7 @@ TASK_BUILDERS = {
     "cgmacros_diabetes": cgmacros_diabetes_task,
     "deap_arousal": deap_arousal_task,
     "deap_anxiety": deap_anxiety_task,
+    "eegmat_workload": eegmat_workload_task,
     "sleep_edf_rem": lambda: sleep_edf_stage_task(target="rem"),
     "sleep_edf_deep": lambda: sleep_edf_stage_task(target="deep"),
     "sleep_edf_wake": lambda: sleep_edf_stage_task(target="wake_sleep"),
