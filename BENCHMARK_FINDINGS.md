@@ -63,6 +63,17 @@ single-modality baselines beat the learned cross-modal fusion. Physiologically s
 autonomic (heart-rate) response to arithmetic load is a stronger, lower-variance workload signal
 than cross-subject EEG band-power.
 
+### The LLM-in-the-predictive-path (`rep:llm`): present, off by default, weakest
+
+The proposal's title is "LLM-Based … Prediction," and the repo does implement an LLM **in the
+predictive path** (`dvxr/llm/predictor.py`: VQ-codebook tokens → soft prompts into a frozen Qwen,
+NeuroLM-style). It is **excluded from the default sweep** (enable with `--llm`) because on CPU it
+runs Qwen2.5-0.5B with an *untrained* seeded projection (the LoRA/trainable variant is documented
+but not run), and it lands among the **weakest** configs. The working predictions come from the
+classical/linear shared head; the LLM's *validated* role is `dvxr/llm/insight.py`, which explains
+a calibrated prediction and never makes one. So "LLM-Based Prediction" is, today, aspirational —
+the LLM narrates reliably or predicts poorly untrained. Reported here, not hidden.
+
 ## Headline (clinical profile): the fused model does NOT win
 
 Repeated subject/patient-held-out CV (5×5), error metrics (lower is better),
