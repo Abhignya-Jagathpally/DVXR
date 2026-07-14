@@ -120,3 +120,14 @@ unimodal theory is running; framing will be tightened against closest prior art.
   source (≤32 Hz content) vs LaBraM's 200 Hz training → fidelity-limited wins (would likely improve
   at native rate); DEAP decimated, not a fair test. Findings + GOAL updated; committing iter-4.
   **Slice C next:** LLM-in-the-predictive-path (NeuroLM-style) made competitive.
+  - **Slice C scope (from reading `dvxr/llm/predictor.py`):** the weakness is a *seeded, UNTRAINED*
+    linear projection from VQ-codebook tokens → the frozen LLM's hidden dim, so the frozen Qwen
+    reads meaningless soft prompts (only the head learns). The honest experiment: replace the random
+    projection with an **in-distribution** one (project VQ tokens onto the LLM's real token-embedding
+    subspace / nearest real-token embeddings — CPU-feasible, no backprop through the LLM), and
+    compare vs the random projection on the smallest cohort (eegmat, 560 rows; Qwen forward cached
+    once). Hypothesis: in-distribution soft prompts let the frozen LLM contribute real signal. Report
+    honestly — a modest gain or an honest negative both matter, and match the project's ethos. The
+    heavier LoRA/backprop-through-LLM variant is likely infeasible on CPU and would be flagged, not
+    faked. This slice is the hardest to make a genuine win; treat a rigorous negative as a valid
+    outcome, not a failure.
