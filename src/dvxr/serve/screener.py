@@ -50,6 +50,22 @@ def _embed_task(task, representation: str) -> np.ndarray:
     raise ValueError(f"unknown representation {representation!r}")
 
 
+def embed_cohort(task_name: str, representation: Optional[str] = None):
+    """Build a cohort task and return (emb, y, subject_ids, task) using its validated encoder.
+
+    Shared by fit_screener, the CLI, and the demo so a subject is embedded exactly the way the
+    benchmark scores it. Embeddings are per window; ``subject_ids`` aligns row-for-row so a single
+    subject's windows are ``emb[subject_ids == sid]``.
+    """
+    from dvxr.bench.tasks import TASK_BUILDERS
+    representation = representation or REPRESENTATION_BY_TASK.get(task_name, "bandpower_concat")
+    task = TASK_BUILDERS[task_name]()
+    emb = _embed_task(task, representation)
+    y = np.asarray(task.y, dtype=int)
+    subjects = np.asarray(task.subject_ids)
+    return emb, y, subjects, task
+
+
 def _fit_head(emb: np.ndarray, y: np.ndarray, seed: int):
     """StandardScaler + balanced logistic head (the same shared head the benchmark scores)."""
     from sklearn.linear_model import LogisticRegression
@@ -142,15 +158,11 @@ def fit_screener(task_name: str, n_repeats: int = 3, n_folds: int = 5,
     from sklearn.metrics import roc_auc_score
 
     from dvxr.bench.protocol import bootstrap_ci, repeated_group_folds
-    from dvxr.bench.tasks import TASK_BUILDERS
     from dvxr.calibration import (conformal_radius, expected_calibration_error,
                                   fit_platt_calibrator, risk_band)
 
     representation = representation or REPRESENTATION_BY_TASK.get(task_name, "bandpower_concat")
-    task = TASK_BUILDERS[task_name]()
-    emb = _embed_task(task, representation)
-    y = np.asarray(task.y, dtype=int)
-    subjects = np.asarray(task.subject_ids)
+    emb, y, subjects, task = embed_cohort(task_name, representation)
 
     folds = repeated_group_folds(subjects, n_repeats, n_folds, seed)
     fold_auroc: List[float] = []

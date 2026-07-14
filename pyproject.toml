@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dvxr"
+version = "0.1.0"
+description = "DVXR Screen — research-grade multimodal clinical-risk screening (EEG-first) with validated, calibrated, evidence-backed models."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Abhignya Jagathpally" }]
+keywords = ["EEG", "BCI", "foundation-model", "clinical-screening", "multimodal", "calibration"]
+classifiers = [
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Medical Science Apps.",
+    "Programming Language :: Python :: 3",
+]
+
+# Core runtime for the serving layer (fit -> save -> load -> predict). Heavier optional
+# encoders (torch/transformers/LaBraM weights, xgboost) are extras so a plain install stays light;
+# the band-power screeners run on the core alone.
+dependencies = [
+    "numpy",
+    "scipy",
+    "pandas",
+    "scikit-learn",
+    "joblib",
+]
+
+[project.optional-dependencies]
+eeg = ["torch", "transformers", "safetensors", "huggingface_hub", "mne", "einops"]
+floor = ["xgboost"]
+io = ["wfdb", "openpyxl", "pyarrow", "kagglehub"]
+all = ["dvxr[eeg,floor,io]"]
+
+[project.scripts]
+dvxr = "dvxr.cli:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
