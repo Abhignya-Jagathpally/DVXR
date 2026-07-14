@@ -5,10 +5,35 @@ It answers a sharp audit: make the proposed model actually predict, evaluate on
 non-circular real labels, try to beat a genuine baseline by a significant
 relative-error-reduction (RER) ≥ 50%, and **report where it doesn't**.
 
-Reproduce: `python3 scripts/run_benchmark.py --repeats 5 --folds 5 --ablate`
-→ `outputs/benchmark_scoreboard.{csv,md}`. Harness: `src/dvxr/bench/`.
+Reproduce (mental-health concentration — the current committed scoreboard):
+`python3 scripts/run_benchmark.py --profile mh --repeats 5 --folds 5 --ablate`.
+Clinical profile: `--profile clinical` (stress/glucose/mortality). Legacy default:
+`--tasks stress glucose mortality`. → `outputs/benchmark_scoreboard.{csv,md}`. Harness: `src/dvxr/bench/`.
 
-## Headline: the fused model does NOT win
+## Mental-health concentration: fusion does NOT win (and DEAP is near-chance)
+
+The `mh` profile is the real-label mental-health emphasis: stress (peripheral physiology)
+plus the DEAP EEG+peripheral **affective/BCI** tasks with genuine self-report (SAM) labels —
+`deap_anxiety` (high-arousal + low-valence quadrant) and `deap_arousal`. Depression and
+cognitive workload have **no labeled cohort on disk** and remain documented proxies in
+`clinical_tasks.py` (not benchmarked; not cited as predictive results). 5×5 subject-held-out CV:
+
+| task | metric | best baseline | base err | fused err | RER% | 95% CI | meets ≥50%? |
+|---|---|---|---|---|---|---|---|
+| stress | 1−AUROC | rep:pca (concat) | 0.108 | 0.129 | **−19.9%** | −28.6 … −13.5 | **No** |
+| wesad_stress | 1−AUROC | xgboost | 0.045 | 0.129 | **−185.9%** | −441.6 … −80.5 | **No** |
+| deap_anxiety | 1−AUROC | single:physiology | 0.466 | 0.469 | **−0.6%** | −6.4 … 5.4 | **No** |
+| deap_arousal | 1−AUROC | single:physiology | 0.452 | 0.458 | **−1.2%** | −7.0 … 4.7 | **No** |
+
+Two honest observations. (1) The learned CACMF fusion never beats the strongest floor on
+any MH task — same negative result as the clinical profile. (2) On DEAP, **every** config —
+floor, MOMENT-SOTA, and fused alike — sits near chance (1−AUROC 0.45–0.49 ⇒ AUROC ≈ 0.51–0.55):
+cross-subject affective decoding from *per-window summary statistics* is essentially at the
+noise floor here. That motivates the raw-signal path (Slice H: the `raw_cnn` config over raw
+EEG+peripheral windows) as the fair test of whether waveform structure — not summary stats —
+carries the affective signal.
+
+## Headline (clinical profile): the fused model does NOT win
 
 Repeated subject/patient-held-out CV (5×5), error metrics (lower is better),
 RER = (base_err − prop_err)/base_err, 95% bootstrap CI, paired one-sided Wilcoxon,

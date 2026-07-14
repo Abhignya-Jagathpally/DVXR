@@ -25,6 +25,16 @@ from dvxr.bench.run import finalize, run_task  # noqa: E402
 from dvxr.bench.scoreboard import write_scoreboard  # noqa: E402
 from dvxr.bench.tasks import TASK_BUILDERS  # noqa: E402
 
+# Named task sets. 'clinical' is the historical default (stress/glucose/mortality).
+# 'mh' is the mental-health concentration: real-label affective/BCI decoding (DEAP EEG +
+# peripheral physiology) alongside stress — the tasks with genuine self-report/annotation
+# labels. Depression and cognitive workload have no labeled cohort on disk and remain
+# documented proxies in clinical_tasks.py (not benchmarked here).
+TASK_PROFILES = {
+    "clinical": ["stress", "glucose", "mortality"],
+    "mh": ["stress", "wesad_stress", "deap_anxiety", "deap_arousal"],
+}
+
 
 def _write_llm_interpretability(task_name: str, task, out_dir: str) -> None:
     """Interpretability artifact for the LLM predictor: per-modality attribution
@@ -87,8 +97,11 @@ def _write_llm_robustness(task_name: str, task, out_dir: str,
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="CACMF real-label benchmark")
-    ap.add_argument("--tasks", nargs="+", default=["stress", "glucose", "mortality"],
+    ap.add_argument("--tasks", nargs="+", default=None,
                     choices=list(TASK_BUILDERS))
+    ap.add_argument("--profile", choices=list(TASK_PROFILES),
+                    help="named task set; --tasks overrides it. "
+                         "'mh' = mental-health concentration (stress + DEAP affective/BCI).")
     ap.add_argument("--repeats", type=int, default=5)
     ap.add_argument("--folds", type=int, default=5)
     ap.add_argument("--loso", action="store_true",
@@ -102,8 +115,16 @@ def main(argv=None) -> int:
     ap.add_argument("--out", type=str, default="outputs")
     args = ap.parse_args(argv)
 
+    # Resolve the task set: explicit --tasks wins; else --profile; else the clinical default.
+    if args.tasks:
+        tasks = args.tasks
+    elif args.profile:
+        tasks = TASK_PROFILES[args.profile]
+    else:
+        tasks = TASK_PROFILES["clinical"]
+
     results, ablation_by_task = [], {}
-    for name in args.tasks:
+    for name in tasks:
         print(f"[bench] building task {name!r} ...", flush=True)
         task = TASK_BUILDERS[name]()
         n_subj = len(set(task.subject_ids))

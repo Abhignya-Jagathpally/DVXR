@@ -61,7 +61,11 @@ def write_scoreboard(results: List[TaskResult], out_dir: str = "outputs",
 
     # M4: which tasks are actually multimodal
     MODALITY = {"stress": "MULTIMODAL (4 peripheral-physiology streams, one wearable)",
+                "wesad_stress": "MULTIMODAL (chest+wrist wearable physiology: ECG/EDA/EMG/resp/temp/ACC)",
+                "deap_anxiety": "MULTIMODAL affective/BCI (EEG band-power + peripheral physiology, real SAM label)",
+                "deap_arousal": "MULTIMODAL affective/BCI (EEG band-power + peripheral physiology, real SAM label)",
                 "glucose": "single-modality (CGM only)",
+                "cgmacros_glucose": "single-modality (CGM only)",
                 "mortality": "single-modality (EHR only)"}
 
     lines: List[str] = ["# CACMF relativity scoreboard — real labels, held-out subjects\n"]
@@ -76,9 +80,16 @@ def write_scoreboard(results: List[TaskResult], out_dir: str = "outputs",
         "modality, or a real pretrained SOTA encoder — unstable configs excluded). "
         "Error metric per task; RER = (base_err - prop_err)/base_err. No configuration "
         "is assumed to win.\n")
+    run_tasks = [r.task for r in results]
+    mod_items = [(t, MODALITY[t]) for t in run_tasks if t in MODALITY]
+    has_deap = any(t.startswith("deap_") for t in run_tasks)
+    multimodal_note = ("Multimodal-fusion evidence spans the peripheral-physiology stress "
+                       "task(s) and the DEAP EEG+peripheral affective/BCI tasks"
+                       if has_deap else
+                       "Multimodal-fusion conclusions rest on the **stress** task")
     lines.append("\n**Modality labeling (M4):** " + "; ".join(
-        f"{k} = {v}" for k, v in MODALITY.items()) + ". Multimodal-fusion conclusions "
-        "rest on the **stress** task; no dataset co-registers EEG+CGM+EHR per subject.\n")
+        f"{k} = {v}" for k, v in mod_items) + f". {multimodal_note}; "
+        "no single dataset co-registers EEG+CGM+EHR per subject.\n")
 
     # headline scoreboard
     try:

@@ -1,20 +1,20 @@
 # CACMF relativity scoreboard — real labels, held-out subjects
 
-**Run params:** repeats=3, folds=4, seed=7, sota=True
+**Run params:** repeats=5, folds=5, seed=7, sota=True
 
-**Protocol:** repeated subject/patient-held-out 5x5 CV (single-level; opponent selection and RER share folds — nested CV deferred)
+**Protocol:** repeated subject/patient-held-out grouped CV (single-level; opponent selection and RER share folds — nested CV deferred; exact repeats×folds in the Run params line above)
 
 Proposed = CACMF fused (cross-modal transformer + VQ) as a swappable representation into a shared head. Baseline = the single strongest NON-fused opponent on the same folds (trivial floor, classical GBM, best single modality, or a real pretrained SOTA encoder — unstable configs excluded). Error metric per task; RER = (base_err - prop_err)/base_err. No configuration is assumed to win.
 
 
-**Modality labeling (M4):** stress = MULTIMODAL (4 peripheral-physiology streams, one wearable); glucose = single-modality (CGM only); mortality = single-modality (EHR only). Multimodal-fusion conclusions rest on the **stress** task; no dataset co-registers EEG+CGM+EHR per subject.
+**Modality labeling (M4):** stress = MULTIMODAL (4 peripheral-physiology streams, one wearable); wesad_stress = MULTIMODAL (chest+wrist wearable physiology: ECG/EDA/EMG/resp/temp/ACC); deap_anxiety = MULTIMODAL affective/BCI (EEG band-power + peripheral physiology, real SAM label); deap_arousal = MULTIMODAL affective/BCI (EEG band-power + peripheral physiology, real SAM label); glucose = single-modality (CGM only); cgmacros_glucose = single-modality (CGM only); mortality = single-modality (EHR only). Multimodal-fusion conclusions rest on the **stress** task; no dataset co-registers EEG+CGM+EHR per subject.
 
 ```
-             task  metric best_baseline  base_err  prop_err  delta_abs  RER_pct  RER_CI_low  RER_CI_high  p_wilcoxon  p_holm  cliffs_delta  n_folds  meets_>=50%
-     wesad_stress 1-AUROC       rep:raw    0.0571    0.1568    -0.0997  -174.63     -331.56       -97.44     1.00000     1.0        -0.875       12        False
-     deap_arousal 1-AUROC classical_gbm    0.4503    0.4561    -0.0058    -1.29       -9.63         8.03     0.82520     1.0        -0.139       12        False
-cgmacros_diabetes 1-AUROC       xgboost    0.0175    0.1291    -0.1116  -636.63    -1552.15      -218.86     0.99805     1.0        -0.744       11        False
- cgmacros_glucose     MAE       rep:raw   10.8829   11.7111    -0.8282    -7.61       -8.62        -6.65     1.00000     1.0        -0.778       12        False
+        task  metric     best_baseline  base_err  prop_err  delta_abs  RER_pct  RER_CI_low  RER_CI_high  p_wilcoxon  p_holm  cliffs_delta  n_folds  meets_>=50%
+      stress 1-AUROC           rep:pca    0.1079    0.1294    -0.0215   -19.87      -28.58       -13.50     0.99999     1.0        -0.254       25        False
+wesad_stress 1-AUROC           xgboost    0.0453    0.1294    -0.0841  -185.90     -441.57       -80.54     0.99982     1.0        -0.667       25        False
+deap_anxiety 1-AUROC single:physiology    0.4658    0.4688    -0.0029    -0.63       -6.37         5.39     0.73645     1.0        -0.027       25        False
+deap_arousal 1-AUROC single:physiology    0.4522    0.4575    -0.0053    -1.16       -7.05         4.70     0.79412     1.0        -0.027       25        False
 ```
 
 ## Triangulation — floor vs SOTA vs proposed
@@ -22,106 +22,141 @@ cgmacros_diabetes 1-AUROC       xgboost    0.0175    0.1291    -0.1116  -636.63 
 For each task: the strongest **floor** opponent you must not lose to (tuned GBM / TabPFN / Riemannian / single-modality / PCA->logistic / persistence), the strongest open-weight **SOTA** encoder that actually ran here, and the **proposed** model. `err` is the task error (1-AUROC or MAE, lower better); `ECE` is calibration (raw / after temperature scaling). A win must beat BOTH floor and SOTA.
 
 ```
-             task  metric         floor floor_err   floor_ECE sota sota_err    sota_ECE  proposed proposed_err proposed_ECE
-     wesad_stress 1-AUROC       rep:raw    0.0571 0.108/0.092 sota   0.2126 0.187/0.105 cacmf_e2e       0.1334  0.251/0.167
-     deap_arousal 1-AUROC classical_gbm    0.4503 0.140/0.075 sota   0.4880 0.297/0.304 rep:fused       0.4561  0.305/0.313
-cgmacros_diabetes 1-AUROC       xgboost    0.0175 0.063/0.041 sota   0.2506 0.188/0.139 rep:fused       0.1291  0.123/0.094
- cgmacros_glucose     MAE       rep:raw   10.8829           —    —      nan           — rep:fused      11.7111            —
+        task  metric             floor floor_err   floor_ECE sota sota_err    sota_ECE  proposed proposed_err proposed_ECE
+      stress 1-AUROC           rep:pca    0.1079 0.059/0.035 sota   0.1912 0.049/0.042 rep:fused       0.1294  0.048/0.033
+wesad_stress 1-AUROC           xgboost    0.0453 0.059/0.029 sota   0.2217 0.214/0.118 cacmf_e2e       0.1115  0.248/0.158
+deap_anxiety 1-AUROC single:physiology    0.4658 0.285/0.308 sota   0.4931 0.298/0.307 rep:fused       0.4688  0.311/0.319
+deap_arousal 1-AUROC single:physiology    0.4522 0.273/0.298 sota   0.4872 0.291/0.300 rep:fused       0.4575  0.302/0.311
 ```
 
-- **wesad_stress**: vs floor (rep:raw 0.0571): proposed cacmf_e2e 0.1334 -> does NOT beat; vs SOTA (sota 0.2126): BEATS.
-- **deap_arousal**: vs floor (classical_gbm 0.4503): proposed rep:fused 0.4561 -> does NOT beat; vs SOTA (sota 0.4880): BEATS.
-- **cgmacros_diabetes**: vs floor (xgboost 0.0175): proposed rep:fused 0.1291 -> does NOT beat; vs SOTA (sota 0.2506): BEATS.
-- **cgmacros_glucose**: vs floor (rep:raw 10.8829): proposed rep:fused 11.7111 -> does NOT beat; SOTA encoder: not runnable in this environment (labeled, not faked).
+- **stress**: vs floor (rep:pca 0.1079): proposed rep:fused 0.1294 -> does NOT beat; vs SOTA (sota 0.1912): BEATS.
+- **wesad_stress**: vs floor (xgboost 0.0453): proposed cacmf_e2e 0.1115 -> does NOT beat; vs SOTA (sota 0.2217): BEATS.
+- **deap_anxiety**: vs floor (single:physiology 0.4658): proposed rep:fused 0.4688 -> does NOT beat; vs SOTA (sota 0.4931): BEATS.
+- **deap_arousal**: vs floor (single:physiology 0.4522): proposed rep:fused 0.4575 -> does NOT beat; vs SOTA (sota 0.4872): BEATS.
 
 ## Verdict
 
-- **wesad_stress** (1-AUROC, ): fused 0.1568 vs rep:raw 0.0571 -> RER -174.6% (95% CI -331.6..-97.4, Wilcoxon p=1.0000, Holm p=1.0000) -> **does NOT meet the >=50% RER bar.**
-- **deap_arousal** (1-AUROC, ): fused 0.4561 vs classical_gbm 0.4503 -> RER -1.3% (95% CI -9.6..8.0, Wilcoxon p=0.8252, Holm p=1.0000) -> **does NOT meet the >=50% RER bar.**
-- **cgmacros_diabetes** (1-AUROC, ): fused 0.1291 vs xgboost 0.0175 -> RER -636.6% (95% CI -1552.2..-218.9, Wilcoxon p=0.9980, Holm p=1.0000) -> **does NOT meet the >=50% RER bar.**
-- **cgmacros_glucose** (MAE, ): fused 11.7111 vs rep:raw 10.8829 -> RER -7.6% (95% CI -8.6..-6.7, Wilcoxon p=1.0000, Holm p=1.0000) -> **does NOT meet the >=50% RER bar.**
+- **stress** (1-AUROC, MULTIMODAL (4 peripheral-physiology streams, one wearable)): fused 0.1294 vs rep:pca 0.1079 -> RER -19.9% (95% CI -28.6..-13.5, Wilcoxon p=1.0000, Holm p=1.0000) -> **does NOT meet the >=50% RER bar.**
+- **wesad_stress** (1-AUROC, MULTIMODAL (chest+wrist wearable physiology: ECG/EDA/EMG/resp/temp/ACC)): fused 0.1294 vs xgboost 0.0453 -> RER -185.9% (95% CI -441.6..-80.5, Wilcoxon p=0.9998, Holm p=1.0000) -> **does NOT meet the >=50% RER bar.**
+- **deap_anxiety** (1-AUROC, MULTIMODAL affective/BCI (EEG band-power + peripheral physiology, real SAM label)): fused 0.4688 vs single:physiology 0.4658 -> RER -0.6% (95% CI -6.4..5.4, Wilcoxon p=0.7364, Holm p=1.0000) -> **does NOT meet the >=50% RER bar.**
+- **deap_arousal** (1-AUROC, MULTIMODAL affective/BCI (EEG band-power + peripheral physiology, real SAM label)): fused 0.4575 vs single:physiology 0.4522 -> RER -1.2% (95% CI -7.0..4.7, Wilcoxon p=0.7941, Holm p=1.0000) -> **does NOT meet the >=50% RER bar.**
 
 ## Stability (M2)
 
-- **cgmacros_glucose**: failures by config = {'sota': 12}; unstable (NaN >20% folds) = ['sota']
+- No config/fold failures; no unstable configs.
 
 ## Per-configuration CV error (lower is better)
 
 
+### stress  (SOTA backend: moment:AutonLab/MOMENT-1-large)
+```
+       config  1-AUROC
+      rep:pca   0.1079
+      rep:raw   0.1113
+      xgboost   0.1141
+classical_gbm   0.1204
+    rep:fused   0.1294
+    cacmf_e2e   0.1666
+single:motion   0.1670
+         sota   0.1912
+   single:ppg   0.2505
+       rep:vq   0.3166
+   rep:neural   0.3245
+   single:eda   0.3416
+  single:temp   0.3599
+     majority   0.5000
+```
+
 ### wesad_stress  (SOTA backend: moment:AutonLab/MOMENT-1-large)
 ```
        config  1-AUROC
-      rep:raw   0.0571
-      xgboost   0.0597
-classical_gbm   0.0640
-      rep:pca   0.1208
-    cacmf_e2e   0.1334
-  single:resp   0.1381
-    rep:fused   0.1568
-single:motion   0.1870
-         sota   0.2126
-   rep:neural   0.2413
-   single:eda   0.2463
-   single:ecg   0.2662
-   single:ppg   0.2743
-  single:temp   0.2783
-      rep:llm   0.2970
-       rep:vq   0.3550
-   single:emg   0.3952
+      xgboost   0.0453
+      rep:raw   0.0528
+classical_gbm   0.0582
+      rep:pca   0.1042
+    cacmf_e2e   0.1115
+  single:resp   0.1243
+    rep:fused   0.1294
+single:motion   0.1369
+   rep:neural   0.1985
+         sota   0.2217
+   single:eda   0.2407
+   single:ppg   0.2577
+   single:ecg   0.2623
+  single:temp   0.2691
+       rep:vq   0.2969
+   single:emg   0.3852
      majority   0.5000
+```
+
+### deap_anxiety  (SOTA backend: moment:AutonLab/MOMENT-1-large)
+```
+           config  1-AUROC
+single:physiology   0.4658
+        rep:fused   0.4688
+           rep:vq   0.4730
+       rep:neural   0.4732
+          rep:pca   0.4738
+    classical_gbm   0.4741
+          xgboost   0.4828
+             sota   0.4931
+         majority   0.5000
+        cacmf_e2e   0.5152
+          rep:raw   0.5246
+       single:eeg   0.5464
 ```
 
 ### deap_arousal  (SOTA backend: moment:AutonLab/MOMENT-1-large)
 ```
            config  1-AUROC
-    classical_gbm   0.4503
-single:physiology   0.4507
-        rep:fused   0.4561
-           rep:vq   0.4565
-       rep:neural   0.4614
-          xgboost   0.4633
-          rep:pca   0.4837
-             sota   0.4880
+single:physiology   0.4522
+        rep:fused   0.4575
+          rep:pca   0.4652
+    classical_gbm   0.4658
+           rep:vq   0.4730
+          xgboost   0.4764
+       rep:neural   0.4770
+             sota   0.4872
          majority   0.5000
-          rep:llm   0.5053
-        cacmf_e2e   0.5190
-          rep:raw   0.5221
-       single:eeg   0.5466
+        cacmf_e2e   0.5180
+          rep:raw   0.5293
+       single:eeg   0.5530
 ```
 
-### cgmacros_diabetes  (SOTA backend: moment:AutonLab/MOMENT-1-large)
+## True modality ablation (retrain without the modality)
+
+
+### stress  (contribution = error increase when dropped)
 ```
-              config  1-AUROC
-             xgboost   0.0175
-          single:ehr   0.1072
-          single:cgm   0.1186
-           rep:fused   0.1291
-             rep:raw   0.1317
-              rep:vq   0.1648
-           cacmf_e2e   0.1716
-          rep:neural   0.1850
-             rep:pca   0.2387
-                sota   0.2506
-             rep:llm   0.2704
-            majority   0.5000
-       classical_gbm   0.5000
-single:wearable_phys   0.6167
+dropped_modality  err_without (1-AUROC)  err_with_all (1-AUROC)  contribution  ci_low  ci_high
+          motion                 0.2120                  0.1264        0.0855  0.0668   0.1059
+             ppg                 0.1468                  0.1264        0.0204  0.0119   0.0296
+            temp                 0.1420                  0.1264        0.0155  0.0085   0.0221
+             eda                 0.1327                  0.1264        0.0063 -0.0032   0.0159
 ```
 
-### cgmacros_glucose  (SOTA backend: moment:AutonLab/MOMENT-1-large)
+### wesad_stress  (contribution = error increase when dropped)
 ```
-       config     MAE
-      rep:raw 10.8829
-   single:cgm 10.8829
-ridge_history 10.8829
-      rep:pca 10.8852
-      xgboost 11.0236
-classical_gbm 11.0729
-  persistence 11.3477
-    rep:fused 11.7111
-       rep:vq 11.8811
-   rep:neural 12.0526
-      rep:llm 12.5095
-    cacmf_e2e 13.2274
-         sota     NaN
+dropped_modality  err_without (1-AUROC)  err_with_all (1-AUROC)  contribution  ci_low  ci_high
+             eda                 0.2022                  0.1417        0.0605  0.0159   0.1140
+            resp                 0.1853                  0.1417        0.0436  0.0003   0.0844
+          motion                 0.1701                  0.1417        0.0284 -0.0088   0.0655
+            temp                 0.1538                  0.1417        0.0120 -0.0161   0.0432
+             ppg                 0.1159                  0.1417       -0.0259 -0.0616   0.0153
+             emg                 0.0877                  0.1417       -0.0541 -0.0873  -0.0185
+             ecg                 0.0831                  0.1417       -0.0587 -0.0900  -0.0265
+```
+
+### deap_anxiety  (contribution = error increase when dropped)
+```
+dropped_modality  err_without (1-AUROC)  err_with_all (1-AUROC)  contribution  ci_low  ci_high
+             eeg                 0.5086                  0.4685        0.0401  0.0037   0.0774
+      physiology                 0.4976                  0.4685        0.0291 -0.0060   0.0676
+```
+
+### deap_arousal  (contribution = error increase when dropped)
+```
+dropped_modality  err_without (1-AUROC)  err_with_all (1-AUROC)  contribution  ci_low  ci_high
+             eeg                 0.4999                  0.4545        0.0454  0.0197   0.0720
+      physiology                 0.4742                  0.4545        0.0196 -0.0113   0.0482
 ```
