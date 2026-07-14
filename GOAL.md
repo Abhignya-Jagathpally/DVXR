@@ -111,3 +111,12 @@ unimodal theory is running; framing will be tightened against closest prior art.
   implement `src/dvxr/encoders/labram_real.py` (vendored forward + `from_pretrained`), validate
   (shape asserts, strict load, non-degeneracy, ideally a reference cross-check in an isolated env),
   wire `sota:eeg_fm` into the sweep + DNH library, and honestly report FM-vs-baseline per cohort.
+- **2026-07-14 — iter 4 (Slice B DONE — real LaBraM wins on EEG):** Implemented + validated the
+  vendored LaBraM (`labram_real.py`, strict load, non-degenerate), wired the frozen `labram` bench
+  config (`labram_bench.py`), and benchmarked vs band-power on the two 64 Hz EEG cohorts.
+  **Result: the real EEG FM beats hand-crafted band-power on BOTH** — eegmat workload AUROC 0.663
+  vs 0.636, and **mumtaz depression AUROC 0.961 — the single best config**, beating xgboost/raw-CNN/
+  learned-CACMF. Above-chance decoding functionally validates the forward. Honest caveat: 64 Hz
+  source (≤32 Hz content) vs LaBraM's 200 Hz training → fidelity-limited wins (would likely improve
+  at native rate); DEAP decimated, not a fair test. Findings + GOAL updated; committing iter-4.
+  **Slice C next:** LLM-in-the-predictive-path (NeuroLM-style) made competitive.

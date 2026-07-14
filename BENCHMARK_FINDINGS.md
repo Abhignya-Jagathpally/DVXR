@@ -164,6 +164,45 @@ plausible fix — reported, not buried. (The deeper lesson: at N≤60 there is n
 worst-case safety and average multimodal gain; a per-task, not global, selection rule is the open
 question.)
 
+## Slice B: a REAL EEG foundation model (LaBraM) — and it wins on EEG
+
+The proposal names an EEG foundation model; earlier findings recorded that LaBraM was **not
+wireable** here (braindecode won't import under torch 2.12 — no torchaudio). That blocker is now
+resolved a different way: `braindecode/labram-pretrained` ships plain **safetensors**, so
+`src/dvxr/encoders/labram_real.py` loads the real pretrained weights through a **vendored
+LaBraM-base forward** (no braindecode import) — validated by a strict state-dict load (all 221
+keys consumed), non-degenerate embeddings, and the above-chance decoding below (the functional
+proof the token layout is correct). Wired as the frozen `labram` config (200-d CLS embedding →
+shared head, computed once over all rows, leak-free) competing on the same folds as the
+band-power `single:eeg` baseline and `raw_cnn`. 3×5 subject-held-out CV, error = 1−AUROC:
+
+| task | labram | single:eeg (band-power) | best non-labram | verdict |
+|---|---|---|---|---|
+| eegmat_workload | 0.3373 (AUROC 0.663) | 0.3635 (0.636) | single:physiology/ECG 0.2565 | LaBraM **> band-power**; ECG still best |
+| mumtaz_depression | **0.0392 (AUROC 0.961)** | 0.1112 (0.889) | xgboost 0.070 | LaBraM is the **single best config** |
+
+Two honest positives, one caveat:
+
+1. **The real EEG FM beats hand-crafted band-power features on both EEG cohorts** — modestly on
+   workload (0.663 vs 0.636) and decisively on depression (0.961 vs 0.889). On `mumtaz_depression`
+   (EEG-only, the cleanest FM test) LaBraM is the **best config overall**, beating the tuned GBM
+   (0.93), the raw-CNN (0.84), and the learned CACMF fusion (0.79). A foundation model extracting
+   more from resting/task EEG than band-power is exactly the expected win — and here it is real,
+   frozen (linear-probe, no fine-tuning), and reproduced under subject-held-out CV.
+2. **On workload, EEG is still not the best modality** — the ECG autonomic response
+   (`single:physiology` 0.74 AUROC) beats every EEG method including LaBraM. The FM improves the
+   *EEG* path; it does not overturn the task-level finding that autonomic signal dominates for
+   arithmetic load.
+3. **Fidelity caveat (stated up front, not after the fact):** both cohorts are **64 Hz**, so real
+   content is ≤32 Hz, while LaBraM was pretrained on 200 Hz EEG (≤100 Hz). We resample 64→200 Hz to
+   give LaBraM its patch structure, but not its bandwidth — so these are **fidelity-limited** wins;
+   LaBraM would plausibly do *better* on native ≥200 Hz data. DEAP is worse still (decimated ~8 Hz
+   effective — see Slice H) and is not a fair FM test; it is left for a full-rate re-export. So the
+   result reads: the real EEG FM already beats band-power **even under-resourced on sampling rate**.
+
+Reproduce: `python3 scripts/run_benchmark.py --tasks mumtaz_depression --repeats 3 --folds 5`
+(config `labram`; needs the cached weights or `DVXR_LABRAM_ALLOW_DOWNLOAD=1`).
+
 ### The LLM-in-the-predictive-path (`rep:llm`): present, off by default, weakest
 
 The proposal's title is "LLM-Based … Prediction," and the repo does implement an LLM **in the

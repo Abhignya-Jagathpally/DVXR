@@ -183,6 +183,15 @@ def baseline_configs(task: BenchTask, include_sota: bool = True) -> Dict[str, Ca
     # unless the inner-CV advantage clears one bootstrap SE. Competes on the same folds.
     from dvxr.bench.gated_fusion import pred_dnh_gated
     cfgs["dnh_gated"] = pred_dnh_gated
+    # real pretrained LaBraM EEG foundation model as a frozen encoder (Slice B) — guarded so
+    # it only registers when the weights + this task's raw EEG windows are available.
+    if task.kind == "classification":
+        try:
+            from dvxr.bench.labram_bench import labram_bench_available, pred_labram
+            if labram_bench_available(task):
+                cfgs["labram"] = pred_labram
+        except Exception:
+            pass
     if include_sota:
         cfgs["sota"] = pred_sota
     return cfgs
