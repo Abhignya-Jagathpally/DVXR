@@ -65,6 +65,7 @@ def write_scoreboard(results: List[TaskResult], out_dir: str = "outputs",
                 "deap_anxiety": "MULTIMODAL affective/BCI (EEG band-power + peripheral physiology, real SAM label)",
                 "deap_arousal": "MULTIMODAL affective/BCI (EEG band-power + peripheral physiology, real SAM label)",
                 "eegmat_workload": "MULTIMODAL EEG-BCI (19-ch EEG + ECG @64 Hz, real rest-vs-arithmetic workload label)",
+                "mumtaz_depression": "EEG-BCI single-modality (19-ch resting EEG @64 Hz, real MDD-vs-control diagnosis label)",
                 "glucose": "single-modality (CGM only)",
                 "cgmacros_glucose": "single-modality (CGM only)",
                 "mortality": "single-modality (EHR only)"}

@@ -57,11 +57,10 @@ scaffolding vs. real:
 | Task | Label status |
 |---|---|
 | **anxiety** | Real label now available — the `deap_anxiety` benchmark task uses DEAP self-report SAM ratings (high-arousal + low-valence quadrant). The `clinical_tasks.anxiety_prediction` median-split remains scaffolding; prefer `deap_anxiety` for any claim. |
-| **depression** | Scaffolding only — no labeled cohort on disk or in `scripts/fetch_data.py` (DAIC-WOZ needs credentialed application). No evaluative result. |
 | **cognitive workload** | Real label now available — the `eegmat_workload` benchmark task uses the PhysioNet EEG mental-arithmetic cohort (resting baseline vs serial-subtraction; `scripts/fetch_data.py eegmat`, `load_eegmat_dataset`, 19-ch EEG + ECG @ 64 Hz). The `clinical_tasks.cognitive_workload` beta/alpha median-split remains scaffolding; prefer `eegmat_workload`. Evaluated result: real-decodable (best single modality ECG ≈ 0.74 AUROC), learned fusion still loses. |
-| **depression** | Scaffolding only — no labeled cohort on disk or in `scripts/fetch_data.py` (DAIC-WOZ needs credentialed application). No evaluative result. |
+| **depression** | Real label now available — the `mumtaz_depression` benchmark task uses the Mumtaz (2016) MDD-vs-healthy resting-EEG cohort (`scripts/fetch_data.py mumtaz-mdd`, `load_mumtaz_mdd_dataset`, 19-ch @ 64 Hz, subject-level diagnosis). The `clinical_tasks.depression_risk` motion/HRV median-split remains scaffolding; prefer `mumtaz_depression`. Evaluated result: highly decodable (floor/SOTA AUROC ≈ 0.92, dataset-specific), learned fusion loses hardest (−148%). |
 
-Only **depression** remains a proxy; anxiety and cognitive workload now have real labeled cohorts.
+**Every mental-health target now has a real labeled cohort** — anxiety (DEAP), arousal (DEAP), cognitive workload (eegmat), and depression (Mumtaz MDD). The `clinical_tasks.py` median-split proxies are superseded and must not be cited.
 
 ⚠️ "Fine-tune the selected models": the neural encoder is **trained** (self-supervised
 masked-feature reconstruction), not fine-tuned from published EEG-X/BIOT weights — those

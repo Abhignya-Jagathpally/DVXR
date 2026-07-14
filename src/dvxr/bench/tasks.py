@@ -34,6 +34,7 @@ from dvxr.loaders import (
     load_deap_dataset,
     load_eegmat_dataset,
     load_mimic_demo_ehr,
+    load_mumtaz_mdd_dataset,
     load_noneeg_dataset,
     load_shanghai_cgm_dataset,
     load_wesad_dataset,
@@ -401,6 +402,24 @@ def eegmat_workload_task(data_dir: str = "data/real/eegmat", subjects: int = 20,
         extra={"label": "rest (low) vs serial-subtraction (high) — real workload label"})
 
 
+def mumtaz_depression_task(data_dir: str = "data/real/mumtaz_mdd", subjects: Optional[int] = None,
+                           window_seconds: int = 8) -> BenchTask:
+    """Mumtaz (2016) MDD vs healthy resting EEG — REAL depression diagnosis label.
+
+    Replaces the documented motion/HRV *proxy* (clinical_tasks.py) with a labeled clinical
+    cohort: eyes-closed resting EEG, MDD patients (high_depression) vs healthy controls
+    (low_depression), subject-level diagnosis under cross-subject held-out CV. EEG-only
+    (single modality, 19-ch 10-20 @ 64 Hz) → band-power + the raw-signal path (``raw_cnn``).
+    Depression from resting EEG is genuinely hard cross-subject — an honest test, not a win by
+    construction.
+    """
+    events = load_mumtaz_mdd_dataset(data_dir, subjects=subjects)
+    return _windowed_signal_task(
+        "mumtaz_depression", events, "depression", "high_depression", window_seconds,
+        "Mumtaz MDD 64 Hz resting EEG raw windows",
+        extra={"label": "MDD patients vs healthy controls (real diagnosis label)"})
+
+
 TASK_BUILDERS = {
     "stress": noneeg_stress_task,
     "glucose": shanghai_glucose_task,
@@ -411,6 +430,7 @@ TASK_BUILDERS = {
     "deap_arousal": deap_arousal_task,
     "deap_anxiety": deap_anxiety_task,
     "eegmat_workload": eegmat_workload_task,
+    "mumtaz_depression": mumtaz_depression_task,
     "sleep_edf_rem": lambda: sleep_edf_stage_task(target="rem"),
     "sleep_edf_deep": lambda: sleep_edf_stage_task(target="deep"),
     "sleep_edf_wake": lambda: sleep_edf_stage_task(target="wake_sleep"),

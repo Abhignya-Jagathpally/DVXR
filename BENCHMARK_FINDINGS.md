@@ -16,9 +16,10 @@ The `mh` profile is the real-label mental-health emphasis: stress (peripheral ph
 the DEAP EEG+peripheral **affective/BCI** tasks with genuine self-report (SAM) labels —
 `deap_anxiety` (high-arousal + low-valence quadrant) and `deap_arousal` — and `eegmat_workload`,
 a **real cognitive-workload** cohort (PhysioNet EEG mental-arithmetic: resting baseline vs
-serial-subtraction, 19-ch EEG + ECG @ 64 Hz) that replaces the old beta/alpha proxy. Only
-**depression** now lacks a labeled cohort on disk (DAIC-WOZ is credentialed) and remains a
-documented proxy in `clinical_tasks.py` (not benchmarked; not cited). 5×5 subject-held-out CV:
+serial-subtraction, 19-ch EEG + ECG @ 64 Hz), and `mumtaz_depression`, a **real depression**
+cohort (Mumtaz 2016 MDD-vs-healthy resting EEG, 19-ch @ 64 Hz, subject-level diagnosis). **Every
+mental-health target the proposal names now has a real labeled benchmark** — the median-split
+proxies in `clinical_tasks.py` are superseded and no longer cited. 5×5 subject-held-out CV:
 
 | task | metric | best baseline | base err | fused err | RER% | 95% CI | meets ≥50%? |
 |---|---|---|---|---|---|---|---|
@@ -27,6 +28,7 @@ documented proxy in `clinical_tasks.py` (not benchmarked; not cited). 5×5 subje
 | deap_anxiety | 1−AUROC | single:physiology | 0.466 | 0.469 | **−0.6%** | −6.4 … 5.4 | **No** |
 | deap_arousal | 1−AUROC | single:physiology | 0.452 | 0.458 | **−1.2%** | −7.0 … 4.7 | **No** |
 | eegmat_workload | 1−AUROC | single:physiology (ECG) | 0.260 | 0.365 | **−40.4%** | −56.7 … −26.8 | **No** |
+| mumtaz_depression | 1−AUROC | sota (MOMENT) | 0.082 | 0.205 | **−148.2%** | −224.4 … −86.7 | **No** |
 
 Two honest observations. (1) The learned CACMF fusion never beats the strongest floor on
 any MH task — same negative result as the clinical profile. (2) On DEAP, **every** config —
@@ -62,6 +64,19 @@ modality by −40.4%** (CI −56.7…−26.8) — the same verdict as every othe
 single-modality baselines beat the learned cross-modal fusion. Physiologically sensible, too:
 autonomic (heart-rate) response to arithmetic load is a stronger, lower-variance workload signal
 than cross-subject EEG band-power.
+
+### Depression: highly decodable, yet learned fusion still loses hardest
+
+`mumtaz_depression` is the last mental-health proxy converted to a real cohort (58 subjects,
+28 healthy / 30 MDD, subject-held-out). Depression is the *most* separable of the six: the
+xgboost floor and MOMENT-SOTA both reach **AUROC ≈ 0.92** (1−AUROC ≈ 0.082) from resting
+band-power — high (the Mumtaz set is known to be comparatively separable, so read this as
+dataset-specific, not a universal MDD-decoding claim). And it is the task where the learned CACMF
+fusion loses **hardest**: `rep:fused` 0.205 vs the 0.082 floor → **−148.2% RER** (CI −224 … −87).
+The pattern is now unmistakable across all six real tasks: where the signal is weak (DEAP) fusion
+ties near chance; where it is strong (workload, depression) simple GBM / single-modality / MOMENT
+baselines capture it and the cross-modal fusion *adds negative value*. A credible, honest negative
+result on learned fusion — on real mental-health labels, not proxies.
 
 ### The LLM-in-the-predictive-path (`rep:llm`): present, off by default, weakest
 

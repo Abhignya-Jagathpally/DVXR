@@ -68,10 +68,10 @@ CLINICAL_TASKS: List[ClinicalTask] = [
             "(motion_accel_mag_energy) < median AND ppg HRV proxy "
             "(heart_rate_std) < median are labelled high_depression_risk; "
             "otherwise low_depression_risk. Median thresholding guarantees "
-            "both classes appear. SCAFFOLDING ONLY — no labeled depression cohort is "
-            "present on disk or fetchable via scripts/fetch_data.py (DAIC-WOZ requires "
-            "credentialed application), so this proxy has no ground-truth evaluation and "
-            "must not be cited as a predictive result."
+            "both classes appear. SCAFFOLDING ONLY (median-split proxy) — do not cite as a "
+            "predictive result. For a REAL depression evaluation use the `mumtaz_depression` "
+            "benchmark task (Mumtaz 2016 MDD-vs-healthy resting EEG; `fetch_data.py mumtaz-mdd`), "
+            "which replaces this proxy with ground-truth clinical diagnosis labels."
         ),
         source_modalities=["motion", "ppg"],
     ),

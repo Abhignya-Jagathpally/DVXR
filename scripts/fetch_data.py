@@ -33,6 +33,11 @@ CGMACROS_ZIP_URL = "https://physionet.org/content/cgmacros/get-zip/1.0.0/"
 # (high workload). 19-ch 10-20 EEG + ECG @ 500 Hz.
 EEGMAT_BASE = "https://physionet.org/files/eegmat/1.0.0"
 
+# Mumtaz (2016) MDD-vs-healthy resting EEG (figshare 4244171, CC BY 4.0). REAL depression
+# label: 'H S* EC.edf' = healthy control, 'MDD S* EC.edf' = major depressive disorder. We fetch
+# only the eyes-closed (EC) resting recordings (the standard MDD resting-state condition).
+MUMTAZ_ARTICLE = "4244171"
+
 
 def _download(url: str, dest: Path) -> int:
     """Stream a URL to disk (urllib uses HTTP/1.1, avoiding the HTTP/2 stream errors some
@@ -114,6 +119,34 @@ def fetch_eegmat() -> Path:
     except urllib.error.HTTPError:
         pass
     print(f"Fetched {fetched}/{len(edfs)} eegmat recordings -> {out}")
+    return out
+
+
+def fetch_mumtaz_mdd() -> Path:
+    """Download the Mumtaz MDD-vs-healthy resting EEG cohort (eyes-closed) from figshare."""
+    import json
+
+    out = REAL_DIR / "mumtaz_mdd"
+    out.mkdir(parents=True, exist_ok=True)
+    meta = json.loads(urllib.request.urlopen(
+        f"https://api.figshare.com/v2/articles/{MUMTAZ_ARTICLE}", timeout=60).read())
+    ec = [f for f in meta["files"] if f["name"].strip().endswith("EC.edf")]
+    fetched, skipped = 0, []
+    for f in ec:
+        name = f["name"].strip().replace("  ", " ").replace(" ", "_")  # normalize spacing
+        dest = out / name
+        if dest.exists() and dest.stat().st_size > 1000:  # resume
+            fetched += 1
+            continue
+        try:  # one dead/renamed file must not abort the whole cohort fetch
+            _download(f["download_url"], dest)
+            fetched += 1
+        except urllib.error.URLError as err:
+            dest.unlink(missing_ok=True)
+            skipped.append(f"{name} ({err})")
+    if skipped:
+        print(f"  skipped {len(skipped)} unavailable file(s): {skipped}")
+    print(f"Fetched {fetched}/{len(ec)} Mumtaz MDD eyes-closed recordings -> {out}")
     return out
 
 
@@ -235,6 +268,7 @@ def main() -> None:
         choices=[
             "noneeg",
             "eegmat",
+            "mumtaz-mdd",
             "mimic-demo",
             "shanghai-cgm",
             "wesad",
@@ -245,7 +279,7 @@ def main() -> None:
         ],
         help=(
             "'all-free' downloads every credential-free source "
-            "(noneeg + eegmat + mimic-demo + shanghai-cgm + wesad + cgmacros)."
+            "(noneeg + eegmat + mumtaz-mdd + mimic-demo + shanghai-cgm + wesad + cgmacros)."
         ),
     )
     parser.add_argument("--subjects", type=int, default=4, help="Number of Non-EEG subjects to fetch.")
@@ -255,6 +289,8 @@ def main() -> None:
         fetch_noneeg(args.subjects)
     if args.source in ("eegmat", "all-free"):
         fetch_eegmat()
+    if args.source in ("mumtaz-mdd", "all-free"):
+        fetch_mumtaz_mdd()
     if args.source in ("mimic-demo", "all-free"):
         fetch_mimic_demo()
     if args.source in ("shanghai-cgm", "all-free"):

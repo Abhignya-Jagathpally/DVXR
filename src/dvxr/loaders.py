@@ -863,6 +863,61 @@ def _deap_channel_names(width: int) -> list[str]:
     return (eeg + peripheral)[:width]
 
 
+# Standard 10-20 electrode labels (old T3/T4/T5/T6 and new T7/T8/P7/P8 nomenclature) — used to
+# separate real EEG channels from reference/aux channels when loading montage EDFs.
+_EEG_1020 = frozenset({
+    "Fp1", "Fp2", "F3", "F4", "C3", "C4", "P3", "P4", "O1", "O2", "F7", "F8",
+    "T3", "T4", "T5", "T6", "T7", "T8", "P7", "P8", "Fz", "Cz", "Pz", "Oz",
+})
+
+
+def _emit_eeg_edf_events(raw, subject_id: str, session_id: str, source: str, device: str,
+                         eeg_names, phys_names, label_name: str, label_value: str,
+                         target_rate_hz: float, max_seconds: float | None,
+                         take: str) -> list[pd.DataFrame]:
+    """Shared EDF → canonical-events tail for EEG(+peripheral) recordings.
+
+    Types the channels, band-passes the EEG (0.5-45 Hz), average-references it, resamples to
+    ``target_rate_hz``, keeps the ``first`` or ``last`` ``max_seconds`` (``take``), and emits one
+    long-format row block per channel (EEG in µV under modality ``eeg``; ``phys_names`` under
+    ``physiology``). ``raw`` must already contain only ``eeg_names ∪ phys_names``. Reused by the
+    eegmat (workload) and Mumtaz-MDD (depression) loaders — same preprocessing, different labels.
+    """
+    raw.set_channel_types({**{c: "eeg" for c in eeg_names},
+                           **{c: "ecg" for c in phys_names}}, verbose="ERROR")
+    raw.filter(l_freq=0.5, h_freq=45.0, picks="eeg", verbose="ERROR")
+    raw.set_eeg_reference("average", projection=False, verbose="ERROR")
+    if target_rate_hz and raw.info["sfreq"] > target_rate_hz:
+        raw.resample(target_rate_hz, verbose="ERROR")
+    rate = float(raw.info["sfreq"])
+    data = raw.get_data()  # Volts (EEG filtered + avg-referenced)
+    n = data.shape[1]
+    keep = int(max_seconds * rate) if max_seconds else n
+    sl = slice(max(0, n - keep), n) if take == "last" else slice(0, min(n, keep))
+    start = pd.Timestamp("2026-01-01T00:00:00Z")
+    eeg_set = set(eeg_names)
+    parts: list[pd.DataFrame] = []
+    for ci, ch in enumerate(raw.ch_names):
+        series = data[ci, sl]
+        is_eeg = ch in eeg_set
+        parts.append(pd.DataFrame({
+            "subject_id": subject_id,
+            "session_id": session_id,
+            "timestamp_utc": start + pd.to_timedelta(np.arange(len(series)) / rate, unit="s"),
+            "source_system": source,
+            "device": device,
+            "modality": "eeg" if is_eeg else "physiology",
+            "channel": ch if is_eeg else ch.lower(),
+            "value": series * (1e6 if is_eeg else 1.0),  # EEG Volts -> uV
+            "unit": "uV" if is_eeg else "a.u.",
+            "sampling_rate_hz": rate,
+            "quality_flag": "ok",
+            "label_name": label_name,
+            "label_value": label_value,
+        }))
+    return parts
+
+
 def load_eegmat_dataset(
     data_dir: str | Path = "data/real/eegmat",
     subjects: int | None = None,
@@ -886,7 +941,6 @@ def load_eegmat_dataset(
     subs = sorted({p.stem.rsplit("_", 1)[0] for p in data_dir.glob("Subject*_*.edf")})
     if subjects:
         subs = subs[:subjects]
-    start = pd.Timestamp("2026-01-01T00:00:00Z")
     parts: list[pd.DataFrame] = []
     for sid in subs:
         for cond, label in (("1", "low_workload"), ("2", "high_workload")):
@@ -901,38 +955,70 @@ def load_eegmat_dataset(
                 raw.drop_channels(["A2-A1"])
             eeg_names = [c for c in raw.ch_names if c.upper() != "ECG"]
             ecg_names = [c for c in raw.ch_names if c.upper() == "ECG"]
-            raw.set_channel_types({**{c: "eeg" for c in eeg_names},
-                                   **{c: "ecg" for c in ecg_names}}, verbose="ERROR")
-            raw.filter(l_freq=0.5, h_freq=45.0, picks="eeg", verbose="ERROR")
-            raw.set_eeg_reference("average", projection=False, verbose="ERROR")
-            if target_rate_hz and raw.info["sfreq"] > target_rate_hz:
-                raw.resample(target_rate_hz, verbose="ERROR")
-            rate = float(raw.info["sfreq"])
-            data = raw.get_data()  # Volts (EEG filtered + avg-referenced)
-            n = data.shape[1]
-            keep = int(max_seconds * rate) if max_seconds else n
-            # rest: last `keep`; task: first `keep` (both ≈ max_seconds long).
-            sl = slice(max(0, n - keep), n) if cond == "1" else slice(0, min(n, keep))
-            eeg_set = set(eeg_names)
-            for ci, ch in enumerate(raw.ch_names):
-                series = data[ci, sl]
-                is_eeg = ch in eeg_set
-                parts.append(pd.DataFrame({
-                    "subject_id": sid,
-                    "session_id": f"eegmat_{cond}",
-                    "timestamp_utc": start + pd.to_timedelta(np.arange(len(series)) / rate, unit="s"),
-                    "source_system": "eegmat",
-                    "device": "neurocom_eeg",
-                    "modality": "eeg" if is_eeg else "physiology",
-                    "channel": ch if is_eeg else ch.lower(),
-                    "value": series * (1e6 if is_eeg else 1.0),  # EEG Volts -> uV
-                    "unit": "uV" if is_eeg else "a.u.",
-                    "sampling_rate_hz": rate,
-                    "quality_flag": "ok",
-                    "label_name": "cognitive_workload",
-                    "label_value": label,
-                }))
+            # rest (cond 1): last `max_seconds`; task (cond 2): first `max_seconds`.
+            parts += _emit_eeg_edf_events(
+                raw, sid, f"eegmat_{cond}", "eegmat", "neurocom_eeg",
+                eeg_names, ecg_names, "cognitive_workload", label,
+                target_rate_hz, max_seconds, take="last" if cond == "1" else "first")
     if not parts:
         raise FileNotFoundError(
             f"No eegmat EDFs under {data_dir}. Fetch with: python3 scripts/fetch_data.py eegmat")
+    return validate_events(pd.concat(parts, ignore_index=True))
+
+
+def load_mumtaz_mdd_dataset(
+    data_dir: str | Path = "data/real/mumtaz_mdd",
+    subjects: int | None = None,
+    target_rate_hz: float = 64.0,
+    max_seconds: float = 120.0,
+) -> pd.DataFrame:
+    """Load the Mumtaz (2016) MDD-vs-healthy resting EEG cohort into canonical events.
+
+    REAL depression label (not a proxy): eyes-closed resting recordings named ``H S* EC``
+    (healthy control → ``low_depression``) vs ``MDD S* EC`` (major depressive disorder →
+    ``high_depression``). 19-channel 10-20 EEG (linked-ear reference dropped, ``-LE`` suffix
+    stripped); band-passed (0.5-45 Hz), average-referenced, resampled to ``target_rate_hz``,
+    first ``max_seconds`` per recording. EEG-only (single modality); each subject is one CV group.
+    Source: figshare 4244171 (Mumtaz et al., CC BY 4.0) — subject-level diagnosis, cross-subject.
+    """
+    import mne
+    import re
+
+    data_dir = Path(data_dir)
+    files = sorted(data_dir.glob("*EC.edf"))
+    # Interleave controls and patients so a `subjects` cap yields a class-balanced subset
+    # (sorted filenames otherwise place all H_* before all MDD_* -> a small cap is single-class).
+    h = [f for f in files if f.stem.upper().startswith("H")]
+    mdd = [f for f in files if f.stem.upper().startswith("MDD")]
+    files = [f for i in range(max(len(h), len(mdd))) for f in (h[i:i + 1] + mdd[i:i + 1])]
+    seen: list[str] = []
+    parts: list[pd.DataFrame] = []
+    for edf in files:
+        m = re.match(r"(H|MDD)_?S(\d+)", edf.stem, re.I)
+        if not m:
+            continue
+        grp = m.group(1).upper()
+        subject_id = f"{grp}_S{int(m.group(2))}"
+        if subject_id in seen:
+            continue  # one EC recording per subject
+        if subjects and len(seen) >= subjects:
+            break
+        seen.append(subject_id)
+        label = "high_depression" if grp == "MDD" else "low_depression"
+        raw = mne.io.read_raw_edf(edf, preload=True, verbose="ERROR")
+        # clean names: strip 'EEG ' prefix and any reference suffix ('-LE', '-A1', ...).
+        raw.rename_channels({ch: re.sub(r"-\w+$", "", ch.split(" ", 1)[1] if " " in ch else ch).strip()
+                             for ch in raw.ch_names})
+        eeg_names = [c for c in raw.ch_names if c in _EEG_1020]
+        aux = [c for c in raw.ch_names if c not in eeg_names]
+        if aux:
+            raw.drop_channels(aux)  # drop A2-A1 / 23A-23R / 24A-24R aux channels
+        if not eeg_names:
+            continue
+        parts += _emit_eeg_edf_events(
+            raw, subject_id, "mumtaz_ec", "mumtaz_mdd", "neuroscan",
+            eeg_names, [], "depression", label, target_rate_hz, max_seconds, take="first")
+    if not parts:
+        raise FileNotFoundError(
+            f"No Mumtaz MDD EDFs under {data_dir}. Fetch with: python3 scripts/fetch_data.py mumtaz-mdd")
     return validate_events(pd.concat(parts, ignore_index=True))
