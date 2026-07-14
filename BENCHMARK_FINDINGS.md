@@ -214,6 +214,31 @@ classical/linear shared head; the LLM's *validated* role is `dvxr/llm/insight.py
 a calibrated prediction and never makes one. So "LLM-Based Prediction" is, today, aspirational —
 the LLM narrates reliably or predicts poorly untrained. Reported here, not hidden.
 
+#### Slice C ablation: in-distribution soft tokens do NOT rescue the LLM predictor (honest negative)
+
+We tested the most plausible cheap fix for *why* the frozen-LLM predictor is weak: its VQ→LLM
+projection is an untrained random matrix, so the soft prompts are out-of-distribution for the
+frozen Qwen. Slice C replaces it with an **in-distribution** projection — each VQ token becomes a
+convex combination of the LLM's own real token embeddings (`DVXR_LLM_INDIST=1`,
+`src/dvxr/llm/predictor.py`), so soft prompts live inside the model's embedding hull by
+construction. Head-to-head on `eegmat_workload` (3×5 subject-held-out,
+`scripts/run_llm_indist_ablation.py`):
+
+| config | 1−AUROC | AUROC |
+|---|---|---|
+| single:eeg (band-power ref) | 0.3635 | 0.636 |
+| rep:llm (random projection) | 0.4164 | 0.584 |
+| rep:llm (in-distribution) | 0.4169 | 0.583 |
+
+**In-distribution changes nothing (−0.1%);** both LLM variants lose to band-power by ~14.5%. The
+bottleneck is not the projection *distribution* — it is that a **frozen** general-purpose 0.5B LLM
+has no learned mapping from EEG/BCI VQ tokens to the clinical label; placing the tokens in the
+right magnitude/subspace does not confer decoding ability the model never acquired. Closing this
+would require actually *training* the read-in (LoRA / backprop-through-LLM), which is CPU-
+infeasible here and flagged, not faked. So the honest verdict stands and is now *sharper*: the
+LLM's validated role is insight/explanation, not prediction — and we ruled out the obvious
+projection fix rather than leaving it as hand-waving. A clean negative on the third novel slice.
+
 ## Headline (clinical profile): the fused model does NOT win
 
 Repeated subject/patient-held-out CV (5×5), error metrics (lower is better),

@@ -131,3 +131,12 @@ unimodal theory is running; framing will be tightened against closest prior art.
     heavier LoRA/backprop-through-LLM variant is likely infeasible on CPU and would be flagged, not
     faked. This slice is the hardest to make a genuine win; treat a rigorous negative as a valid
     outcome, not a failure.
+- **2026-07-14 — iter 5 (Slice C DONE — honest negative):** Implemented the in-distribution
+  projection (VQ tokens → convex combos of the frozen LLM's real token embeddings,
+  `DVXR_LLM_INDIST=1`) and ran it vs the random projection on eegmat
+  (`scripts/run_llm_indist_ablation.py`). **Result: no effect** — rep:llm(random) 0.4164 vs
+  rep:llm(indist) 0.4169 (−0.1%), both lose to band-power single:eeg (0.3635) by ~14.5%. The
+  bottleneck is the frozen LLM's lack of BCI knowledge, not the projection distribution; fixing it
+  needs actual read-in training (LoRA), CPU-infeasible here (flagged, not faked). Findings updated.
+  **All three sequenced slices complete: A positive, B positive, C honest-negative — a full,
+  honest arc across POW Goals 1–3.**

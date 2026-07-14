@@ -53,12 +53,15 @@ class SoftPromptReader:
     model_id: str
     d_code: int = 24
     seed: int = 7
+    indist: bool = False                 # Slice C: in-distribution (real-embedding) soft tokens
+    n_anchors: int = 256
     _model: object = field(default=None, repr=False)
     _tok: object = field(default=None, repr=False)
     hidden: int = 0
     device: str = "cpu"
     _proj: Dict[str, np.ndarray] = field(default_factory=dict, repr=False)
     _absent: Dict[str, np.ndarray] = field(default_factory=dict, repr=False)
+    _anchors: object = field(default=None, repr=False)   # (n_anchors, hidden) real token embeds
 
     def load(self) -> "SoftPromptReader":
         import torch
@@ -73,13 +76,42 @@ class SoftPromptReader:
         for p in self._model.parameters():
             p.requires_grad_(False)  # frozen
         self.hidden = int(self._model.config.hidden_size)
+        if self.indist:
+            # Slice C: sample n_anchors REAL token embeddings; soft tokens will be convex
+            # combinations of these, so they live inside the frozen LLM's own embedding
+            # distribution (magnitude + direction) instead of an arbitrary random subspace.
+            E = self._model.get_input_embeddings().weight.detach().float().cpu().numpy()
+            rng = np.random.default_rng(self.seed)
+            idx = rng.choice(E.shape[0], size=min(self.n_anchors, E.shape[0]), replace=False)
+            self._anchors = E[idx].astype(np.float32)     # (n_anchors, hidden)
         return self
 
     def _project(self, modality: str, quant: np.ndarray) -> np.ndarray:
+        if not self.indist:
+            if modality not in self._proj:
+                self._proj[modality] = _seeded_matrix(self.hidden, quant.shape[1], self.seed, f"proj:{modality}")
+                self._absent[modality] = _seeded_matrix(1, self.hidden, self.seed, f"absent:{modality}")[0]
+            return quant @ self._proj[modality].T  # (N, hidden)
+        # in-distribution: VQ quant -> logits over anchors -> softmax -> convex combo of
+        # REAL token embeddings. The soft token is guaranteed inside the real-embedding hull.
+        r = self._anchors.shape[0]
         if modality not in self._proj:
-            self._proj[modality] = _seeded_matrix(self.hidden, quant.shape[1], self.seed, f"proj:{modality}")
-            self._absent[modality] = _seeded_matrix(1, self.hidden, self.seed, f"absent:{modality}")[0]
-        return quant @ self._proj[modality].T  # (N, hidden)
+            self._proj[modality] = _seeded_matrix(r, quant.shape[1], self.seed, f"logit:{modality}")
+            self._absent[modality] = _seeded_matrix(1, r, self.seed, f"absent:{modality}")[0]
+        logits = quant @ self._proj[modality].T                 # (N, r)
+        logits = logits - logits.max(axis=1, keepdims=True)
+        w = np.exp(logits)
+        w = w / np.clip(w.sum(axis=1, keepdims=True), 1e-9, None)
+        return (w @ self._anchors).astype(np.float32)           # (N, hidden), in-distribution
+
+    def _absent_token(self, modality: str) -> np.ndarray:
+        """Absent-modality soft token, in the same space as present ones."""
+        if not self.indist:
+            return self._absent[modality]
+        a = self._absent[modality]                              # (r,) logits over anchors
+        a = a - a.max()
+        w = np.exp(a); w = w / np.clip(w.sum(), 1e-9, None)
+        return (w @ self._anchors).astype(np.float32)
 
     def encode(self, quant_by_mod: Dict[str, np.ndarray], present: Dict[str, bool],
                batch_size: int = 16) -> np.ndarray:
@@ -99,7 +131,7 @@ class SoftPromptReader:
                 soft[:, j, :] = self._project(m, quant_by_mod[m])
             else:
                 self._project(m, quant_by_mod[m])  # ensure absent token exists
-                soft[:, j, :] = self._absent[m]
+                soft[:, j, :] = self._absent_token(m)
 
         # text prompt embeddings (shared across rows)
         embed_layer = self._model.get_input_embeddings()
@@ -128,9 +160,10 @@ _READERS: Dict[str, SoftPromptReader] = {}
 
 def get_reader(d_code: int = 24, seed: int = 7) -> SoftPromptReader:
     mid = resolve_model_id()
-    key = f"{mid}:{d_code}:{seed}"
+    indist = bool(os.environ.get("DVXR_LLM_INDIST"))     # Slice C: in-distribution soft tokens
+    key = f"{mid}:{d_code}:{seed}:{'indist' if indist else 'rand'}"
     if key not in _READERS:
-        _READERS[key] = SoftPromptReader(mid, d_code=d_code, seed=seed).load()
+        _READERS[key] = SoftPromptReader(mid, d_code=d_code, seed=seed, indist=indist).load()
     return _READERS[key]
 
 
