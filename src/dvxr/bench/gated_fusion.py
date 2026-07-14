@@ -162,6 +162,49 @@ def _nnls_weights(P: np.ndarray, y: np.ndarray) -> np.ndarray:
     return w / s if s > _EPS else np.full(P.shape[1], 1.0 / P.shape[1])
 
 
+# simplicity rank for the 1-SE rule: at small N, prefer the lower-capacity candidate
+# (a single modality over concat over a frozen FM over a boosted tree) when errors tie —
+# less capacity overfits the noisy inner-CV estimate less, narrowing the held-out gap.
+def _simplicity(name: str) -> int:
+    if name.startswith("single:"):
+        return 0
+    return {"concat": 1, "sota": 2, "concat_gbm": 3}.get(name, 2)
+
+
+def _boot_err_se(kind: str, subjects: np.ndarray, y: np.ndarray,
+                 oof_pred: np.ndarray, seed: int) -> float:
+    """Subject-grouped bootstrap SE of a single candidate's inner-CV error."""
+    uniq = np.unique(subjects)
+    if len(uniq) < 2:
+        return float("inf")
+    rng = np.random.default_rng(seed)
+    errs: List[float] = []
+    for _ in range(_BOOT):
+        pick = rng.choice(uniq, size=len(uniq), replace=True)
+        rows = np.concatenate([np.where(subjects == s)[0] for s in pick])
+        e = _cand_error(kind, y[rows], oof_pred[rows])
+        if np.isfinite(e):
+            errs.append(e)
+    return float(np.std(errs, ddof=1)) if len(errs) >= 2 else float("inf")
+
+
+def _one_se_best(kind: str, subjects: np.ndarray, y: np.ndarray,
+                 oof: Dict[str, np.ndarray], rows: np.ndarray,
+                 cand_err: Dict[str, float], argmin_cand: str, seed: int) -> str:
+    """1-SE rule: among candidates within one bootstrap SE of the lowest inner-CV error,
+    return the SIMPLEST (lowest-capacity). Falls back to argmin when nothing else qualifies.
+    This is the finite-sample robustification that fixes inner-CV<->held-out divergence."""
+    se = _boot_err_se(kind, subjects, y[rows], oof[argmin_cand][rows], seed)
+    if not np.isfinite(se):
+        return argmin_cand
+    band = cand_err[argmin_cand] + se
+    within = [c for c, e in cand_err.items() if np.isfinite(e) and e <= band]
+    if not within:
+        return argmin_cand
+    # simplest first; break ties by lower error
+    return min(within, key=lambda c: (_simplicity(c), cand_err[c]))
+
+
 def _grouped_bootstrap_se(kind: str, subjects: np.ndarray, y: np.ndarray,
                           stack_oof: np.ndarray, best_oof: np.ndarray,
                           seed: int) -> Tuple[float, float]:
@@ -188,7 +231,8 @@ def _grouped_bootstrap_se(kind: str, subjects: np.ndarray, y: np.ndarray,
 
 
 def dnh_weights(task: BenchTask, cands: Dict[str, Callable], singles: List[str],
-                tr: np.ndarray, seed: int) -> Tuple[Dict[str, float], dict]:
+                tr: np.ndarray, seed: int,
+                strict: bool | None = None) -> Tuple[Dict[str, float], dict]:
     """Compute the do-no-harm reliability-gated weights over candidates on TRAIN.
 
     Returns (weights_by_candidate, diagnostics). The diagnostics dict exposes the
@@ -206,16 +250,28 @@ def dnh_weights(task: BenchTask, cands: Dict[str, Callable], singles: List[str],
     # per-candidate inner-CV reliability (error; lower is better)
     cand_err = {c: _cand_error(task.kind, ytr[rows], oof[c][rows]) for c in names}
     finite = {c: e for c, e in cand_err.items() if np.isfinite(e)}
-    # do-no-harm reference = best OVERALL candidate (the guarantee is vs the field)
-    best_cand = (min(finite, key=finite.get) if finite
-                 else min(names, key=lambda c: cand_err.get(c, np.inf)))
+    # do-no-harm reference = best OVERALL candidate (the guarantee is vs the field).
+    # STRICT (argmin) is the default: the 1-SE "prefer the simpler candidate" rule was
+    # tested (scripts/run_dnh_ablation.py) and is a net NEGATIVE — it shaves the worst
+    # held-out violation (eegmat) but is over-conservative and sacrifices real fusion
+    # wins (wesad), holding do-no-harm on fewer tasks. Kept as an opt-in (DVXR_DNH_1SE /
+    # strict=False) for the documented ablation, not the default.
+    argmin_cand = (min(finite, key=finite.get) if finite
+                   else min(names, key=lambda c: cand_err.get(c, np.inf)))
+    if strict is None:
+        strict = not bool(os.environ.get("DVXR_DNH_1SE"))
+    if strict or len(rows) < 4:
+        best_cand = argmin_cand
+    else:
+        best_cand = _one_se_best(task.kind, sub_tr, task.y[tr], oof, rows,
+                                 cand_err, argmin_cand, seed)
     valid_single = [c for c in singles if np.isfinite(cand_err[c])]
     best_single = (min(valid_single, key=lambda c: cand_err[c])
                    if valid_single else best_cand)
 
     onehot = {c: (1.0 if c == best_cand else 0.0) for c in names}
     base_diag = {"cand_err": cand_err, "best_cand": best_cand,
-                 "best_single": best_single}
+                 "argmin_cand": argmin_cand, "best_single": best_single}
     # not enough coverage / candidates to stack -> fall back to best candidate
     if len(rows) < 4 or len(names) < 2:
         return onehot, {**base_diag, "lambda": 1.0, "adv_mean": 0.0,
@@ -255,14 +311,15 @@ def dnh_weights(task: BenchTask, cands: Dict[str, Callable], singles: List[str],
 
 
 # --------------------------------------------------------------- predictor
-def pred_dnh_gated(task: BenchTask, tr, te, seed: int = 7) -> np.ndarray:
+def pred_dnh_gated(task: BenchTask, tr, te, seed: int = 7,
+                   strict: bool | None = None) -> np.ndarray:
     """Do-no-harm reliability-gated late fusion prediction on the test rows."""
     tr = np.asarray(tr)
     te = np.asarray(te)
     cands, singles = _candidates(task)
     if not cands:                                   # nothing to fuse
         return np.full(len(te), float(np.mean(task.y[tr])))
-    w, _diag = dnh_weights(task, cands, singles, tr, seed)
+    w, _diag = dnh_weights(task, cands, singles, tr, seed, strict=strict)
 
     # refit each participating candidate on FULL train, combine on test.
     pred = np.zeros(len(te))

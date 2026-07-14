@@ -86,3 +86,20 @@ unimodal theory is running; framing will be tightened against closest prior art.
   braindecode route. Candidates: LaBraM (`THU-BCI/LaBraM` / `eeg-telecom-paris/labram-base-official`
   unverified) or EEGPT. Frozen-extractor → linear head → compete on the same folds via a new
   `sota:eeg_fm` config. Detailed plan when Slice A commits.
+  - **Concrete weights found:** `braindecode/labram-pretrained` (HF) ships `model.safetensors`
+    (23 MB) + `config.json` with LaBraM's full 10-20 channel vocabulary and `n_times=3000`
+    (15 s @ 200 Hz, 1 s patches). Loadable via `safetensors.torch.load_file` **without** the
+    braindecode class import — Slice B vendors a minimal LaBraM forward (temporal-conv patch
+    embed + channel/pos embeddings + transformer encoder, arXiv 2208.06366) keyed to the
+    state-dict names, feeds the raw EEG windows in `task.extra["raw"]["eeg"]` (DEAP 32-ch,
+    eegmat 19-ch → mapped into the channel vocab, resampled to 200 Hz), and reports frozen-
+    embedding → linear head vs the band-power+VQ baseline on the same folds.
+- **2026-07-14 — iter 2 (1-SE ablation = honest negative):** Implemented the 1-SE simpler-candidate
+  rule as the finite-sample robustification and ran it strict-vs-1SE on the same folds
+  (`scripts/run_dnh_ablation.py`). Result: **net negative** — 1-SE shaves the worst held-out
+  violation (eegmat −6.9%→−1.2%) but is over-conservative, killing a real fusion win (wesad
+  +8.5%→−2.1%) and worsening the near-chance DEAP tasks; do-no-harm holds on 3/6 under strict vs
+  2/6 under 1-SE. **Strict stays the default;** 1-SE retained as a documented opt-in. Findings +
+  code updated. Also diagnosed + fixed a shared-machine thread-thrashing issue (see
+  [[shared-machine-thread-caps]]) — cap OMP/BLAS threads on heavy runs. **Next:** commit iter-2,
+  then build Slice B (LaBraM EEG FM, now unblocked — weights confirmed loadable).

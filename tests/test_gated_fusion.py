@@ -71,6 +71,23 @@ class DoNoHarmTest(unittest.TestCase):
             self.assertLessEqual(diag["dnh_inner_err"], best_err + 1e-6,
                                  f"{name}: floor violated")
 
+    def test_one_se_rule_prefers_simpler_candidate(self):
+        # 'a' carries the signal; a linear single-modality head already suffices, so the
+        # 1-SE rule should not hand the reference to a higher-capacity concat/GBM candidate
+        # when it is not clearly (>1 SE) better. best_cand should be a low-capacity choice.
+        task = _make_task("single_dom", lambda a, b, bias: a[0] + a[1] + bias, seed=5)
+        tr, _te = _first_split(task)
+        cands, singles = _candidates(task)
+        # opt into the 1-SE rule (default is strict argmin); it must never pick a MORE
+        # complex reference than the strict argmin candidate.
+        _w, diag = dnh_weights(task, cands, singles, tr, seed=7, strict=False)
+        from dvxr.bench.gated_fusion import _simplicity
+        self.assertLessEqual(_simplicity(diag["best_cand"]),
+                             _simplicity(diag["argmin_cand"]))
+        # and strict is the default: best_cand == argmin_cand when strict is unset
+        _w2, diag2 = dnh_weights(task, cands, singles, tr, seed=7)
+        self.assertEqual(diag2["best_cand"], diag2["argmin_cand"])
+
     def test_not_fooled_by_noise_modality(self):
         # modality 'a' carries all the signal; 'b' is pure noise.
         task = _make_task("noise_guard", lambda a, b, bias: a[0] + a[1] + bias, seed=1)

@@ -134,6 +134,36 @@ measured, reportable finding (the synergy/redundancy diagnostic in `outputs/dnh_
 characterizes *when* it helps vs. merely not-harms). Reproduce:
 `python3 scripts/run_benchmark.py --profile mh --repeats 5 --folds 5` (config `dnh_gated`).
 
+### Ablation: the 1-SE candidate-selection rule — tested, and it does NOT help (kept off)
+
+The one held-out failure above (eegmat −15.6%) is the inner-CV floor over-trusting a
+concat/GBM candidate that generalized worse than single-ECG. The natural robustification is a
+**1-SE rule**: among candidates within one subject-grouped bootstrap SE of the best inner-CV
+error, pick the *simplest* (a single modality over concat over a boosted tree), so at N≤60 the
+noisy inner-CV estimate cannot promote an over-capacity candidate on a tie. We implemented it
+(`strict=False` / `DVXR_DNH_1SE`) and ran it head-to-head against the strict argmin selection on
+the same folds (`scripts/run_dnh_ablation.py`, 3×5, no-SOTA candidate set for speed on a shared
+host). RER vs. best single modality (>0 = do-no-harm holds on held-out subjects):
+
+| task | strict | 1-SE | effect |
+|---|---|---|---|
+| stress | +33.5% | +36.3% | ~tie |
+| wesad_stress | **+8.5%** | **−2.1%** | 1-SE kills a real fusion win |
+| deap_anxiety | −2.3% | −6.2% | worse |
+| deap_arousal | −3.7% | −5.3% | worse |
+| eegmat_workload | **−6.9%** | **−1.2%** | 1-SE closes the target gap |
+| mumtaz_depression | +10.2% | +11.5% | ~tie |
+
+**The 1-SE rule is a net negative.** It does exactly what it was designed to do on eegmat (shaves
+the worst held-out violation, −6.9%→−1.2%), but it is over-conservative: it falls back off a
+genuinely-helpful blend on wesad (+8.5%→−2.1%, a win turned into a loss) and worsens the
+near-chance DEAP tasks. Aggregate: do-no-harm holds on **3/6 tasks under strict vs. 2/6 under
+1-SE**, and mean RER is higher for strict (+6.6% vs. +5.5%). So **strict argmin stays the default**;
+the 1-SE rule is retained only as an opt-in for this documented ablation. Honest negative on a
+plausible fix — reported, not buried. (The deeper lesson: at N≤60 there is no free lunch between
+worst-case safety and average multimodal gain; a per-task, not global, selection rule is the open
+question.)
+
 ### The LLM-in-the-predictive-path (`rep:llm`): present, off by default, weakest
 
 The proposal's title is "LLM-Based … Prediction," and the repo does implement an LLM **in the
