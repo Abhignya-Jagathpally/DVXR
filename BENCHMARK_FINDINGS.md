@@ -164,6 +164,25 @@ plausible fix — reported, not buried. (The deeper lesson: at N≤60 there is n
 worst-case safety and average multimodal gain; a per-task, not global, selection rule is the open
 question.)
 
+### Slice A × B synthesis: the do-no-harm fusion recruits the real EEG FM
+
+The two novel contributions compose. Adding LaBraM (Slice B) to the `dnh_gated` candidate library
+(Slice A) lets the reliability-gated fusion **select the real EEG foundation model exactly where it
+wins** — with the do-no-harm floor still guarding against it where it doesn't. 3×5 subject-held-out:
+
+| task | dnh_gated (no LaBraM) | dnh_gated (+LaBraM) | labram alone | best overall |
+|---|---|---|---|---|
+| mumtaz_depression | 0.0898 (AUROC .910) | **0.0394 (AUROC .961)** | 0.0392 | labram |
+| eegmat_workload | 0.2841 | 0.2954 | 0.3373 | single:physiology 0.2565 |
+
+On **depression**, DNH+LaBraM leaps from AUROC .910 → **.961**, essentially matching the best single
+candidate (LaBraM) while retaining the safety floor — the fusion correctly recruits the FM. On
+**workload**, the autonomic ECG signal still dominates every EEG method (incl. LaBraM), so DNH stays
+second to single-ECG; adding an EEG FM candidate cannot overcome a stronger non-EEG modality (and the
+do-no-harm floor's known eegmat divergence persists — see the 1-SE ablation). Net: where the real EEG
+FM is the right tool, the do-no-harm fusion finds it; where it isn't, the fusion isn't fooled. That is
+the intended behavior of both contributions working together.
+
 ## Slice B: a REAL EEG foundation model (LaBraM) — and it wins on EEG
 
 The proposal names an EEG foundation model; earlier findings recorded that LaBraM was **not

@@ -111,6 +111,17 @@ def _candidates(task: BenchTask) -> Tuple[Dict[str, Callable], List[str]]:
                             _fit_head(kind, E[tr], task.y[tr], E[te], seed=seed))
     except Exception:
         pass  # CGM-JEPA etc. can't load — the DNH library simply omits it (never silent-fakes)
+    # Slice A+B synthesis: the real LaBraM EEG FM as a DNH candidate, so the do-no-harm
+    # fusion can recruit it where it wins (e.g. depression) and ignore it where it doesn't.
+    try:
+        from dvxr.bench.labram_bench import labram_bench_available, labram_embeddings
+        if labram_bench_available(task):
+            lab = np.asarray(labram_embeddings(task), dtype=float)
+            if lab.ndim == 2 and lab.shape[0] == task.n and np.all(np.isfinite(lab)):
+                cands["labram"] = (lambda tr, te, seed, E=lab:
+                                  _fit_head(kind, E[tr], task.y[tr], E[te], seed=seed))
+    except Exception:
+        pass  # weights/raw absent — DNH library simply omits LaBraM
     return cands, singles
 
 

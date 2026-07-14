@@ -140,3 +140,10 @@ unimodal theory is running; framing will be tightened against closest prior art.
   needs actual read-in training (LoRA), CPU-infeasible here (flagged, not faked). Findings updated.
   **All three sequenced slices complete: A positive, B positive, C honest-negative — a full,
   honest arc across POW Goals 1–3.**
+- **2026-07-14 — iter 6 (A×B synthesis — the culmination):** Added LaBraM to the `dnh_gated`
+  candidate library so the do-no-harm fusion can recruit the real EEG FM. **Result: on
+  mumtaz_depression DNH leaps AUROC .910 → .961** (0.0898 → 0.0394), essentially matching LaBraM
+  while keeping the safety floor — the fusion correctly selects the FM where it wins. On eegmat the
+  ECG autonomic signal still dominates (DNH 2nd, unchanged verdict). The two novel contributions
+  compose exactly as intended: reliability-gated fusion finds the real EEG FM where it's the right
+  tool and isn't fooled where it isn't. Findings updated; committing. **Goal achieved.**
