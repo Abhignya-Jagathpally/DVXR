@@ -101,5 +101,13 @@ unimodal theory is running; framing will be tightened against closest prior art.
   +8.5%→−2.1%) and worsening the near-chance DEAP tasks; do-no-harm holds on 3/6 under strict vs
   2/6 under 1-SE. **Strict stays the default;** 1-SE retained as a documented opt-in. Findings +
   code updated. Also diagnosed + fixed a shared-machine thread-thrashing issue (see
-  [[shared-machine-thread-caps]]) — cap OMP/BLAS threads on heavy runs. **Next:** commit iter-2,
-  then build Slice B (LaBraM EEG FM, now unblocked — weights confirmed loadable).
+  [[shared-machine-thread-caps]]) — cap OMP/BLAS threads on heavy runs.
+- **2026-07-14 — iter 3 (Slice B fully de-risked + specced):** Confirmed `braindecode/labram-pretrained`
+  safetensors load here (no braindecode), and reverse-engineered the **complete LaBraM-base spec**
+  (embed 200, 12 blocks, 10 heads, TemporalConv patch embed, channel-major token layout,
+  `_adj_position_embedding` expansion, `LABRAM_CHANNEL_ORDER` mapping, cls-token frozen rep) from
+  the state dict + the BSD-3 reference (downloaded, box has internet). Wrote the exact build spec +
+  a mandatory correctness-validation plan to `docs/SLICE_B_LABRAM.md`. **Next (tasks #5/#6):**
+  implement `src/dvxr/encoders/labram_real.py` (vendored forward + `from_pretrained`), validate
+  (shape asserts, strict load, non-degeneracy, ideally a reference cross-check in an isolated env),
+  wire `sota:eeg_fm` into the sweep + DNH library, and honestly report FM-vs-baseline per cohort.
