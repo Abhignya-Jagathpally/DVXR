@@ -177,6 +177,12 @@ def baseline_configs(task: BenchTask, include_sota: bool = True) -> Dict[str, Ca
     if task.kind == "classification" and isinstance(task.extra.get("raw"), dict):
         from dvxr.bench.raw_seq import pred_rawcnn
         cfgs["raw_cnn"] = pred_rawcnn
+    # do-no-harm reliability-gated late fusion (the novel contribution): a Super-Learner-
+    # style non-negative-weight ensemble over {single modalities, concat, SOTA} with a
+    # finite-sample safety floor that never trusts fusion over the best single modality
+    # unless the inner-CV advantage clears one bootstrap SE. Competes on the same folds.
+    from dvxr.bench.gated_fusion import pred_dnh_gated
+    cfgs["dnh_gated"] = pred_dnh_gated
     if include_sota:
         cfgs["sota"] = pred_sota
     return cfgs
