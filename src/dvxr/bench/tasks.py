@@ -22,7 +22,12 @@ from typing import Dict, List, Optional
 import numpy as np
 import pandas as pd
 
-from dvxr.features import build_glucose_forecast_table, build_signal_windows, feature_columns
+from dvxr.features import (
+    build_glucose_forecast_table,
+    build_raw_windows,
+    build_signal_windows,
+    feature_columns,
+)
 from dvxr.loaders import (
     load_cgmacros_bio,
     load_cgmacros_dataset,
@@ -288,59 +293,62 @@ def cgmacros_diabetes_task(data_dir: str = "data/real/cgmacros",
     )
 
 
-# ------------------------------------------------------------- DEAP arousal
-def deap_arousal_task(data_dir: str = "data/real/deap", subjects: int = 8,
-                      max_trials: Optional[int] = None, window_seconds: int = 8) -> BenchTask:
-    """DEAP EEG+peripheral arousal — REAL self-report arousal (high vs low).
+# ---------------------------------------------------------------- DEAP affect
+_DEAP_RAW_NOTE = ("decimated preprocessed DEAP signal (~8 Hz effective); "
+                  "raw waveform vs the summary-stat floor on the same signal")
 
-    Auto-detects preprocessed (.dat, labels included) vs raw (.bdf + ratings).
-    EEG band-power + peripheral-physiology windows, non-overlapping. One trial spans
-    ~60 s, so short windows give several examples per trial while subjects stay the CV group.
+
+def _deap_affect_task(name: str, label_scheme: str, positive: str,
+                      data_dir: str, subjects: int, max_trials: Optional[int],
+                      window_seconds: int, extra: Optional[dict] = None) -> BenchTask:
+    """Shared builder for the DEAP EEG+peripheral affect tasks (arousal, anxiety).
+
+    Both draw REAL self-report (SAM) labels and share the identical windowing, feature
+    extraction, raw-signal path, and subject-held-out CV — only ``label_scheme`` and the
+    positive-class name differ. ``label_scheme`` names both the loader scheme and the window
+    label column (see ``_deap_affect_label`` in loaders.py). Non-overlapping windows; one
+    ~60 s trial yields several windows while the subject remains the CV group.
     """
     assert_no_fabrication()
-    events = load_deap_dataset(data_dir, subjects=subjects, max_trials=max_trials)
+    events = load_deap_dataset(data_dir, subjects=subjects, max_trials=max_trials,
+                               label_scheme=label_scheme)
     win = build_signal_windows(events, window_seconds=window_seconds,
-                               step_seconds=window_seconds, label_name="arousal")
+                               step_seconds=window_seconds, label_name=label_scheme)
     win = win[win["target"].astype(str).str.len() > 0].reset_index(drop=True)
-    y = (win["target"].astype(str) == "high_arousal").astype(int).to_numpy()
+    y = (win["target"].astype(str) == positive).astype(int).to_numpy()
     groups = _split_by_modality(win)
     feats = {m: win[cols].to_numpy(dtype=float) for m, cols in groups.items()}
+    raw, raw_ch = build_raw_windows(events, win, modalities=list(groups))
     return BenchTask(
-        name="deap_arousal", kind="classification", features=feats,
+        name=name, kind="classification", features=feats,
         feature_names=groups, y=y, subject_ids=win["subject_id"].to_numpy(),
         metric="1-AUROC", baseline_hint="majority", raw_windows=win,
-        extra={"events": events, "window_seconds": window_seconds},
+        extra={"events": events, "window_seconds": window_seconds,
+               "raw": raw, "raw_channels": raw_ch, "raw_note": _DEAP_RAW_NOTE,
+               **(extra or {})},
     )
 
 
-# ------------------------------------------------------------- DEAP anxiety
+def deap_arousal_task(data_dir: str = "data/real/deap", subjects: int = 8,
+                      max_trials: Optional[int] = None, window_seconds: int = 8) -> BenchTask:
+    """DEAP EEG+peripheral arousal — REAL self-report arousal (high vs low SAM arousal)."""
+    return _deap_affect_task("deap_arousal", "arousal", "high_arousal",
+                             data_dir, subjects, max_trials, window_seconds)
+
+
 def deap_anxiety_task(data_dir: str = "data/real/deap", subjects: int = 8,
                       max_trials: Optional[int] = None, window_seconds: int = 8) -> BenchTask:
     """DEAP EEG+peripheral anxiety / negative affect — REAL self-report label.
 
-    Anxiety is operationalized as the high-arousal + low-valence quadrant of the affective
-    circumplex (arousal >= 5 AND valence < 5), computed from the participant's own SAM
-    ratings — genuine ground truth, not a proxy/median-split. This is the mental-health
-    task grounded in real labels (depression and cognitive workload have no labeled cohort
-    on disk and remain documented proxies in ``clinical_tasks.py``). Same EEG band-power +
-    peripheral-physiology windowing and subject-held-out CV as ``deap_arousal_task``.
+    Anxiety is the high-arousal + low-valence quadrant of the affective circumplex
+    (arousal >= 5 AND valence < 5) from the participant's own SAM ratings — genuine ground
+    truth, not a proxy/median-split. The mental-health task grounded in real labels;
+    depression and cognitive workload have no labeled cohort on disk (documented proxies in
+    ``clinical_tasks.py``) — the real workload cohort is ``eegmat_workload_task``.
     """
-    assert_no_fabrication()
-    events = load_deap_dataset(data_dir, subjects=subjects, max_trials=max_trials,
-                               label_scheme="anxiety")
-    win = build_signal_windows(events, window_seconds=window_seconds,
-                               step_seconds=window_seconds, label_name="anxiety")
-    win = win[win["target"].astype(str).str.len() > 0].reset_index(drop=True)
-    y = (win["target"].astype(str) == "high_anxiety").astype(int).to_numpy()
-    groups = _split_by_modality(win)
-    feats = {m: win[cols].to_numpy(dtype=float) for m, cols in groups.items()}
-    return BenchTask(
-        name="deap_anxiety", kind="classification", features=feats,
-        feature_names=groups, y=y, subject_ids=win["subject_id"].to_numpy(),
-        metric="1-AUROC", baseline_hint="majority", raw_windows=win,
-        extra={"events": events, "window_seconds": window_seconds,
-               "label": "high-arousal+low-valence quadrant (real SAM ratings)"},
-    )
+    return _deap_affect_task("deap_anxiety", "anxiety", "high_anxiety",
+                             data_dir, subjects, max_trials, window_seconds,
+                             extra={"label": "high-arousal+low-valence quadrant (real SAM ratings)"})
 
 
 def sleep_edf_stage_task(n_recordings: int = 20, target: str = "rem",

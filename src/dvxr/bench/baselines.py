@@ -170,6 +170,13 @@ def baseline_configs(task: BenchTask, include_sota: bool = True) -> Dict[str, Ca
         cfgs["tabpfn"] = pred_tabpfn
     if task.kind == "forecast":
         cfgs["ridge_history"] = pred_ridge_history
+    # raw-signal lever: a multimodal 1D-CNN over RAW windows (the honest path past the
+    # summary-stat ceiling, C2). Registered only when the task carries per-modality raw
+    # windows in extra["raw"] — so it competes head-to-head against the summary-stat floor
+    # on the exact same folds. Classification only (the CNN head is a classifier).
+    if task.kind == "classification" and isinstance(task.extra.get("raw"), dict):
+        from dvxr.bench.raw_seq import pred_rawcnn
+        cfgs["raw_cnn"] = pred_rawcnn
     if include_sota:
         cfgs["sota"] = pred_sota
     return cfgs

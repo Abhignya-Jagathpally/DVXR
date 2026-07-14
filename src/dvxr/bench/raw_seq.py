@@ -21,7 +21,15 @@ from dvxr.bench.tasks import BenchTask
 
 
 def _raw_channels(task: BenchTask, m: str) -> int:
-    """#channels packed into the flat raw vector for modality m (eeg=2, others=1)."""
+    """#channels packed into the flat raw vector for modality m.
+
+    Prefer the per-task count recorded in ``extra["raw_channels"]`` (set by whichever task
+    built ``extra["raw"]``, e.g. DEAP: eeg=32, physiology=8); fall back to the Sleep-EDF
+    convention (eeg=2, others=1) when a task fills ``extra["raw"]`` without declaring counts.
+    """
+    ch = task.extra.get("raw_channels")
+    if isinstance(ch, dict) and m in ch:
+        return int(ch[m])
     return 2 if m == "eeg" else 1
 
 

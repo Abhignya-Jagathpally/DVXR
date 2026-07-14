@@ -29,9 +29,22 @@ Two honest observations. (1) The learned CACMF fusion never beats the strongest 
 any MH task — same negative result as the clinical profile. (2) On DEAP, **every** config —
 floor, MOMENT-SOTA, and fused alike — sits near chance (1−AUROC 0.45–0.49 ⇒ AUROC ≈ 0.51–0.55):
 cross-subject affective decoding from *per-window summary statistics* is essentially at the
-noise floor here. That motivates the raw-signal path (Slice H: the `raw_cnn` config over raw
-EEG+peripheral windows) as the fair test of whether waveform structure — not summary stats —
-carries the affective signal.
+noise floor here.
+
+### The raw-signal lever (Slice H): tested, and it does not rescue DEAP
+
+The `raw_cnn` config (a multimodal 1D-CNN over the raw EEG+peripheral windows, wired into the
+sweep on the same subject-held-out folds — `src/dvxr/bench/raw_seq.py`) is the honest test of
+whether waveform structure, not summary stats, carries the affective signal. Result: it lands
+**at chance** — 1−AUROC **0.504** (deap_anxiety) and **0.504** (deap_arousal) — *worse* than the
+summary-stat `single:physiology` floor (0.466 / 0.452). So raw signal does **not** rescue DEAP
+here. The reason is concrete and disclosed: DEAP's canonical events are the loader's *decimated*
+preprocessed signal (~8 Hz effective), which aliases away the EEG oscillations (α/β) that carry
+affect — so the raw window is a coarse waveform, not the 128 Hz signal. The lever is real (it
+beats the GBM floor on Sleep-EDF's full-rate raw), but it needs signal fidelity DEAP's decimated
+events don't provide. That is exactly why the **cognitive-workload** task uses the eegmat cohort
+loaded at a proper 64 Hz (δ/θ/α/β intact) — the fidelity DEAP lacks. Full-rate raw DEAP is
+future work.
 
 ## Headline (clinical profile): the fused model does NOT win
 

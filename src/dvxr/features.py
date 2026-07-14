@@ -82,6 +82,73 @@ def build_signal_windows(
     return frame.fillna(0.0)
 
 
+def build_raw_windows(
+    events: pd.DataFrame,
+    windows: pd.DataFrame,
+    modalities: list[str] | set[str] | None = None,
+    samples: int = 64,
+) -> tuple[dict[str, np.ndarray], dict[str, int]]:
+    """Extract per-modality RAW signal windows aligned 1:1 with ``windows``.
+
+    Companion to :func:`build_signal_windows`: while that returns per-window *summary
+    statistics* (the floor's input), this returns the per-window *raw waveform* — the
+    lever past the summary-stat ceiling. For every row of ``windows`` (which must carry
+    ``subject_id``, ``session_id``, ``window_start``, ``window_end``) and every modality,
+    each channel's samples inside the window are resampled onto a fixed ``samples``-point
+    grid (linear interpolation) and packed **channel-major** into a flat ``(C*samples,)``
+    vector, so ``arr.reshape(N, C, samples)`` recovers ``(window, channel, time)``.
+
+    Channels per modality are the sorted unique channels present in ``events`` for that
+    modality, fixed across all windows so ``C`` is constant. Returns
+    ``(raw, channels)`` where ``raw[m]`` has shape ``(len(windows), C_m*samples)`` and
+    ``channels[m] == C_m`` — the layout :func:`dvxr.bench.raw_seq.pred_rawcnn` consumes.
+
+    NOTE (fidelity): the raw here is whatever the loader emitted — for DEAP that is the
+    decimated preprocessed signal (~8 Hz effective), so this is a *raw-waveform* contrast
+    against summary stats on the same signal, not full-rate EEG. Full-rate raw is future
+    work (see Slice H notes / BENCHMARK_FINDINGS C2).
+    """
+    events = validate_events(events)
+    modset = set(modalities) if modalities is not None else set(SIGNAL_MODALITIES)
+    ev = events[events["modality"].isin(modset)]
+    chans = {m: sorted(ev[ev["modality"] == m]["channel"].unique())
+             for m in sorted(ev["modality"].unique())}
+    mods = [m for m in chans if chans[m]]
+    t0 = ev["timestamp_utc"].min()
+
+    # Pre-extract each (subject, session) → {(modality, channel): (t_seconds, values)} once.
+    series: dict[tuple, dict[tuple, tuple[np.ndarray, np.ndarray]]] = {}
+    for (sid, ssid), g in ev.groupby(["subject_id", "session_id"], sort=False):
+        d: dict[tuple, tuple[np.ndarray, np.ndarray]] = {}
+        for (m, ch), gg in g.groupby(["modality", "channel"], sort=False):
+            gg = gg.sort_values("timestamp_utc")
+            t = (gg["timestamp_utc"] - t0).dt.total_seconds().to_numpy(dtype=float)
+            d[(m, ch)] = (t, gg["value"].to_numpy(dtype=float))
+        series[(sid, ssid)] = d
+
+    n = len(windows)
+    raw = {m: np.zeros((n, len(chans[m]) * samples), dtype=np.float32) for m in mods}
+    for i, w in enumerate(windows.itertuples(index=False)):
+        d = series.get((w.subject_id, w.session_id), {})
+        ws = (w.window_start - t0).total_seconds()
+        we = (w.window_end - t0).total_seconds()
+        grid = np.linspace(ws, we, samples)
+        for m in mods:
+            for ci, ch in enumerate(chans[m]):
+                td = d.get((m, ch))
+                if td is None:
+                    continue
+                t, v = td
+                lo = int(np.searchsorted(t, ws, "left"))
+                hi = int(np.searchsorted(t, we, "right"))
+                seg = slice(ci * samples, (ci + 1) * samples)
+                if hi - lo >= 2:
+                    raw[m][i, seg] = np.interp(grid, t[lo:hi], v[lo:hi])
+                elif hi - lo == 1:
+                    raw[m][i, seg] = v[lo]
+    return raw, {m: len(chans[m]) for m in mods}
+
+
 def build_glucose_forecast_table(
     events: pd.DataFrame,
     history_minutes: int = 30,
