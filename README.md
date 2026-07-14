@@ -26,6 +26,21 @@ dvxr report                                                        # scoreboard-
 dvxr demo                                                          # self-contained HTML on real subjects
 ```
 
+**Watch the pipeline run live.** The interactive app scores a real held-out subject (or your own
+upload) *on the spot* — raw EEG → LaBraM embedding → calibration → risk → explanation, computed
+per-Run in a fraction of a second after warmup (verified: live single-subject score reproduces the
+cohort score exactly):
+
+```
+pip install -e ".[app]"                    # adds streamlit
+dvxr demo --serve                          # or: streamlit run scripts/screen_app.py
+dvxr screen --file resting_eeg.edf         # headless upload path (.edf/.bdf/.csv)
+```
+
+Held-out cohort subjects carry the validated benchmark AUROC; **uploads are flagged
+out-of-distribution / illustrative** — the validated number applies to the research cohort, not an
+arbitrary recording.
+
 `dvxr.serve.Screener` is the missing "train once → save → load → **predict(new subject)**" path: it
 wires each task to the representation that actually *wins* the benchmark — the real **LaBraM** EEG
 foundation model for EEG screening, calibrated band-power for wearable stress — returns a Platt-

@@ -1022,3 +1022,45 @@ def load_mumtaz_mdd_dataset(
         raise FileNotFoundError(
             f"No Mumtaz MDD EDFs under {data_dir}. Fetch with: python3 scripts/fetch_data.py mumtaz-mdd")
     return validate_events(pd.concat(parts, ignore_index=True))
+
+
+def load_single_eeg_edf(
+    edf_path: str | Path,
+    subject_id: str = "upload_sub",
+    session_id: str = "upload_ses",
+    label_name: str = "upload",
+    label_value: str = "unknown",
+    target_rate_hz: float = 64.0,
+    max_seconds: float | None = 120.0,
+) -> pd.DataFrame:
+    """Load ONE arbitrary 10-20 EEG ``.edf`` recording into the canonical schema.
+
+    The single-recording analogue of :func:`load_mumtaz_mdd_dataset`, reusing the exact same
+    preprocessing tail (:func:`_emit_eeg_edf_events`): strip the ``EEG `` prefix and any reference
+    suffix from channel names, keep the standard 10-20 electrodes, drop aux/reference channels,
+    band-pass 0.5-45 Hz, average-reference, resample to ``target_rate_hz``, keep the first
+    ``max_seconds`` in µV. Emits a placeholder label so the window builder retains the windows —
+    the label is never used at inference (the Screener reads embeddings only).
+
+    This is the upload path's raw-EEG ingester. NOTE: matching the cohort's *preprocessing* does
+    not make an arbitrary recording in-distribution — a montage/state/hardware mismatch is a real
+    fidelity gap, so an upload's score is illustrative, not the validated cohort AUROC.
+    """
+    import mne
+    import re
+
+    raw = mne.io.read_raw_edf(Path(edf_path), preload=True, verbose="ERROR")
+    raw.rename_channels({ch: re.sub(r"-\w+$", "", ch.split(" ", 1)[1] if " " in ch else ch).strip()
+                         for ch in raw.ch_names})
+    eeg_names = [c for c in raw.ch_names if c in _EEG_1020]
+    aux = [c for c in raw.ch_names if c not in eeg_names]
+    if aux:
+        raw.drop_channels(aux)
+    if not eeg_names:
+        raise ValueError(
+            f"{Path(edf_path).name}: no standard 10-20 EEG channels found after name cleaning "
+            f"(channels: {raw.ch_names}). This loader expects a 10-20 montage EEG recording.")
+    parts = _emit_eeg_edf_events(
+        raw, subject_id, session_id, "upload_edf", "unknown_eeg",
+        eeg_names, [], label_name, label_value, target_rate_hz, max_seconds, take="first")
+    return validate_events(pd.concat(parts, ignore_index=True))

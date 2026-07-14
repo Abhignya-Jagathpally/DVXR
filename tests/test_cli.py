@@ -49,7 +49,12 @@ class CliRoundtripTest(unittest.TestCase):
             with redirect_stdout(buf):
                 rc = main(["report", "--screener", str(scr)])
             self.assertEqual(rc, 0)
-            self.assertIn("held-out AUROC", buf.getvalue())
+            report = buf.getvalue()
+            # report now renders the evidence layer (scoreboard-traced), which prints per-task
+            # AUROC + a verification line + the loaded screener's own held-out number.
+            self.assertIn("AUROC", report)
+            self.assertIn("VERIFIED", report)
+            self.assertIn("wesad_stress", report)
 
 
 if __name__ == "__main__":

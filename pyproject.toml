@@ -32,7 +32,8 @@ dependencies = [
 eeg = ["torch", "transformers", "safetensors", "huggingface_hub", "mne", "einops"]
 floor = ["xgboost"]
 io = ["wfdb", "openpyxl", "pyarrow", "kagglehub"]
-all = ["dvxr[eeg,floor,io]"]
+app = ["streamlit"]                       # the live interactive demo (dvxr demo --serve)
+all = ["dvxr[eeg,floor,io,app]"]
 
 [project.scripts]
 dvxr = "dvxr.cli:main"

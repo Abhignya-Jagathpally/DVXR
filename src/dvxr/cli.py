@@ -142,7 +142,20 @@ def cmd_report(args) -> int:
 
 def cmd_demo(args) -> int:
     import subprocess
-    script = Path(__file__).resolve().parents[2] / "scripts" / "build_screen_demo.py"
+    scripts = Path(__file__).resolve().parents[2] / "scripts"
+    if args.serve:
+        # launch the LIVE interactive Streamlit app (pipeline runs on the spot)
+        app = scripts / "screen_app.py"
+        try:
+            import streamlit  # noqa: F401
+        except ModuleNotFoundError:
+            _eprint("The live app needs Streamlit. Install the app extra:\n"
+                    "    pip install -e \".[app]\"\nthen re-run `dvxr demo --serve`.")
+            return 2
+        _eprint(f"[dvxr demo --serve] streamlit run {app}")
+        return subprocess.call([sys.executable, "-m", "streamlit", "run", str(app)])
+    # default: build the self-contained static demo bundle
+    script = scripts / "build_screen_demo.py"
     if not script.exists():
         _eprint(f"demo builder not found at {script}")
         return 2
@@ -153,6 +166,39 @@ def cmd_demo(args) -> int:
         cmd += ["--tasks", args.tasks]
     _eprint(f"[dvxr demo] {' '.join(cmd)}")
     return subprocess.call(cmd)
+
+
+def cmd_screen(args) -> int:
+    """Live-screen an uploaded recording end to end (headless form of the app's upload path)."""
+    from dvxr.serve.live import screen_file
+    from dvxr.serve.explain import top_feature_attribution  # noqa: F401 (parity import)
+
+    task = args.task or "mumtaz_depression"
+    screener_dir = args.screener or str(
+        Path(__file__).resolve().parents[2] / "outputs" / "product" / "screeners" / task)
+    if not (Path(screener_dir) / "manifest.json").exists():
+        screener_dir = None  # fit in-memory
+    _eprint(f"[dvxr screen] live-screening {args.file} against {task}…")
+
+    def on_stage(key, msg):
+        _eprint(f"  [{key}] {msg}")
+
+    out = screen_file(args.file, task_name=task, screener_dir=screener_dir, on_stage=on_stage)
+    res = out["result"]
+    print(f"\nDVXR Screen — {res['label']}  (LIVE from {args.file})")
+    print("  " + "\n  ".join([
+        "*** ILLUSTRATIVE / OUT-OF-DISTRIBUTION — not the validated cohort AUROC ***",
+        f"risk score : {res['probability']:.3f}  ({res['risk_band'].upper()})",
+        f"90% interval: [{res['interval'][0]:.3f}, {res['interval'][1]:.3f}]  ·  "
+        f"{res['n_windows']} windows",
+        f"basis      : {out['embed_meta'].get('encoder','')}",
+        f"timings(s) : {out['stage_timings']}",
+        f"caveat     : {res['caveat']}",
+    ]))
+    if args.json:
+        print("\n" + json.dumps({"subject": out["subject"], "validated": out["validated"],
+                                 "source": out["source"], **res}, indent=2))
+    return 0
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -179,10 +225,19 @@ def build_parser() -> argparse.ArgumentParser:
     rp.add_argument("--screener", help="saved screener dir")
     rp.set_defaults(func=cmd_report)
 
-    dm = sub.add_parser("demo", help="build the self-contained screener-backed demo bundle")
+    dm = sub.add_parser("demo", help="live app (--serve) or the self-contained static demo bundle")
+    dm.add_argument("--serve", action="store_true",
+                    help="launch the LIVE interactive Streamlit app instead of building static HTML")
     dm.add_argument("--out", help="output directory (default outputs/product)")
     dm.add_argument("--tasks", help="comma-separated subset (e.g. depression,stress)")
     dm.set_defaults(func=cmd_demo)
+
+    sc = sub.add_parser("screen", help="live-screen an uploaded recording (.edf/.bdf/.csv)")
+    sc.add_argument("--file", required=True, help="path to an EEG/wearable recording")
+    sc.add_argument("--task", choices=TASKS, help="screening task (default mumtaz_depression)")
+    sc.add_argument("--screener", help="saved screener dir (default: the task's cached screener)")
+    sc.add_argument("--json", action="store_true", help="also emit the raw result as JSON")
+    sc.set_defaults(func=cmd_screen)
     return p
 
 

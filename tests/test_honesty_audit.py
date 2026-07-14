@@ -89,5 +89,28 @@ class ProseSurfaceAudit(unittest.TestCase):
         self.assertNotIn("https://", page)
 
 
+class UploadOutOfDistributionAudit(unittest.TestCase):
+    """The live upload path must never present an upload's number as the validated cohort AUROC."""
+
+    def test_upload_result_is_flagged_not_validated(self):
+        # run the live engine on a synthetic band-power task with the upload flag
+        import numpy as np
+        from dvxr.serve.live import run_screening_live
+        sys.path.insert(0, str(ROOT / "tests"))
+        from test_live import _fake_bandpower_task, _synthetic_screener
+        out = run_screening_live(_synthetic_screener(), _fake_bandpower_task(), "B",
+                                 validated=False, source="upload")
+        self.assertFalse(out["validated"])
+        self.assertEqual(out["source"], "upload")
+
+    def test_upload_surfaces_carry_ood_disclaimer(self):
+        # the app, the CLI screen path, and the loader must all disclaim OOD uploads
+        for rel in ("scripts/screen_app.py", "src/dvxr/cli.py", "src/dvxr/serve/live.py"):
+            text = (ROOT / rel).read_text().lower()
+            self.assertTrue("out-of-distribution" in text or "out of distribution" in text
+                            or "illustrative" in text,
+                            f"{rel}: upload path missing the out-of-distribution disclaimer")
+
+
 if __name__ == "__main__":
     unittest.main()
