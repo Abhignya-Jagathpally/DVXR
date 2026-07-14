@@ -142,13 +142,15 @@ def cmd_report(args) -> int:
 
 def cmd_demo(args) -> int:
     import subprocess
-    script = Path(__file__).resolve().parents[2] / "scripts" / "build_dashboard.py"
+    script = Path(__file__).resolve().parents[2] / "scripts" / "build_screen_demo.py"
     if not script.exists():
         _eprint(f"demo builder not found at {script}")
         return 2
     cmd = [sys.executable, str(script)]
     if args.out:
         cmd += ["--out", args.out]
+    if args.tasks:
+        cmd += ["--tasks", args.tasks]
     _eprint(f"[dvxr demo] {' '.join(cmd)}")
     return subprocess.call(cmd)
 
@@ -177,8 +179,9 @@ def build_parser() -> argparse.ArgumentParser:
     rp.add_argument("--screener", help="saved screener dir")
     rp.set_defaults(func=cmd_report)
 
-    dm = sub.add_parser("demo", help="build the self-contained demo bundle")
-    dm.add_argument("--out", help="output directory")
+    dm = sub.add_parser("demo", help="build the self-contained screener-backed demo bundle")
+    dm.add_argument("--out", help="output directory (default outputs/product)")
+    dm.add_argument("--tasks", help="comma-separated subset (e.g. depression,stress)")
     dm.set_defaults(func=cmd_demo)
     return p
 
