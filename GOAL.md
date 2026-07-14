@@ -147,3 +147,29 @@ unimodal theory is running; framing will be tightened against closest prior art.
   ECG autonomic signal still dominates (DNH 2nd, unchanged verdict). The two novel contributions
   compose exactly as intended: reliability-gated fusion finds the real EEG FM where it's the right
   tool and isn't fooled where it isn't. Findings updated; committing. **Goal achieved.**
+
+## Product arc (2026-07-14) — "make it a useful product"
+
+Second goal, same repo: turn the validated research into a usable product (integrated demo +
+toolkit + evidence), EEG mental-health screening first. Delivered as five committed slices, each
+with tests, all honesty-gated.
+
+- **P1 — serving core:** `dvxr.serve.Screener` (fit→save→load→predict) wiring the *winning* models
+  (LaBraM/band-power), calibrated + conformal, reproducing the benchmark AUROC. Depression screener
+  reproduced **AUROC 0.9608** (CI [0.9417, 0.9756], ECE 0.030) under 3×5 subject-held-out CV.
+- **P2 — packaged toolkit:** `pyproject.toml` (`pip install -e .`, console_scripts `dvxr`) +
+  `dvxr fit|predict|report|demo`. Verified the installed command runs offline without PYTHONPATH.
+- **P3 — screener-backed demo:** `scripts/build_screen_demo.py` scores real held-out subjects
+  (case + control) through the screeners into a self-contained HTML page (headline depression EEG,
+  supporting workload + stress); panels skipped-not-faked when data/weights absent.
+- **P4 — evidence layer:** `dvxr.serve.evidence` — single source of scoreboard-traced numbers with a
+  drift guard, `docs/MODEL_CARD.md`, and a shareable Artifact evidence page generated from the
+  registry. Glucose omitted from headline (no current scoreboard trace — honest under-claim).
+- **P5 — novelty/impact + blocking honesty audit:** README "DVXR Screen" section (novelty: FM-as-live-
+  screener; do-no-harm finite-sample fusion; honesty-gated evidence). `tests/test_honesty_audit.py`
+  (8 tests, BLOCKING): every number traces to a scoreboard; DEAP/CACMF-win/LLM-predictor/mortality/
+  diabetes-leak can never be a product claim; no un-negated "diagnosis" on any surface. All green.
+
+**Product delivered.** A user can `pip install -e .`, feed a research-cohort EEG subject, and get a
+calibrated, explained, evidence-backed depression screening score (AUROC ≈0.96) — research-grade
+screening, never a diagnosis — plus a demo and a scoreboard-traced evidence page.

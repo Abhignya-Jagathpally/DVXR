@@ -13,6 +13,51 @@ models (see `model_choice_registry.csv`):
 - **CGM:** GluFormer if weights/data access are available, else a conformalized forecasting baseline.
 - **EHR:** Med-BERT/BEHRT for structured events, NYUTron/Foresight for note/concept timelines.
 
+## DVXR Screen — the product (`dvxr.serve` + `dvxr` CLI)
+
+The research above is packaged into a usable, research-grade **clinical-risk screening** toolkit,
+headlined by **depression screening from a short resting EEG**. Install it and score a subject:
+
+```
+pip install -e .
+dvxr fit     --task mumtaz_depression --out screeners/depression   # held-out AUROC ~0.96
+dvxr predict --screener screeners/depression                       # calibrated score + explanation
+dvxr report                                                        # scoreboard-traced evidence
+dvxr demo                                                          # self-contained HTML on real subjects
+```
+
+`dvxr.serve.Screener` is the missing "train once → save → load → **predict(new subject)**" path: it
+wires each task to the representation that actually *wins* the benchmark — the real **LaBraM** EEG
+foundation model for EEG screening, calibrated band-power for wearable stress — returns a Platt-
+calibrated probability, a risk band, and a conformal interval, and carries the *same* subject-held-out
+AUROC the benchmark reports. Explanations come through `dvxr.serve.explain` (grounded, always caveated).
+
+**Validated capabilities** (AUROC, subject-held-out CV, each traced to `outputs/*scoreboard*`; see
+[`docs/MODEL_CARD.md`](docs/MODEL_CARD.md) and `dvxr.serve.evidence`):
+
+| Capability | Model | AUROC (95% CI) |
+|---|---|---|
+| **Depression (MDD vs healthy), resting EEG** | real LaBraM EEG foundation model | **0.961 (0.942–0.976)** |
+| Acute stress, wearable physiology | band-power + tuned GBM | 0.955 (0.930–0.978) |
+| Cognitive workload (rest vs task) | ECG autonomic; LaBraM improves the EEG path | 0.740 |
+| Stress, peripheral physiology | band-power (concat) | 0.892 |
+
+### Novelty & impact
+
+The distinctive contribution is not another fusion architecture — it is turning a rigorously *honest*
+benchmark into a **live, evidence-forward screening product**. Three grounded pieces: (1) the real
+**LaBraM EEG foundation model runs as a frozen linear-probe screener** and beats hand-crafted
+band-power on both EEG cohorts — decisively on depression (0.961, the single best config), a
+foundation-model-as-clinical-screener result reproduced under subject-held-out CV; (2) a
+**reliability-gated "do-no-harm" late fusion** (`dnh_gated`, Super-Learner provenance, van der Laan
+2007) that beats the proposal's own learned cross-modal fusion on 4/6 tasks — reported *with* its
+finite-sample caveat, not oversold; (3) an **honesty gate wired into CI**: every product number
+resolves to a committed scoreboard, and a blocking audit (`tests/test_honesty_audit.py`) forbids the
+weak/negative results (DEAP affect, CACMF-as-win, LLM-as-predictor, mortality, the diabetes leak)
+from ever surfacing as a claim. The impact is a reproducible, offline, calibrated EEG-first screening
+toolkit whose accuracy claims a reviewer can verify to the row of a CSV — research-grade screening,
+never a diagnosis.
+
 ## CACMF — the unified multimodal fusion framework (`dvxr`)
 
 The pipeline is now packaged as **`dvxr`** implementing **CACMF** (Cross-modal Aligned

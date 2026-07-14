@@ -5,8 +5,9 @@ biosignals it returns a *calibrated* risk probability, a risk band, a conformal 
 explanation, and the held-out accuracy of the model that produced it. Headlined by **depression
 screening from a short resting-EEG recording** (real LaBraM EEG foundation model).
 
-**What it is not:** a diagnostic device. Every output is a research-cohort estimate, not a clinical
-determination. It must not be used to diagnose, treat, or make medical decisions.
+**What it is not:** a diagnostic device. It is **not a diagnosis**. Every output is a research-cohort
+estimate, not a clinical determination, and must not be used to diagnose, treat, or make medical
+decisions.
 
 ---
 
@@ -15,8 +16,8 @@ determination. It must not be used to diagnose, treat, or make medical decisions
 - **Users:** BCI / digital-health researchers exploring EEG- and wearable-based screening.
 - **Use:** score research-cohort subjects (or compatible device exports) to triage / prioritize /
   study risk. Decision-*support* and research only.
-- **Out of scope:** clinical diagnosis, autonomous decisioning, deployment on patients, any use on
-  populations unlike the research cohorts below.
+- **Out of scope (never supported):** clinical diagnosis, autonomous decisioning, deployment on
+  patients, any use on populations unlike the research cohorts below.
 
 ## The models (validated, headline-able)
 
