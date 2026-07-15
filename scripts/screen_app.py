@@ -80,6 +80,25 @@ def _build_task(task_name: str, representation: str):
     return task, np.asarray(task.y), np.asarray(task.subject_ids)
 
 
+def glucose_product_panel_md() -> str:
+    """Markdown for the research-stage glucose product headline banner (importable/testable without
+    Streamlit). The default product is the NeuroGlycemic Sentinel glucose early-warning system; it is
+    research-stage and ABSTAINS until synchronized same-subject pilot data exists — never a fabricated
+    score. The validated components below are what a user can score live today."""
+    from dvxr.serve.vision import glucose_risk_report
+    from dvxr.serve.evidence import PRODUCT_VISION
+    r = glucose_risk_report()
+    comps = ", ".join(PRODUCT_VISION.components)
+    return (
+        f"### 🩸 {PRODUCT_VISION.name} — glucose early-warning (headline · research-stage)\n\n"
+        f"{PRODUCT_VISION.tagline}\n\n"
+        f"**Status: RESEARCH-STAGE — NOT YET VALIDATED.** The default `stress_glucose_risk` report "
+        f"**abstains** (`{r['action_id']}`): {r['risk_summary']}\n\n"
+        f"Validated components you can score live below: _{comps}_. "
+        f"Research-grade decision-support, **not a diagnosis**."
+    )
+
+
 def main() -> None:
     try:
         import streamlit as st
@@ -101,10 +120,12 @@ def main() -> None:
     build_task_cached = st.cache_resource(show_spinner=False)(_build_task)
     load_screener_cached = st.cache_resource(show_spinner=False)(_load_screener)
 
-    st.title("🩺 DVXR Screen — live pipeline")
-    st.caption("Real held-out subjects (or your own upload) scored **live** by the validated "
-               "models: raw signal → LaBraM embedding → calibration → risk → explanation. "
-               "Research-grade screening, **not a diagnosis**.")
+    st.title("🩺 DVXR NeuroGlycemic Sentinel — live pipeline")
+    st.info(glucose_product_panel_md())
+    st.caption("Below: the validated **components** — real held-out subjects (or your own upload) scored "
+               "**live**: raw signal → LaBraM embedding → calibration → risk → explanation. Uploads are "
+               "flagged **out-of-distribution** (illustrative). Research-grade screening, **not a "
+               "diagnosis**.")
 
     tab_run, tab_evidence = st.tabs(["▶ Live screening", "📊 Evidence"])
 

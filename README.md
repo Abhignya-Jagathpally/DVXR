@@ -1,8 +1,22 @@
-# DVXR — Multimodal Health Signal Ingestion & Modeling Pipeline
+# DVXR NeuroGlycemic Sentinel — Multimodal Glucose-Excursion Early-Warning
 
-A reproducible pipeline that ingests **wearable/PHR, BCI/EEG, CGM/diabetes, and EHR**
-signals into one canonical event schema, builds per-modality features, trains
-auditable baseline models, and reports calibrated, explainable predictions.
+**Product headline (research-stage).** The **DVXR NeuroGlycemic Sentinel** aims to predict
+**30/60-minute glucose-excursion risk** from recent CGM dynamics, acute neural/autonomic stress state
+(EEG + wearable physiology), and clinical context — then produce a grounded explanation and a
+protocol-controlled next action. It is described more precisely as *multimodal clinical-risk prediction
+with grounded language-model explanations* (the LLM explains verified predictions; it never computes
+the risk).
+
+> **Status: RESEARCH-STAGE — NOT YET VALIDATED.** The fused end-to-end glucose-excursion claim requires
+> **synchronized same-subject** EEG+wearable+CGM pilot data, which does not yet exist. Public datasets
+> validate the individual *components* below, but — being separate cohorts — cannot establish that EEG
+> adds value to CGM forecasting. Fusion on unrelated cohorts is blocked by a synchronized-same-subject
+> gate, and the default glucose report **abstains** until pilot data exists. Research-grade
+> decision-support, **not a diagnosis**.
+
+Under the hood it is a reproducible pipeline that ingests **wearable/PHR, BCI/EEG, CGM/diabetes, and
+EHR** signals into one canonical event schema, builds per-modality features, trains auditable baseline
+models, and reports calibrated, explainable predictions.
 
 The code starts with classical features and lightweight encoders because they run
 reliably and make data quality visible. It keeps adapter points for larger foundation
@@ -13,10 +27,14 @@ models (see `model_choice_registry.csv`):
 - **CGM:** GluFormer if weights/data access are available, else a conformalized forecasting baseline.
 - **EHR:** Med-BERT/BEHRT for structured events, NYUTron/Foresight for note/concept timelines.
 
-## DVXR Screen — the product (`dvxr.serve` + `dvxr` CLI)
+## Validated components (`dvxr.serve` + `dvxr` CLI)
 
-The research above is packaged into a usable, research-grade **clinical-risk screening** toolkit,
-headlined by **depression screening from a short resting EEG**. Install it and score a subject:
+The glucose early-warning architecture above is assembled from individually **validated components** —
+the EEG/wearable screeners the fused product is built on (spec §1.A, "public datasets for component
+development"). These are real, scoreboard-traced results; they are *component* validation, not the
+fused end-to-end glucose claim, which stays gated on synchronized same-subject data (spec §1.B). The
+strongest validated component today is **depression screening from a short resting EEG**. Install it
+and score a subject:
 
 ```
 pip install -e .

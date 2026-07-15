@@ -192,3 +192,29 @@ screening, never a diagnosis — plus a demo and a scoreboard-traced evidence pa
   to within-subject tasks and does NOT help on small cohorts (WESAD ECE 0.156 vs 0.124) — off by
   default, documented. Complements E1 (diagnosis↔subject-level, state↔personalization; mutually excl.).
 - Future work (noted, not built): thin FastAPI/Docker deployment (U4, optional).
+
+## Product re-headline arc (2026-07-15) — NeuroGlycemic Sentinel
+
+Following the clinical multimodal-architecture spec, the product headline is re-framed to the **DVXR
+NeuroGlycemic Sentinel**: a research-stage multimodal **glucose-excursion early-warning** framework
+(30/60-min risk from CGM dynamics + acute neural/autonomic stress + clinical context) with grounded
+LLM explanations. This is executed as a 9-PR roadmap (spec PR1→PR9); each PR is honesty-gated.
+
+**The honesty guardrail on the re-headline (non-negotiable).** Re-headlining to glucose does **not**
+manufacture a validated claim:
+- The glucose product is labeled **research-stage / not yet validated** everywhere (README, model card,
+  evidence, UI). It carries **no headline AUROC** (`evidence.PRODUCT_VISION.auroc is None`).
+- The fused end-to-end claim requires **synchronized same-subject** EEG+wearable+CGM data, which does
+  not exist; public component cohorts are never cross-joined, and a synchronized-same-subject gate
+  blocks fusion on unrelated cohorts (spec §1.B, §4). The default glucose report **abstains**.
+- Depression (0.961) / stress (0.955) / workload remain scoreboard-traced **validated components**
+  (spec §1.A). All prior `EXCLUDED_CLAIMS` stay enforced (cgmacros_diabetes leak, CACMF-as-win,
+  LLM-as-predictor). `make audit` stays green — the audit was *extended* (`ProductVisionAudit`), never
+  weakened.
+
+- **2026-07-15 — PR1 (product & claim re-alignment):** Added `evidence.PRODUCT_VISION` (research-stage
+  glucose headline, no fabricated number, synchrony-gated) surfaced at the top of `dvxr report`;
+  relabelled the validated claims as *components*; quarantined the LLM-in-the-predictive-path probe to
+  `dvxr.experiments.llm_representation_probe` (`EXPERIMENTAL_ONLY` / `NOT_FOR_CLINICAL_INFERENCE`, thin
+  deprecation shim at `dvxr.llm.predictor`); re-headlined README + model card; added an honest
+  abstaining `stress_glucose_risk` report path. Honesty audit extended with `ProductVisionAudit`.

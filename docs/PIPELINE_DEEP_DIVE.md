@@ -1,5 +1,12 @@
 # Pipeline deep-dive — what the DVXR multimodal fLLM actually does
 
+> **Framing (2026-07-15).** The product headline is now the research-stage **NeuroGlycemic Sentinel**
+> glucose early-warning architecture; the depression/stress screeners described here are **validated
+> components** of it (spec §1.A), not the fused end-to-end claim (which stays gated on synchronized
+> same-subject data, spec §1.B). The multimodal fLLM path below remains an honest research
+> demonstration — on full observation it loses to the single-modality screener; the LLM explains
+> verified predictions and never computes the risk. Research-grade decision-support, not a diagnosis.
+
 This is the honest, code-grounded answer to "how does the pipeline actually work?" Every claim points
 at the file and line that implements it, so you can check it rather than trust it. Where a design choice
 is weaker than it could be, that is stated — the same discipline the BLOCKING honesty audit enforces
@@ -295,13 +302,16 @@ board **and** the dropout-crossover curve (`docs/IMPROVEMENT_EXPERIMENT.md`).
 | **Inference** | mean-pool → attention-pool; Platt → temperature/isotonic; global → Mondrian conformal | *safe-to-modest* — better use of the same embeddings |
 | **Regime** | optimize the **dropout curve** (narrow the gap toward a real crossover), not full-obs accuracy | *strategic* — the gap narrows under dropout but no CI-backed crossover yet |
 
-**Tested (Phase 2 — an honest negative).** The glass-box surfaced low VQ codebook utilization (perplexity
-2.5–5.7 / 64), so we pre-registered and measured **SimVQ** (one-linear-layer codebook reparameterization).
-It **underperformed** the existing EMA + dead-code VQ on every WESAD modality and across 8–120 epochs —
-recorded in full in [`docs/IMPROVEMENT_EXPERIMENT.md`](IMPROVEMENT_EXPERIMENT.md), shipped as an
-off-by-default flag (`DVXR_VQ=simvq`) so the negative stays visible. The one real, cheap lever the
-experiment did surface: the low utilization is the LLM path's short training (`epochs=8`), not a VQ
-ceiling (the same VQ reaches ~24 perplexity at 120 epochs) — a future, separately-benchmarked tweak.
+**Tested (Phase 2 — two honest negatives and one real win).** The glass-box surfaced low VQ utilization
+(perplexity 2.5–5.7 / 64). We pre-registered and measured **SimVQ**; it **underperformed** the existing
+EMA + dead-code VQ (a negative, shipped as the off-by-default `DVXR_VQ=simvq` flag so it stays visible).
+The measured streaming showdown was a second negative — graceful degradation, no dropout crossover
+(§12). But the experiment also surfaced a **genuine, CI-backed win**: the low utilization was the LLM
+path's *short training* (`epochs=8`), not a VQ ceiling — raising it to **30** lifts the proposed fLLM's
+held-out AUROC on `wesad_stress` from **0.716 → 0.843** (non-overlapping CIs). That default is now folded
+in (`llm/predictor.py`, `DVXR_VQ_EPOCHS`), so the proposed model is materially stronger — though still
+the weakest predictor and below the 0.955 winner, changing no product claim. Full record:
+[`docs/IMPROVEMENT_EXPERIMENT.md`](IMPROVEMENT_EXPERIMENT.md).
 
 **Bottom line:** the proposed multimodal fLLM is real, fully wired, and demonstrable end-to-end; its
 honest value is calibrated, uncertainty-aware, explainable, missing-modality-robust screening — with a

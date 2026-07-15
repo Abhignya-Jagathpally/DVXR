@@ -9,7 +9,8 @@ the model that actually wins.
 
 Nothing is reimplemented: the internals come from the modules' own exports — `CACMFModel.fuse()` stores
 VQ code indices (`_last_codes`) and attention (`attention_weights()`); `VQBiosignalEncoder.quantize` /
-`.perplexity` give tokens + usage; `llm.predictor` gives the frozen-LLM embedding + `modality_attribution`;
+`.perplexity` give tokens + usage; the EXPERIMENTAL `experiments.llm_representation_probe` gives the
+frozen-LLM embedding + `modality_attribution` (a research probe, never a product predictor);
 `bench.gated_fusion`/`serve.screener` give the probabilities. We only read what they already compute.
 
 Honesty (enforced by `tests/test_honesty_audit.py`):
@@ -157,9 +158,17 @@ def _vq_tokens(task, subj_rows, seed) -> tuple[Dict, Dict]:
     """Per-modality VQ code indices + perplexity for this subject, plus continuous latents to fuse.
 
     Reuses `VQBiosignalEncoder` exactly as the LLM predictor does (trained per modality, K=64)."""
+    import os
+
     import pandas as pd
 
     from dvxr.encoders.codebook import VQBiosignalEncoder
+    # match the LLM path's VQ setting (same DVXR_VQ_EPOCHS default, now 30) so the displayed tokens are
+    # exactly the ones the proposed model reads — see docs/IMPROVEMENT_EXPERIMENT.md.
+    try:
+        epochs = max(1, int(os.environ.get("DVXR_VQ_EPOCHS", "30")))
+    except ValueError:
+        epochs = 30
     vq: Dict[str, Dict] = {}
     latents: Dict[str, np.ndarray] = {}
     for m in task.modalities:
@@ -167,7 +176,7 @@ def _vq_tokens(task, subj_rows, seed) -> tuple[Dict, Dict]:
         cols = [f"f{i}" for i in range(X.shape[1])]
         df = pd.DataFrame(X, columns=cols)
         enc = VQBiosignalEncoder(embedding_dim=24, hidden_dim=32, n_layers=1, n_heads=2,
-                                 epochs=8, codebook_size=64, seed=seed)
+                                 epochs=epochs, codebook_size=64, seed=seed)
         emb = enc.fit_transform(df, cols)                       # continuous latent per row
         sub_df = df.iloc[subj_rows].reset_index(drop=True)
         idx, _quant = enc.quantize(sub_df)
@@ -208,7 +217,7 @@ def _llm_mechanism(task, sid, seed) -> Dict:
     """Frozen-LLM soft-prompt embedding + real modality attribution (L2 shift when a modality drops)."""
     try:
         from dvxr.bench.tasks import BenchTask
-        from dvxr.llm.predictor import llm_window_embeddings, modality_attribution
+        from dvxr.experiments.llm_representation_probe import llm_window_embeddings, modality_attribution
         subjects = np.asarray(task.subject_ids)
         mask = subjects == sid
         sub = BenchTask(name=task.name, kind=task.kind,
@@ -238,7 +247,7 @@ def _proposed_probability(task, sid, seed, include_llm) -> tuple[Optional[float]
         return None, "training fold has one class — no proposed probability for this subject"
     if include_llm:
         try:
-            from dvxr.llm.predictor import llm_window_embeddings
+            from dvxr.experiments.llm_representation_probe import llm_window_embeddings
             from dvxr.serve.screener import _fit_head, _head_proba
             emb = llm_window_embeddings(task, seed=seed)
             sc, clf = _fit_head(emb[tr], y[tr], seed)

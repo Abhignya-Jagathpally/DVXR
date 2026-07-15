@@ -1,9 +1,20 @@
-# Model Card — DVXR Screen
+# Model Card — DVXR NeuroGlycemic Sentinel
 
-**What it is:** a research-grade, multimodal **clinical-risk screening** toolkit. Given a subject's
-biosignals it returns a *calibrated* risk probability, a risk band, a conformal interval, an
-explanation, and the held-out accuracy of the model that produced it. Headlined by **depression
-screening from a short resting-EEG recording** (real LaBraM EEG foundation model).
+**Product headline (research-stage):** the **DVXR NeuroGlycemic Sentinel** — a multimodal
+**glucose-excursion early-warning** framework that aims to predict 30/60-minute glucose-instability
+risk from recent CGM dynamics, acute neural/autonomic stress state, and clinical context, then produce
+a grounded explanation and a protocol-controlled next action.
+
+**Status of the headline:** **RESEARCH-STAGE — NOT YET VALIDATED.** The fused end-to-end
+glucose-excursion claim requires **synchronized same-subject** EEG+wearable+CGM pilot data, which does
+not yet exist. Public datasets validate the individual *components* (below) but, being separate
+cohorts, cannot establish that EEG adds value to CGM forecasting. Fusion on unrelated cohorts is
+blocked by the synchronized-same-subject gate, and the default glucose report **abstains** until pilot
+data exists. The vision is real; the fused product is not yet a claim.
+
+**What it is:** a research-grade multimodal toolkit whose *validated components* each return a
+*calibrated* risk probability, a risk band, a conformal interval, an explanation, and the held-out
+accuracy of the model that produced it.
 
 **What it is not:** a diagnostic device. It is **not a diagnosis**. Every output is a research-cohort
 estimate, not a clinical determination, and must not be used to diagnose, treat, or make medical
@@ -19,11 +30,15 @@ decisions.
 - **Out of scope (never supported):** clinical diagnosis, autonomous decisioning, deployment on
   patients, any use on populations unlike the research cohorts below.
 
-## The models (validated, headline-able)
+## Validated components (the modules the glucose architecture is built from)
 
-All numbers are AUROC under **subject-held-out** cross-validation and trace to a committed
-scoreboard file (`dvxr.serve.evidence.verify_against_scoreboards()` re-checks them). AUROC = 1 −
-the scoreboard's `1-AUROC` error cell.
+These are the individually validated encoders/screeners the NeuroGlycemic Sentinel architecture is
+assembled from (spec §1.A "public datasets for component development"). They are real, scoreboard-traced
+results — and they are *component* validation, not the fused end-to-end claim, which stays gated on
+synchronized same-subject data (spec §1.B). All numbers are AUROC under **subject-held-out**
+cross-validation and trace to a committed scoreboard file
+(`dvxr.serve.evidence.verify_against_scoreboards()` re-checks them). AUROC = 1 − the scoreboard's
+`1-AUROC` error cell.
 
 | Capability | Model | AUROC (95% CI) | Beats | Source |
 |---|---|---|---|---|
@@ -99,10 +114,12 @@ documented opt-in with the negative reported rather than hidden. Persistence is 
 - **Fidelity-limited EEG:** the EEG cohorts are 64 Hz (≤32 Hz content) vs LaBraM's 200 Hz training;
   wins are real but under-resourced on sampling rate and would plausibly improve at native rate.
 - **Small cohorts (N≤60):** CIs are wide; the do-no-harm floor diverges from held-out subjects.
-- **Tokenizer improvement tried and failed (honest negative):** a pre-registered SimVQ tokenizer
-  (a recent anti-collapse method) *underperformed* the existing EMA + dead-code VQ on codebook
-  utilization at this scale (perplexity 3.03 vs 6.66 on WESAD); kept as an off-by-default flag, reported
-  not hidden (`docs/IMPROVEMENT_EXPERIMENT.md`).
+- **Improvement experiment — two negatives, one real win (all measured):** a pre-registered SimVQ
+  tokenizer *underperformed* the existing VQ (negative); the sensor-dropout showdown found graceful
+  degradation but no CI-backed crossover (negative); but raising the LLM-path VQ training epochs 8→30
+  lifts the proposed fLLM's held-out AUROC 0.716→0.843 (CI-backed win, folded in). The improved fLLM is
+  still the weakest predictor (below the 0.955 winner) — no product claim changes. Full record:
+  `docs/IMPROVEMENT_EXPERIMENT.md`.
 - **Not claimed — and blocked from being claimed:** DEAP affective decoding (at chance), the learned
   CACMF fusion as a win (loses on all 6 tasks), the LLM-in-the-loop as a predictor (weakest;
   explanation-only), MIMIC mortality (untrustworthy here), and the old `cgmacros_diabetes` numbers

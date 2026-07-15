@@ -42,7 +42,47 @@ class ProductClaim:
     verify_manifest: Optional[str] = None   # committed screener dir; its heldout.auroc must match too
 
 
-# ----- the allowed product claims (traceable, validated) -----
+@dataclass
+class ProductVision:
+    """The product's HEADLINE target — the NeuroGlycemic Sentinel glucose early-warning system.
+
+    It is deliberately RESEARCH-STAGE and carries NO validated AUROC: the end-to-end fused
+    30/60-minute glucose-excursion claim requires synchronized same-subject EEG+wearable+CGM
+    pilot data that does not yet exist. Public datasets validate the individual *components*
+    (depression, stress, workload — the scoreboard-traced ProductClaims below) but, being
+    separate cohorts, they cannot establish that EEG adds value to CGM forecasting. Fusion on
+    unrelated cohorts is blocked by the synchronized-same-subject gate; until pilot data exists
+    the default glucose report abstains. The vision is real and the components are validated —
+    the fused product is not yet a claim."""
+    name: str
+    tagline: str
+    research_stage: bool
+    requires_synchronized_data: bool
+    auroc: None                     # explicit: there is NO fabricated headline number
+    horizons_minutes: List[int]
+    caveat: str
+    components: List[str]           # task ids of the validated components it is built from
+
+
+PRODUCT_VISION = ProductVision(
+    name="DVXR NeuroGlycemic Sentinel",
+    tagline="Research-stage multimodal glucose-excursion early-warning with grounded LLM explanations",
+    research_stage=True,
+    requires_synchronized_data=True,
+    auroc=None,
+    horizons_minutes=[30, 60],
+    caveat="Research-stage — NOT YET VALIDATED. The fused 30/60-minute glucose-excursion claim "
+           "requires synchronized same-subject EEG+wearable+CGM pilot data, which does not yet "
+           "exist; public component datasets are separate cohorts and are never cross-joined, so "
+           "they cannot establish that EEG adds value to CGM forecasting. Fusion on unrelated "
+           "cohorts is blocked by the synchronized-same-subject gate, and the default glucose "
+           "report abstains until pilot data exists. Research-grade decision-support, not a diagnosis.",
+    components=["mumtaz_depression", "wesad_stress", "eegmat_workload", "stress"],
+)
+
+
+# ----- the allowed product claims (traceable, validated) — the VALIDATED COMPONENTS the vision
+#       above is built from; each number still resolves to a committed scoreboard -----
 PRODUCT_CLAIMS: List[ProductClaim] = [
     ProductClaim(
         task="mumtaz_depression",
@@ -305,6 +345,18 @@ def render_report(screener_dir: Optional[str] = None) -> str:
     lines = ["DVXR Screen — evidence report", "=" * 60,
              "Research-grade screening / decision-support. Not a diagnosis.",
              "Every number below traces to a committed scoreboard file.", ""]
+    v = PRODUCT_VISION
+    lines += [
+        f"PRODUCT — HEADLINE (research-stage): {v.name}",
+        f"  {v.tagline}",
+        f"  Horizons: {v.horizons_minutes} min   Status: RESEARCH-STAGE — NOT YET VALIDATED "
+        f"(no headline AUROC; fusion gated on synchronized same-subject data)",
+        f"  {v.caveat}",
+        f"  Built from the validated components below: {', '.join(v.components)}",
+        "",
+        "VALIDATED COMPONENTS (each number traces to a committed scoreboard):",
+        "",
+    ]
     for c in PRODUCT_CLAIMS:
         tag = "  ★ HEADLINE" if c.headline else ""
         lines.append(f"[{c.task}]{tag}")

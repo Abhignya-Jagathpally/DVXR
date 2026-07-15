@@ -24,7 +24,7 @@ from typing import Dict, List, Optional
 
 import numpy as np
 
-from dvxr.llm.predictor import (
+from dvxr.experiments.llm_representation_probe import (
     SOFT_PROMPT_PREFIX,
     _modality_quant,
     _seeded_matrix,

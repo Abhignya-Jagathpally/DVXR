@@ -152,6 +152,19 @@ def cmd_report(args) -> int:
     return 0
 
 
+def cmd_glucose_report(args) -> int:
+    """The default research-stage glucose product report — an honest abstention until synchronized
+    same-subject pilot data exists (spec §8.7/§16). Emits JSON with --json."""
+    from dvxr.serve.vision import glucose_risk_report, render_glucose_report
+    report = glucose_risk_report(patient_id=args.patient,
+                                 horizons_minutes=args.horizons)
+    if args.json:
+        print(json.dumps(report, indent=2))
+    else:
+        print(render_glucose_report(report))
+    return 0
+
+
 def cmd_demo(args) -> int:
     import subprocess
     scripts = Path(__file__).resolve().parents[2] / "scripts"
@@ -346,6 +359,14 @@ def build_parser() -> argparse.ArgumentParser:
     pr.add_argument("--json", action="store_true", help="also emit the raw result as JSON")
     pr.add_argument("--no-narrative", action="store_true", help="skip the clinician note")
     pr.set_defaults(func=cmd_predict)
+
+    gr = sub.add_parser("glucose-report",
+                        help="research-stage glucose product report (abstains until synchronized data)")
+    gr.add_argument("--patient", default=None, help="pseudonymous patient id (optional)")
+    gr.add_argument("--horizons", type=int, nargs="+", default=None,
+                    help="prediction horizons in minutes (default 30 60)")
+    gr.add_argument("--json", action="store_true", help="emit the structured abstention as JSON")
+    gr.set_defaults(func=cmd_glucose_report)
 
     rp = sub.add_parser("report", help="evidence one-pager (numbers + literature)")
     rp.add_argument("--screener", help="saved screener dir")

@@ -60,8 +60,16 @@ class StructuredClaimAudit(unittest.TestCase):
 
     def test_provenance_verifier_passes(self):
         """The offline provenance tool must confirm the committed board matches the manifest — the
-        network-free half of `docs/REPRODUCE.md` (the other half is the real re-run recorded there)."""
-        import build_dnh_labram_scoreboard as prov
+        network-free half of `docs/REPRODUCE.md` (the other half is the real re-run recorded there).
+
+        Load the tool deterministically from the committed ``scripts/`` path via importlib so a
+        stray same-named module elsewhere on sys.path (e.g. an untracked file at repo root) cannot
+        shadow the audited one."""
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            "_dvxr_prov_build_dnh_labram_scoreboard", ROOT / "scripts" / "build_dnh_labram_scoreboard.py")
+        prov = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(prov)
         self.assertEqual(prov.verify(), 0)
 
     def test_missing_source_degrades_to_problem_string_not_crash(self):
@@ -117,6 +125,55 @@ class StructuredClaimAudit(unittest.TestCase):
         r = render_report().lower()
         self.assertIn("window-level", r)
         self.assertIn("subject-level", r)
+
+
+class ProductVisionAudit(unittest.TestCase):
+    """The re-headlined glucose product (NeuroGlycemic Sentinel) must be presented as research-stage,
+    never as a validated claim: no fabricated AUROC, synchrony-gated, clearly not-yet-validated. This
+    is the honesty guardrail on the glucose re-headline — the product VISION is real, but the validated
+    NUMBERS remain the components (depression / stress / workload). If this class fails, the re-headline
+    has manufactured a claim the data cannot support."""
+
+    def test_vision_is_research_stage_and_synchrony_gated(self):
+        from dvxr.serve.evidence import PRODUCT_VISION
+        self.assertTrue(PRODUCT_VISION.research_stage, "glucose product must be flagged research-stage")
+        self.assertTrue(PRODUCT_VISION.requires_synchronized_data,
+                        "glucose product must require synchronized same-subject data")
+
+    def test_vision_carries_no_fabricated_auroc(self):
+        from dvxr.serve.evidence import PRODUCT_VISION
+        self.assertIsNone(PRODUCT_VISION.auroc, "the glucose product must not carry a headline AUROC")
+
+    def test_vision_caveat_names_synchronized_data_and_not_validated(self):
+        from dvxr.serve.evidence import PRODUCT_VISION
+        low = PRODUCT_VISION.caveat.lower()
+        self.assertIn("synchronized", low)
+        self.assertIn("not yet validated", low)
+        self.assertIn("not a diagnosis", low)
+
+    def test_report_marks_glucose_product_research_stage_without_a_number(self):
+        from dvxr.serve.evidence import render_report, PRODUCT_VISION
+        r = render_report()
+        self.assertIn("research-stage", r.lower())
+        self.assertIn(PRODUCT_VISION.name, r)
+        # the glucose product's own lines must never carry a fabricated AUROC
+        for line in r.splitlines():
+            if PRODUCT_VISION.name in line:
+                self.assertNotRegex(line, r"AUROC\s*0?\.\d",
+                                    "glucose product line carries a fabricated AUROC")
+
+    def test_validated_components_still_trace(self):
+        """The re-headline must not delete the component validation it stands on."""
+        from dvxr.serve.evidence import PRODUCT_CLAIMS, PRODUCT_VISION
+        claim_tasks = {c.task for c in PRODUCT_CLAIMS}
+        for comp in PRODUCT_VISION.components:
+            self.assertIn(comp, claim_tasks, f"validated component {comp} lost its scoreboard claim")
+
+    def test_glucose_diabetes_fusion_remain_excluded_as_validated_claims(self):
+        """Re-headlining to glucose must NOT relax the exclusion of the leaky/negative results."""
+        from dvxr.serve.evidence import EXCLUDED_CLAIMS
+        for k in ("cgmacros_diabetes", "cacmf_as_win", "llm_as_predictor"):
+            self.assertIn(k, EXCLUDED_CLAIMS, f"{k} must stay excluded as a validated claim")
 
 
 _NEGATOR = re.compile(r"not |never |rather than|decision-support|screening|isn't|is not")

@@ -1,5 +1,10 @@
 # Bounded improvement experiment — pre-registration
 
+> **Framing (2026-07-15).** These experiments concern **validated components** of the research-stage
+> NeuroGlycemic Sentinel glucose product; none changes the honesty guardrail — the fused glucose claim
+> stays gated on synchronized same-subject data, and the improved fLLM remains the weakest predictor
+> (explanation-only in the product, never a clinical predictor).
+
 Phase 2 of the glass-box /goal. The rule from Phase 1 stands: the proposed multimodal path loses on
 full-observation accuracy, and we will not sell a loss as a win. This document **pre-registers** one
 bounded, literature-grounded change, the exact bars it must clear, and the decision rule — *before*
@@ -119,3 +124,29 @@ tokenizer.
 
 This is the honest outcome the pre-registration anticipated: a bounded lever, measured against committed
 baselines, that did not help — recorded, not spun.
+
+## Follow-up result — the epochs lever: a GENUINE, CI-backed win
+
+The incidental finding above was then tested directly (H2 for the *epochs* lever, not SimVQ). Measured on
+`wesad_stress` with the exact 3×5 subject-held-out protocol (`repeated_group_folds` + the shared logistic
+head), raising the LLM-path VQ training epochs is a real improvement to the proposed fLLM's representation:
+
+| LLM-path VQ epochs | held-out AUROC | 95% CI | folds |
+|---|---|---|---|
+| 8 (old default) | 0.7162 | [0.6721, 0.7629] | 15 |
+| **30 (new default)** | **0.8429** | **[0.8137, 0.8724]** | 15 |
+
+**+0.127 AUROC, and the confidence intervals do not overlap** — a CI-backed win, not noise. The gain comes
+purely from better-trained, less-collapsed codebooks (richer discrete tokens for the frozen LLM to read);
+the VQ is unsupervised and label-free, so this is not leakage, and the head stays subject-held-out.
+
+**Decision (fold it in, honestly).** Per the pre-registered rule, a genuine scoreboard-traceable gain is
+folded in: the LLM-path VQ default is raised **8 → 30** (`llm/predictor.py`, overridable via
+`DVXR_VQ_EPOCHS`), and the glass-box demo is regenerated so the proposed model shown is the stronger one.
+
+**Honest caveats.** (1) This improves the *proposed fLLM*, which is still the **weakest** predictor — even
+at 0.843 it loses to the single-modality winner (band-power/GBM ≈ 0.955), so it changes **no product
+claim** and remains explanation-only in the product. (2) The committed benchmark scoreboard's `rep:llm`
+entries were computed at the old epochs=8; a full re-benchmark to refresh those exploratory numbers is
+documented follow-up. What is proven here: the proposed model *can be made materially better*, measured
+honestly — the one real win of this experiment, alongside two honest negatives (SimVQ, dropout crossover).
