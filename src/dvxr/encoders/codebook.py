@@ -54,6 +54,7 @@ def _build_vector_quantizer(cfg):
             dead_threshold: float = 1.0,
             gumbel: bool = False,
             temperature: float = 1.0,
+            simvq: bool = False,
         ):
             super().__init__()
             self.num_codes = num_codes
@@ -64,35 +65,52 @@ def _build_vector_quantizer(cfg):
             self.dead_threshold = dead_threshold
             self.gumbel = gumbel
             self.temperature = temperature
+            self.simvq = simvq
 
             codebook = torch.randn(num_codes, dim) * (1.0 / max(dim, 1) ** 0.5)
-            # Codebook is a BUFFER (updated by EMA, not by autograd).
-            self.register_buffer("codebook", codebook)
-            self.register_buffer("cluster_size", torch.ones(num_codes))
-            self.register_buffer("embed_avg", codebook.clone())
+            if simvq:
+                # SimVQ (Zhu et al. 2024): a FROZEN latent codebook reparameterized by ONE learnable
+                # linear layer shared across all codes. Updating that layer moves the whole code space
+                # jointly (not just the nearest codes), which is what fixes representation collapse.
+                # The effective codebook is differentiable, so `codebook_loss` trains the layer and
+                # there is no EMA. All outward behaviour (indices, perplexity, straight-through) is
+                # unchanged. See docs/IMPROVEMENT_EXPERIMENT.md.
+                self.register_buffer("code_latent", codebook)          # frozen anchors
+                self.reparam = nn.Linear(dim, dim, bias=False)
+                with torch.no_grad():                                   # start near identity
+                    self.reparam.weight.copy_(torch.eye(dim) + 0.01 * torch.randn(dim, dim))
+            else:
+                # Codebook is a BUFFER (updated by EMA, not by autograd).
+                self.register_buffer("codebook", codebook)
+                self.register_buffer("cluster_size", torch.ones(num_codes))
+                self.register_buffer("embed_avg", codebook.clone())
+
+        def _codebook(self):
+            """Effective (K, d) codebook: EMA buffer, or the SimVQ reparameterized codebook."""
+            return self.reparam(self.code_latent) if self.simvq else self.codebook
 
         def forward(self, z, training: Optional[bool] = None) -> VQOutput:
             if training is None:
                 training = self.training
             orig_shape = z.shape
             flat = z.reshape(-1, self.dim)                      # (N, d)
+            codebook = self._codebook()                         # (K, d) — EMA buffer or SimVQ
 
             # squared L2 distance to every code
             dist = (
                 flat.pow(2).sum(1, keepdim=True)
-                - 2 * flat @ self.codebook.t()
-                + self.codebook.pow(2).sum(1)
+                - 2 * flat @ codebook.t()
+                + codebook.pow(2).sum(1)
             )                                                   # (N, K)
             indices = dist.argmin(1)                            # (N,)
             onehot = nn.functional.one_hot(indices, self.num_codes).type_as(flat)
-            quantized_hard = self.codebook[indices]             # (N, d)
+            quantized_hard = codebook[indices]                  # (N, d)
 
-            # NOTE (m1): codebook_loss is DIAGNOSTIC-ONLY. The codebook is an EMA buffer
-            # (updated in _ema_update, not by autograd) and quantized_hard indexes it, so
-            # this term carries no gradient to any learnable parameter (flat is detached
-            # on its side too). Only `commitment` trains the encoder. It is kept for
-            # monitoring the codebook-fit magnitude, not as an optimisation objective.
-            codebook_loss = (flat.detach() - quantized_hard).pow(2).mean()   # diagnostic
+            # NOTE (m1): with the EMA codebook, codebook_loss is DIAGNOSTIC-ONLY (the codebook is a
+            # buffer, quantized_hard indexes it, flat is detached) — only `commitment` trains the
+            # encoder. With SimVQ the codebook is differentiable (via the reparam layer), so the SAME
+            # term genuinely trains the shared linear layer that shapes the whole code space.
+            codebook_loss = (flat.detach() - quantized_hard).pow(2).mean()
             commitment = (flat - quantized_hard.detach()).pow(2).mean()      # trains encoder
             loss = codebook_loss + self.beta * commitment
 
@@ -100,7 +118,7 @@ def _build_vector_quantizer(cfg):
                 # differentiable soft assignment (alternative path)
                 logits = -dist / max(self.temperature, 1e-6)
                 soft = nn.functional.softmax(logits, dim=1)
-                quantized = soft @ self.codebook
+                quantized = soft @ codebook
             else:
                 # straight-through estimator: grad flows to z unchanged
                 quantized = flat + (quantized_hard - flat).detach()
@@ -109,7 +127,7 @@ def _build_vector_quantizer(cfg):
             avg = onehot.mean(0)
             perplexity = torch.exp(-(avg * (avg + 1e-10).log()).sum())
 
-            if training:
+            if training and not self.simvq:
                 self._ema_update(flat.detach(), onehot.detach())
 
             return VQOutput(
@@ -161,7 +179,7 @@ def _build_module(cfg):
         from the quantized latent."""
 
         def __init__(self, n_features, embedding_dim, hidden_dim, n_layers,
-                     n_heads, num_codes, beta, gumbel, temperature, decay):
+                     n_heads, num_codes, beta, gumbel, temperature, decay, simvq=False):
             super().__init__()
             self.input_proj = nn.Linear(1, hidden_dim)
             layer = nn.TransformerEncoderLayer(
@@ -171,7 +189,7 @@ def _build_module(cfg):
             self.head = nn.Linear(hidden_dim, embedding_dim)
             self.quantizer = VectorQuantizer(
                 num_codes=num_codes, dim=embedding_dim, beta=beta,
-                decay=decay, gumbel=gumbel, temperature=temperature)
+                decay=decay, gumbel=gumbel, temperature=temperature, simvq=simvq)
             self.decoder = nn.Linear(embedding_dim, n_features)
 
         # aliases so the parent's gradient_saliency (which calls eval_mode/
@@ -218,6 +236,7 @@ class VQBiosignalEncoder(NeuralBiosignalEncoder):
         temperature: float = 1.0,
         ema_decay: float = 0.99,
         mask_ratio: float = 0.3,
+        simvq: bool = False,
     ):
         super().__init__(
             embedding_dim=embedding_dim, hidden_dim=hidden_dim,
@@ -228,6 +247,7 @@ class VQBiosignalEncoder(NeuralBiosignalEncoder):
         self.temperature = temperature
         self.ema_decay = ema_decay
         self.mask_ratio = mask_ratio
+        self.simvq = simvq
         self._last_perplexity: Optional[float] = None
 
     # ---------------- fitting ----------------
@@ -247,7 +267,7 @@ class VQBiosignalEncoder(NeuralBiosignalEncoder):
             hidden_dim=self.hidden_dim, n_layers=self.n_layers,
             n_heads=self.n_heads, num_codes=self.codebook_size,
             beta=self.commitment_beta, gumbel=self.gumbel,
-            temperature=self.temperature, decay=self.ema_decay)
+            temperature=self.temperature, decay=self.ema_decay, simvq=self.simvq)
 
         self._train(matrix, torch)
         embeddings = self._encode_matrix(matrix, torch)
@@ -348,7 +368,7 @@ class VQBiosignalEncoder(NeuralBiosignalEncoder):
                 "codebook_size": self.codebook_size,
                 "commitment_beta": self.commitment_beta, "gumbel": self.gumbel,
                 "temperature": self.temperature, "ema_decay": self.ema_decay,
-                "mask_ratio": self.mask_ratio,
+                "mask_ratio": self.mask_ratio, "simvq": self.simvq,
             },
         }, str(path))
 
@@ -365,7 +385,8 @@ class VQBiosignalEncoder(NeuralBiosignalEncoder):
             n_features=len(enc._columns), embedding_dim=enc.embedding_dim,
             hidden_dim=enc.hidden_dim, n_layers=enc.n_layers, n_heads=enc.n_heads,
             num_codes=enc.codebook_size, beta=enc.commitment_beta,
-            gumbel=enc.gumbel, temperature=enc.temperature, decay=enc.ema_decay)
+            gumbel=enc.gumbel, temperature=enc.temperature, decay=enc.ema_decay,
+            simvq=getattr(enc, "simvq", False))
         enc._model.load_state_dict(payload["state_dict"])
         enc._model.eval()
         return enc

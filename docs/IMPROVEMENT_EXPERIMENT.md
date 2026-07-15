@@ -77,5 +77,45 @@ tokenizer fixes. A negative on H2/H3 is a real result and will be reported as su
 
 ## Results
 
-<!-- RESULTS: appended by Slice 5 after measurement — win or honest negative, whatever the data says. -->
-_Pending Slice 5._
+**H1 (SimVQ raises codebook utilization): REFUTED — a robust negative.** Measured on all 7 real WESAD
+modalities (mean batch perplexity over seeds 7/13/21, K = 64, the LLM path's 8-epoch setting):
+
+| | mean perplexity |
+|---|---|
+| current VQ (EMA + dead-code reinit) | **6.66** |
+| SimVQ (one-linear reparameterization) | **3.03** (−3.63) |
+
+SimVQ was *worse* on every modality. An epoch sweep on `ecg` shows the gap is not an under-training
+artifact — it widens with training, because the existing VQ's dead-code reinit keeps reviving unused
+codes while SimVQ (no reinit, one shared linear layer over a 24-d latent) does not:
+
+| epochs | current VQ | SimVQ |
+|---|---|---|
+| 8   | 6.5  | 3.0 |
+| 30  | 10.9 | 3.9 |
+| 60  | 16.2 | 2.3 |
+| 120 | 24.2 | 5.4 |
+
+**Interpretation (honest).** SimVQ's shared-linear reparameterization is designed for *large* image
+codebooks trained long; at this repo's scale (K = 64, tiny biosignal latents, few epochs) it does **not**
+fix collapse and in fact utilizes fewer codes than the EMA + dead-code baseline already in
+`encoders/codebook.py`. Our existing anti-collapse machinery is the stronger choice here.
+
+**Incidental finding (a real, cheap lever).** The low utilization the glass-box surfaced (perplexity
+2.5–5.7) is **not** a VQ ceiling — it is the LLM path's short training (`_modality_quant` uses
+`epochs=8`, `predictor.py:180`). The *same* VQ reaches perplexity ~24 at 120 epochs. So the honest,
+minimal way to enrich the discrete tokens is simply **more VQ epochs in the LLM path**, not a new
+tokenizer.
+
+**Decision (per the pre-registered rule).**
+- H1 failed, so H2/H3 are not pursued: SimVQ does not improve the mechanism it was chosen to improve, so
+  there is no basis to expect a downstream (H2) or robustness (H3) gain from it. Reported as a negative.
+- No fabricated win. Nothing is folded into the product (Slice 6 records the negative and closes).
+- **What ships:** SimVQ stays as an **off-by-default, documented experimental flag** (`DVXR_VQ=simvq` /
+  `VQBiosignalEncoder(simvq=True)`) with this negative recorded — the repo's standing practice of keeping
+  tested negatives visible rather than hiding them. The actionable recommendation (raise the LLM-path VQ
+  epochs) is noted for a future, separately-benchmarked change; we do not alter the committed LLM-rep
+  numbers here.
+
+This is the honest outcome the pre-registration anticipated: a bounded lever, measured against committed
+baselines, that did not help — recorded, not spun.

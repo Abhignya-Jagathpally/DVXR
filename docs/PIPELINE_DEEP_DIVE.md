@@ -286,11 +286,19 @@ board **and** the dropout-crossover curve (`docs/IMPROVEMENT_EXPERIMENT.md`).
 | Lever | Change | Expectation |
 |---|---|---|
 | **Encoder** | LaBraM → **EEGPT / CBraMod** | *honest-effort* — plausibly better cross-subject transfer; capped by 64 Hz data |
-| **Tokenizer** | VQ → **FSQ / residual-VQ** | *honest-effort* — removes dead-code failure mode / adds capacity |
+| **Tokenizer** | VQ → **FSQ / residual-VQ** | *honest-effort* — SimVQ was tested and **lost** (see below); FSQ/RVQ untried |
 | **LLM path** | frozen-random projection → **learned + LoRA** soft prompts | *honest-effort on GPU* — the documented full Option-3; overfit risk at small n |
 | **KV / latency** | int8/4-bit quantization, seq-len pruning, bigger batches | *safe* — speed with negligible accuracy cost |
 | **Inference** | mean-pool → attention-pool; Platt → temperature/isotonic; global → Mondrian conformal | *safe-to-modest* — better use of the same embeddings |
 | **Regime** | optimize for the **dropout crossover**, not full-obs accuracy | *strategic* — where the proposed model actually wins |
+
+**Tested (Phase 2 — an honest negative).** The glass-box surfaced low VQ codebook utilization (perplexity
+2.5–5.7 / 64), so we pre-registered and measured **SimVQ** (one-linear-layer codebook reparameterization).
+It **underperformed** the existing EMA + dead-code VQ on every WESAD modality and across 8–120 epochs —
+recorded in full in [`docs/IMPROVEMENT_EXPERIMENT.md`](IMPROVEMENT_EXPERIMENT.md), shipped as an
+off-by-default flag (`DVXR_VQ=simvq`) so the negative stays visible. The one real, cheap lever the
+experiment did surface: the low utilization is the LLM path's short training (`epochs=8`), not a VQ
+ceiling (the same VQ reaches ~24 perplexity at 120 epochs) — a future, separately-benchmarked tweak.
 
 **Bottom line:** the proposed multimodal fLLM is real, fully wired, and demonstrable end-to-end; its
 honest value is calibrated, uncertainty-aware, explainable, missing-modality-robust screening — with a

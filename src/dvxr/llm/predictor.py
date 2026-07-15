@@ -171,13 +171,14 @@ def _modality_quant(task, seed: int, d_code: int) -> Dict[str, np.ndarray]:
     """Per-modality VQ quantized vectors for every window (unsupervised, label-free)."""
     from dvxr.encoders.codebook import VQBiosignalEncoder
 
+    simvq = os.environ.get("DVXR_VQ", "").lower() == "simvq"   # opt-in tokenizer experiment
     out: Dict[str, np.ndarray] = {}
     for m in task.modalities:
         X = task.features[m]
         cols = [f"f{i}" for i in range(X.shape[1])]
         df = pd.DataFrame(X, columns=cols)
         enc = VQBiosignalEncoder(embedding_dim=d_code, hidden_dim=32, n_layers=1,
-                                 n_heads=2, epochs=8, codebook_size=64, seed=seed)
+                                 n_heads=2, epochs=8, codebook_size=64, seed=seed, simvq=simvq)
         enc.fit_transform(df, cols)
         _, quant = enc.quantize(df)
         qcols = [c for c in quant.columns if c.startswith("q_")]

@@ -132,6 +132,29 @@ class VQBiosignalEncoderTest(unittest.TestCase):
         emb2 = enc2.transform(frame)
         np.testing.assert_allclose(emb1.to_numpy(), emb2.to_numpy(), rtol=1e-5, atol=1e-6)
 
+    def test_simvq_flag_preserves_the_interface(self):
+        """SimVQ (docs/IMPROVEMENT_EXPERIMENT.md) is an off-by-default experimental tokenizer; it must
+        keep every outward behaviour of the VQ encoder (fit/quantize/perplexity/save/load) so the LLM
+        and fusion paths consume it unchanged. The measured verdict is a NEGATIVE (SimVQ underutilizes
+        vs the EMA+dead-code VQ at this scale) — this test guards the interface, not a performance claim."""
+        frame, cols = _fixture()
+        enc = VQBiosignalEncoder(embedding_dim=8, hidden_dim=16, n_layers=1, n_heads=2,
+                                 epochs=6, codebook_size=32, seed=7, simvq=True)
+        emb = enc.fit_transform(frame, cols)
+        self.assertEqual(emb.shape[0], len(frame))
+        idx, quant = enc.quantize(frame)
+        self.assertEqual(len(idx), len(frame))
+        self.assertTrue((idx["code_index"] >= 0).all() and (idx["code_index"] < 32).all())
+        ppl = enc.perplexity(frame)
+        self.assertGreater(ppl, 1.0)
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp) / "simvq.pt"
+            enc.save(p)
+            enc2 = VQBiosignalEncoder.from_pretrained(p)     # hparams carry simvq=True
+        self.assertTrue(enc2.simvq)
+        np.testing.assert_allclose(emb.to_numpy(), enc2.transform(frame).to_numpy(),
+                                   rtol=1e-5, atol=1e-6)
+
     def test_gradient_saliency_inherited(self):
         frame, cols = _fixture()
         enc = VQBiosignalEncoder(embedding_dim=8, hidden_dim=16, n_layers=1,
