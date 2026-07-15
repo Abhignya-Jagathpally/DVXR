@@ -59,6 +59,11 @@ foundation model for EEG screening, calibrated band-power for wearable stress �
 calibrated probability, a risk band, and a conformal interval, and carries the *same* subject-held-out
 AUROC the benchmark reports. Explanations come through `dvxr.serve.explain` (grounded, always caveated).
 
+For a code-grounded walkthrough of the whole pipeline — data in, preprocessing, tokenization, embeddings,
+attention, the frozen-LLM soft-prompt path, KV cache, fine-tuning/inference, LSL, and the honest SOTA
+comparison (fusion loses at full observation; the proposed model's real edge is graceful degradation
+under sensor dropout) — see [`docs/PIPELINE_DEEP_DIVE.md`](docs/PIPELINE_DEEP_DIVE.md).
+
 **Validated capabilities** (AUROC, subject-held-out CV, each traced to `outputs/*scoreboard*`; see
 [`docs/MODEL_CARD.md`](docs/MODEL_CARD.md) and `dvxr.serve.evidence`). The depression headline was
 **re-derived from raw EEG + the real LaBraM model** (byte-for-byte identical board) — full
