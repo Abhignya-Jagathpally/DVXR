@@ -93,6 +93,42 @@ def _external_html() -> str:
     return (f'<p class="blurb">{html.escape(framing)}</p>{"".join(blocks)}')
 
 
+def _utility_html() -> str:
+    """Clinical-utility (decision-curve / net-benefit) section, read from the saved screeners."""
+    import json
+    from dvxr.serve.utility import render_decision_curve_svg
+    root = Path(__file__).resolve().parents[1] / "outputs" / "product" / "screeners"
+    label = {"mumtaz_depression": "Depression (MDD vs healthy), resting EEG",
+             "wesad_stress": "Acute stress, wearable physiology",
+             "eegmat_workload": "Cognitive workload, EEG"}
+    cards = []
+    for task in ("mumtaz_depression", "wesad_stress", "eegmat_workload"):
+        man = root / task / "manifest.json"
+        if not man.exists():
+            continue
+        dca = json.loads(man.read_text())["heldout"].get("decision_curve")
+        if not dca or not dca.get("points"):
+            continue
+        s = dca.get("summary", {})
+        svg = render_decision_curve_svg(dca)
+        useful = s.get("useful")
+        chip = (f'<span class="ubadge good">useful {int(s["useful_band"][0]*100)}–'
+                f'{int(s["useful_band"][1]*100)}%</span>' if useful
+                else '<span class="ubadge warn">no stable net-benefit advantage</span>')
+        cards.append(
+            f'<div class="ucard"><div class="uhead"><h3>{html.escape(label.get(task, task))}</h3>'
+            f'{chip}</div><div class="usvg">{svg}</div>'
+            f'<p class="unote">{html.escape(str(s.get("note", "")))} '
+            f'<span class="muted">({html.escape(dca.get("level","window"))}-level, held-out).</span></p>'
+            f'</div>')
+    intro = ("AUROC measures ranking; it does not say whether <em>acting</em> on the screen helps. "
+             "Decision-curve analysis (Vickers &amp; Elkin, 2006) plots net benefit against the "
+             "decision threshold beside the two default policies — treat everyone, treat no one — "
+             "from the same held-out predictions. The &ldquo;useful&rdquo; band is bootstrap-gated, so "
+             "a chance advantage reads as not useful rather than being oversold.")
+    return f'<p class="blurb">{intro}</p><div class="ugrid">{"".join(cards)}</div>'
+
+
 def render_page() -> str:
     from dvxr.serve.evidence import (comparative_table, METHOD_CLAIMS, EXCLUDED_CLAIMS,
                                      PRODUCT_CLAIMS, verify_against_scoreboards)
@@ -114,6 +150,7 @@ def render_page() -> str:
 
     tasks_html = "".join(_task_block(r) for r in rows)
     external_html = _external_html()
+    utility_html = _utility_html()
     excl_html = "".join(
         f'<li><span class="x">✕</span><span class="k">{html.escape(k.replace("_"," "))}</span>'
         f'<span class="why">{html.escape(v)}</span></li>'
@@ -237,6 +274,17 @@ h2.sec {{ font-size:13px; letter-spacing:.16em; text-transform:uppercase; color:
 .proto {{ font-family:var(--mono); font-size:10px; border:1px solid; border-radius:10px;
   padding:1px 6px; white-space:nowrap; }}
 .mnote {{ color:var(--muted); font-size:11.5px; margin-top:3px; }}
+.ugrid {{ display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:14px; }}
+.ucard {{ border:1px solid var(--line); border-radius:12px; padding:14px 16px; background:var(--panel);
+  color:var(--fg); }}
+.uhead {{ display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:6px; }}
+.ucard h3 {{ font-size:14px; margin:0; letter-spacing:-.2px; }}
+.ubadge {{ font-family:var(--mono); font-size:10.5px; letter-spacing:.04em; border-radius:20px;
+  padding:2px 9px; white-space:nowrap; border:1px solid; }}
+.ubadge.good {{ color:var(--good); border-color:var(--good); }}
+.ubadge.warn {{ color:var(--warn); border-color:var(--warn); }}
+.usvg {{ overflow-x:auto; }} .usvg svg {{ display:block; }}
+.unote {{ color:var(--muted); font-size:12px; margin:8px 0 0; }}
 .lit {{ font-size:13.5px; color:var(--fg); }} .lit li {{ margin:6px 0; }}
 footer {{ margin-top:40px; padding-top:18px; border-top:1px solid var(--line); color:var(--muted);
   font-size:12.5px; }}
@@ -276,6 +324,9 @@ footer strong {{ color:var(--fg); }}
 
   <h2 class="sec">DVXR vs published SOTA — same cohort, protocol-labeled</h2>
   {external_html}
+
+  <h2 class="sec">Clinical utility — does acting on the screen help?</h2>
+  {utility_html}
 
   <h2 class="sec">Method contribution — do-no-harm fusion</h2>
   {method_html}

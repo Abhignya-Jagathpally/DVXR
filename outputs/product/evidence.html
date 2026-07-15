@@ -1,0 +1,306 @@
+<title>DVXR Screen — Evidence</title>
+<style>
+:root {
+  --paper:#f5f7fa; --panel:#ffffff; --fg:#16202e; --muted:#5b6b80; --line:#dde4ee;
+  --accent:#0e8f8c; --accent-soft:#d6efee; --ink-soft:#eef2f7;
+  --good:#1a9850; --warn:#e0952b; --bad:#cf3b2f;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --paper:#0c1220; --panel:#141d2e; --fg:#e9eef6; --muted:#93a1b8; --line:#243247;
+    --accent:#3fd0c9; --accent-soft:#123634; --ink-soft:#101a2a; }
+}
+:root[data-theme="dark"] { --paper:#0c1220; --panel:#141d2e; --fg:#e9eef6; --muted:#93a1b8;
+  --line:#243247; --accent:#3fd0c9; --accent-soft:#123634; --ink-soft:#101a2a; }
+:root[data-theme="light"] { --paper:#f5f7fa; --panel:#ffffff; --fg:#16202e; --muted:#5b6b80;
+  --line:#dde4ee; --accent:#0e8f8c; --accent-soft:#d6efee; --ink-soft:#eef2f7; }
+
+* { box-sizing:border-box; }
+.wrap { --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; color:var(--fg);
+  background:var(--paper); margin:0 auto; max-width:980px; padding:0 20px 72px;
+  line-height:1.55; -webkit-font-smoothing:antialiased; }
+.wrap .num, .auroc, .barval, .ci { font-family:var(--mono); font-variant-numeric:tabular-nums; }
+.eyebrow { font-family:var(--mono); font-size:11px; letter-spacing:.18em; text-transform:uppercase;
+  color:var(--muted); }
+.eyebrow.head { color:var(--accent); border:1px solid var(--accent); border-radius:20px;
+  padding:1px 8px; margin-left:8px; }
+
+/* hero */
+.hero { position:relative; margin-top:34px; padding:30px 28px 26px; border:1px solid var(--line);
+  border-radius:18px; background:linear-gradient(160deg,var(--panel),var(--ink-soft)); overflow:hidden; }
+.hero svg { position:absolute; inset:auto 0 0 0; width:100%; height:80px; opacity:.28; }
+.hero .kicker { font-family:var(--mono); font-size:12px; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--accent); }
+.hero h1 { font-size:34px; line-height:1.1; margin:8px 0 6px; letter-spacing:-.5px; text-wrap:balance;
+  max-width:20ch; }
+.hero p { color:var(--muted); max-width:62ch; margin:0; }
+.hero .big { position:relative; z-index:1; display:flex; align-items:flex-end; gap:14px; margin-top:18px; }
+.hero .big .v { font-family:var(--mono); font-size:56px; font-weight:700; color:var(--accent);
+  line-height:.9; letter-spacing:-1px; }
+.hero .big .cap { color:var(--muted); font-size:13px; padding-bottom:6px; }
+.badges { display:flex; flex-wrap:wrap; gap:8px; margin-top:16px; }
+.badge { font-family:var(--mono); font-size:11px; letter-spacing:.06em; color:var(--muted);
+  border:1px solid var(--line); border-radius:20px; padding:3px 10px; background:var(--panel); }
+.ok { color:var(--good); } .bad { color:var(--bad); }
+
+h2.sec { font-size:13px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted);
+  font-family:var(--mono); margin:44px 0 14px; padding-bottom:8px; border-bottom:1px solid var(--line); }
+
+.task { border:1px solid var(--line); border-radius:14px; padding:20px 22px; margin:14px 0;
+  background:var(--panel); }
+.task-head { display:flex; justify-content:space-between; gap:20px; align-items:flex-start;
+  flex-wrap:wrap; }
+.task h3 { margin:6px 0 3px; font-size:19px; letter-spacing:-.2px; }
+.task .enc { color:var(--muted); font-size:13px; }
+.readout { text-align:right; }
+.readout .auroc { font-size:30px; font-weight:700; color:var(--fg); line-height:1; }
+.readout .ci { color:var(--muted); font-size:11.5px; margin-top:4px; }
+
+.bars { margin:16px 0 4px; display:flex; flex-direction:column; gap:7px; }
+.barrow { display:grid; grid-template-columns:190px 1fr; gap:12px; align-items:center; }
+.barlabel { font-size:12.5px; color:var(--muted); text-align:right; }
+.crown { font-family:var(--mono); font-size:9.5px; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--accent); border:1px solid var(--accent); border-radius:10px; padding:0 5px; margin-left:5px; }
+.bartrack { position:relative; background:var(--ink-soft); border-radius:6px; height:22px; }
+.bar { height:100%; border-radius:6px; background:var(--line); }
+.bar.win { background:linear-gradient(90deg,var(--accent),color-mix(in srgb,var(--accent) 60%,#7fe)); }
+.barval { position:absolute; right:8px; top:50%; transform:translateY(-50%); font-size:12px;
+  color:var(--fg); }
+
+.caveat { font-size:13px; color:var(--muted); margin:14px 0 0; }
+.ctag { font-family:var(--mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase;
+  color:var(--warn); border:1px solid var(--warn); border-radius:6px; padding:1px 6px; margin-right:6px; }
+.src { font-family:var(--mono); font-size:11px; color:var(--muted); margin-top:10px;
+  padding-top:10px; border-top:1px dashed var(--line); }
+
+.method { border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:10px;
+  padding:16px 18px; background:var(--panel); }
+.method p { margin:0; } .mcav { font-size:12.5px; color:var(--muted); margin-top:10px; }
+
+.honesty { border:1px solid var(--line); border-radius:14px; padding:8px 20px 18px; background:var(--panel); }
+.honesty ul { list-style:none; padding:0; margin:12px 0 0; display:flex; flex-direction:column; gap:10px; }
+.honesty li { display:grid; grid-template-columns:20px 200px 1fr; gap:10px; align-items:start;
+  font-size:13px; }
+.honesty .x { color:var(--bad); font-weight:700; }
+.honesty .k { font-weight:600; text-transform:capitalize; }
+.honesty .why { color:var(--muted); }
+
+.xcohort { border:1px solid var(--line); border-radius:12px; padding:14px 16px; margin:12px 0;
+  background:var(--panel); overflow-x:auto; }
+.xhead { font-size:14px; margin-bottom:10px; } .xhead .ours { color:var(--accent); }
+.muted { color:var(--muted); font-weight:400; }
+.xtable { width:100%; border-collapse:collapse; font-size:12.5px; }
+.xtable th { text-align:left; color:var(--muted); font-weight:600; font-size:11px;
+  text-transform:uppercase; letter-spacing:.04em; border-bottom:1px solid var(--line);
+  padding:4px 8px; }
+.xtable td { padding:7px 8px; border-bottom:1px solid var(--line); vertical-align:top; }
+.xtable td.num { font-family:var(--mono); font-variant-numeric:tabular-nums; white-space:nowrap; }
+.xtable .unit { color:var(--muted); font-size:10px; }
+.xtable a { color:var(--accent); text-decoration:none; } .xtable a:hover { text-decoration:underline; }
+.proto { font-family:var(--mono); font-size:10px; border:1px solid; border-radius:10px;
+  padding:1px 6px; white-space:nowrap; }
+.mnote { color:var(--muted); font-size:11.5px; margin-top:3px; }
+.ugrid { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:14px; }
+.ucard { border:1px solid var(--line); border-radius:12px; padding:14px 16px; background:var(--panel);
+  color:var(--fg); }
+.uhead { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:6px; }
+.ucard h3 { font-size:14px; margin:0; letter-spacing:-.2px; }
+.ubadge { font-family:var(--mono); font-size:10.5px; letter-spacing:.04em; border-radius:20px;
+  padding:2px 9px; white-space:nowrap; border:1px solid; }
+.ubadge.good { color:var(--good); border-color:var(--good); }
+.ubadge.warn { color:var(--warn); border-color:var(--warn); }
+.usvg { overflow-x:auto; } .usvg svg { display:block; }
+.unote { color:var(--muted); font-size:12px; margin:8px 0 0; }
+.lit { font-size:13.5px; color:var(--fg); } .lit li { margin:6px 0; }
+footer { margin-top:40px; padding-top:18px; border-top:1px solid var(--line); color:var(--muted);
+  font-size:12.5px; }
+footer strong { color:var(--fg); }
+@media (max-width:640px) {
+  .barrow { grid-template-columns:120px 1fr; } .barlabel { font-size:11px; }
+  .honesty li { grid-template-columns:20px 1fr; } .honesty li .why { grid-column:2; }
+  .hero h1 { font-size:27px; }
+}
+</style>
+<div class="wrap">
+  <section class="hero">
+    <svg viewBox="0 0 480 80" preserveAspectRatio="none" aria-hidden="true">
+      <polyline points="0,40.0 3,50.0 6,57.2 9,60.3 12,59.3 15,56.4 18,53.5 21,52.3 24,52.7 27,53.1 30,51.7 33,47.5 36,40.9 39,33.8 42,28.9 45,28.0 48,31.2 51,36.9 54,42.4 57,45.4 60,44.7 63,41.3 66,37.0 69,34.1 72,33.4 75,34.5 78,35.5 81,34.7 84,31.2 87,26.0 90,21.3 93,19.6 96,22.5 99,29.7 102,39.1 105,47.9 108,54.0 111,56.5 114,56.4 117,55.6 120,55.9 123,57.6 126,59.5 129,59.8 132,56.7 135,49.9 138,40.7 141,31.9 144,26.0 147,24.5 150,27.0 153,31.4 156,35.3 159,36.9 162,36.0 165,34.0 168,32.9 171,34.0 174,37.2 177,41.0 180,43.1 183,41.8 186,37.2 189,30.8 192,25.4 195,23.5 198,26.0 201,32.0 204,39.3 207,45.4 210,49.0 213,50.3 216,50.7 219,52.1 222,55.3 225,59.8 228,63.4 231,64.0 234,60.0 237,52.0 240,41.9 243,32.7 246,26.7 249,24.8 252,25.9 255,28.0 258,29.1 261,28.4 264,26.7 267,25.9 270,27.6 273,32.3 276,39.0 279,45.1 282,48.3 285,47.4 288,42.9 291,36.9 294,32.3 297,30.9 300,33.0 303,37.2 306,41.4 309,43.9 312,44.2 315,43.5 318,43.9 321,46.8 324,52.2 327,58.6 330,63.4 333,64.2 336,60.2 339,52.4 342,43.2 345,35.2 348,30.3 351,28.3 354,28.0 357,27.3 360,25.1 363,21.7 366,18.9 369,18.6 372,22.3 375,29.6 378,38.5 381,46.2 384,50.3 387,50.1 390,46.9 393,42.8 396,40.3 399,40.4 402,42.4 405,44.8 408,45.6 411,44.0 414,40.8 417,38.0 420,37.7 423,41.1 426,47.5 429,54.5 432,59.4 435,60.2 438,56.7 441,50.2 444,43.3 447,38.1 450,35.2 453,33.9 456,32.4 459,29.2 462,23.9 465,18.1 468,14.1 471,14.1 474,18.8 477,27.1" fill="none" stroke="var(--accent)" stroke-width="1.6"/>
+    </svg>
+    <div class="kicker">DVXR Screen · evidence</div>
+    <h1>Depression, screened from a short resting EEG.</h1>
+    <p>A research-grade multimodal clinical-risk screening toolkit. Every figure below is produced by
+      the model that <em>wins</em> the benchmark for its task, under subject-held-out cross-validation
+      — reproduced live by the shipped screener, not quoted from a paper. Screening, not diagnosis.</p>
+    <div class="big">
+      <div class="v">0.961</div>
+      <div class="cap">window-level held-out AUROC · MDD vs healthy · real LaBraM EEG FM<br>
+        95% CI [0.942, 0.976] · subject-level 0.986 (n=58) ·
+        Mumtaz 2016, subject-held-out CV</div>
+    </div>
+    <div class="badges">
+      <span class="badge">offline · CPU · deterministic</span>
+      <span class="badge">subject-held-out CV</span>
+      <span class="badge">calibrated + conformal intervals</span>
+      <span class="badge"><span class="ok">✓ every number re-verified against its committed scoreboard</span></span>
+    </div>
+  </section>
+
+  <h2 class="sec">Comparative results — the numbers speak</h2>
+  
+    <article class="task">
+      <header class="task-head">
+        <div>
+          <div class="eyebrow">screening capability <span class="eyebrow head">headline</span></div>
+          <h3>Depression screen (MDD vs healthy) from resting EEG</h3>
+          <div class="enc">real LaBraM EEG foundation model (frozen linear-probe)</div>
+        </div>
+        <div class="readout">
+          <div class="auroc">0.961</div>
+          <div class="ci">AUROC · 95% CI [0.942, 0.976]</div>
+        </div>
+      </header>
+      <div class="bars">
+        <div class="barrow">
+          <div class="barlabel">LaBraM EEG FM <span class="crown">winner</span></div>
+          <div class="bartrack"><div class="bar win" style="width:96%"></div>
+            <span class="barval">0.961</span></div>
+        </div>
+        <div class="barrow">
+          <div class="barlabel">tuned GBM (xgboost)</div>
+          <div class="bartrack"><div class="bar" style="width:93%"></div>
+            <span class="barval">0.930</span></div>
+        </div>
+        <div class="barrow">
+          <div class="barlabel">band-power (single:eeg)</div>
+          <div class="bartrack"><div class="bar" style="width:89%"></div>
+            <span class="barval">0.889</span></div>
+        </div>
+        <div class="barrow">
+          <div class="barlabel">raw-CNN</div>
+          <div class="bartrack"><div class="bar" style="width:84%"></div>
+            <span class="barval">0.840</span></div>
+        </div>
+        <div class="barrow">
+          <div class="barlabel">learned CACMF fusion</div>
+          <div class="bartrack"><div class="bar" style="width:80%"></div>
+            <span class="barval">0.795</span></div>
+        </div></div>
+      <p class="caveat"><span class="ctag">caveat</span> Fidelity-limited: 64 Hz source (≤32 Hz content) vs LaBraM&#x27;s 200 Hz training; would plausibly improve at native rate.</p>
+      <div class="src">source · outputs/_dnh_labram/benchmark_scoreboard.csv</div>
+    </article>
+    <article class="task">
+      <header class="task-head">
+        <div>
+          <div class="eyebrow">screening capability </div>
+          <h3>Acute-stress screen from wearable physiology</h3>
+          <div class="enc">band-power physiology features + tuned GBM</div>
+        </div>
+        <div class="readout">
+          <div class="auroc">0.955</div>
+          <div class="ci">AUROC · 95% CI [0.93, 0.978]</div>
+        </div>
+      </header>
+      <div class="bars">
+        <div class="barrow">
+          <div class="barlabel">band-power + GBM <span class="crown">winner</span></div>
+          <div class="bartrack"><div class="bar win" style="width:96%"></div>
+            <span class="barval">0.955</span></div>
+        </div>
+        <div class="barrow">
+          <div class="barlabel">learned CACMF fusion</div>
+          <div class="bartrack"><div class="bar" style="width:87%"></div>
+            <span class="barval">0.871</span></div>
+        </div></div>
+      <p class="caveat"><span class="ctag">caveat</span> Wrist/chest wearable cohort; acute-stress state, not chronic-stress diagnosis.</p>
+      <div class="src">source · outputs/benchmark_scoreboard.csv</div>
+    </article>
+    <article class="task">
+      <header class="task-head">
+        <div>
+          <div class="eyebrow">screening capability </div>
+          <h3>Cognitive-workload screen (rest vs task)</h3>
+          <div class="enc">ECG autonomic (band-power); LaBraM improves the EEG-only path</div>
+        </div>
+        <div class="readout">
+          <div class="auroc">0.740</div>
+          <div class="ci">AUROC · 95% CI [0.71, 0.77]</div>
+        </div>
+      </header>
+      <div class="bars">
+        <div class="barrow">
+          <div class="barlabel">ECG autonomic (task best) <span class="crown">winner</span></div>
+          <div class="bartrack"><div class="bar win" style="width:74%"></div>
+            <span class="barval">0.740</span></div>
+        </div>
+        <div class="barrow">
+          <div class="barlabel">LaBraM EEG FM</div>
+          <div class="bartrack"><div class="bar" style="width:66%"></div>
+            <span class="barval">0.663</span></div>
+        </div>
+        <div class="barrow">
+          <div class="barlabel">band-power EEG</div>
+          <div class="bartrack"><div class="bar" style="width:64%"></div>
+            <span class="barval">0.636</span></div>
+        </div>
+        <div class="barrow">
+          <div class="barlabel">learned CACMF fusion</div>
+          <div class="bartrack"><div class="bar" style="width:64%"></div>
+            <span class="barval">0.635</span></div>
+        </div></div>
+      <p class="caveat"><span class="ctag">caveat</span> Autonomic ECG dominates for arithmetic load; the EEG FM improves the EEG view (0.663 &gt; 0.636 band-power) but does not overturn the task-level modality finding.</p>
+      <div class="src">source · outputs/benchmark_scoreboard.csv</div>
+    </article>
+    <article class="task">
+      <header class="task-head">
+        <div>
+          <div class="eyebrow">screening capability </div>
+          <h3>Stress screen from peripheral physiology</h3>
+          <div class="enc">peripheral physiology (band-power, concat)</div>
+        </div>
+        <div class="readout">
+          <div class="auroc">0.892</div>
+          <div class="ci">AUROC · 95% CI [0.86, 0.91]</div>
+        </div>
+      </header>
+      <div class="bars">
+        <div class="barrow">
+          <div class="barlabel">peripheral physiology <span class="crown">winner</span></div>
+          <div class="bartrack"><div class="bar win" style="width:89%"></div>
+            <span class="barval">0.892</span></div>
+        </div>
+        <div class="barrow">
+          <div class="barlabel">learned CACMF fusion</div>
+          <div class="bartrack"><div class="bar" style="width:87%"></div>
+            <span class="barval">0.871</span></div>
+        </div></div>
+      <p class="caveat"><span class="ctag">caveat</span> Peripheral-signal stress states; research cohort.</p>
+      <div class="src">source · outputs/benchmark_scoreboard.csv</div>
+    </article>
+
+  <h2 class="sec">DVXR vs published SOTA — same cohort, protocol-labeled</h2>
+  <p class="blurb">Published numbers are shown WITH their protocol. Segment-level / within-subject splits are not comparable to our subject-held-out CV and are labeled as such — we never claim to beat a number measured under a different protocol. Cross-subject (LOSO / subject-independent) is the honest bar.</p><div class="xcohort"><div class="xhead">mumtaz_depression · <span class="ours">DVXR window-level <strong>0.961</strong> · subject-level <strong>0.986</strong></span> <span class="muted">(3x5 subject-held-out CV, n=58, Mumtaz 2016)</span></div><table class="xtable"><thead><tr><th>published method</th><th>score</th><th>protocol</th><th>source</th></tr></thead><tbody><tr><td>MDD-SSTNet (Sinc-CNN)</td><td class="num">0.651<span class="unit"> accuracy</span></td><td><span class="proto" style="border-color:#1a9850;color:#1a9850">LOSO (cross-subject)</span></td><td><a href="https://doi.org/10.1093/cercor/bhae505" target="_blank" rel="noopener">Chen et al., 2025, Cereb Cortex</a><div class="mnote">LOSO on MODMA = 65.1% (93.9% on HUSM) — cross-subject EEG-MDD is HARD; different cohort than Mumtaz (Mumtaz is comparatively more separable).</div></td></tr><tr><td>GoogleNet CNN</td><td class="num">0.733<span class="unit"> accuracy</span></td><td><span class="proto" style="border-color:#e0952b;color:#e0952b">external-validation</span></td><td><a href="https://doi.org/10.1177/15500594241273181" target="_blank" rel="noopener">Metin et al., 2024, Clin EEG Neurosci</a><div class="mnote">88-90% within-study but drops to 73.3% on EXTERNAL validation — the generalization gap our subject-level number also probes.</div></td></tr><tr><td>EEGNet</td><td class="num">0.937<span class="unit"> accuracy</span></td><td><span class="proto" style="border-color:#cf3b2f;color:#cf3b2f">within-subject/segment</span></td><td><a href="https://doi.org/10.1515/bmt-2021-0232" target="_blank" rel="noopener">Yan et al., 2022, Biomed Tech</a><div class="mnote">93.7% but 3-electrode, segment-level split — NOT subject-held-out; not comparable to our cross-subject protocol (shown for context only).</div></td></tr></tbody></table></div><div class="xcohort"><div class="xhead">wesad_stress · <span class="ours">DVXR window-level <strong>0.955</strong> · <span class="muted">within-subject task → epoch-level unit</span></span> <span class="muted">(2x5 subject-held-out CV, n=8, WESAD)</span></div><table class="xtable"><thead><tr><th>published method</th><th>score</th><th>protocol</th><th>source</th></tr></thead><tbody><tr><td>GB+ANN ensemble</td><td class="num">0.850<span class="unit"> accuracy</span></td><td><span class="proto" style="border-color:#1a9850;color:#1a9850">LOSO (cross-subject)</span></td><td><a href="https://doi.org/10.1016/j.jbi.2023.104556" target="_blank" rel="noopener">Vos et al., 2023, J Biomed Inform</a><div class="mnote">~85% under LOSO on unseen data; explicitly shows small single-study models DON&#x27;T generalize — the honest cross-subject bar for wearable stress.</div></td></tr><tr><td>GAF + DNN</td><td class="num">0.948<span class="unit"> accuracy</span></td><td><span class="proto" style="border-color:#cf3b2f;color:#cf3b2f">within-subject/segment</span></td><td><a href="https://doi.org/10.3390/bios12121153" target="_blank" rel="noopener">Ghosh et al., 2022, Biosensors</a><div class="mnote">94.8% segment-level (not LOSO) — high but not subject-held-out.</div></td></tr><tr><td>EDA + spectrogram ML</td><td class="num">0.964<span class="unit"> accuracy</span></td><td><span class="proto" style="border-color:#cf3b2f;color:#cf3b2f">within-subject/segment</span></td><td><a href="https://doi.org/10.1142/S0129065724500278" target="_blank" rel="noopener">Sriram Kumar &amp; Ronickom, 2024, Int J Neural Syst</a><div class="mnote">96.4% 3-class segment-level (EDA only) — segment split, not cross-subject.</div></td></tr></tbody></table></div><div class="xcohort"><div class="xhead">eegmat_workload · <span class="ours">DVXR window-level <strong>0.663</strong> · <span class="muted">within-subject task → epoch-level unit</span></span> <span class="muted">(3x5 subject-held-out CV, n=20, eegmat / PhysioNet MAT)</span></div><table class="xtable"><thead><tr><th>published method</th><th>score</th><th>protocol</th><th>source</th></tr></thead><tbody><tr><td>EMD + SVM (subject-independent)</td><td class="num">n/a<span class="unit"> accuracy</span></td><td><span class="proto" style="border-color:#1a9850;color:#1a9850">subject-independent</span></td><td><a href="https://doi.org/10.1371/journal.pone.0291576" target="_blank" rel="noopener">Khanam et al., 2023, PLoS One</a><div class="mnote">Studies the subject-INDEPENDENT MAT setting and the rest-vs-task hypothesis directly — the honest cross-subject framing (accuracy varies with subject performance); the SAME cohort we use.</div></td></tr><tr><td>R-LMD + BAO + ensemble</td><td class="num">0.974<span class="unit"> accuracy</span></td><td><span class="proto" style="border-color:#cf3b2f;color:#cf3b2f">within-subject/segment</span></td><td><a href="https://doi.org/10.1038/s41598-024-84429-6" target="_blank" rel="noopener">Yedukondalu et al., 2025, Sci Rep</a><div class="mnote">97.4% on the MAT dataset but segment-level (4 s windows) — NOT subject-held-out; not comparable to our cross-subject AUROC.</div></td></tr></tbody></table></div>
+
+  <h2 class="sec">Clinical utility — does acting on the screen help?</h2>
+  <p class="blurb">AUROC measures ranking; it does not say whether <em>acting</em> on the screen helps. Decision-curve analysis (Vickers &amp; Elkin, 2006) plots net benefit against the decision threshold beside the two default policies — treat everyone, treat no one — from the same held-out predictions. The &ldquo;useful&rdquo; band is bootstrap-gated, so a chance advantage reads as not useful rather than being oversold.</p><div class="ugrid"><div class="ucard"><div class="uhead"><h3>Depression (MDD vs healthy), resting EEG</h3><span class="ubadge good">useful 10–75%</span></div><div class="usvg"><svg width='460' height='240' viewBox='0 0 460 240' style='max-width:100%;height:auto' role='img' aria-label='Decision-curve analysis: net benefit vs decision threshold'><line x1='42' y1='83.4' x2='448' y2='83.4' stroke='currentColor' stroke-opacity='0.25' stroke-width='1'/><path d='M42.0,83.4 L71.0,83.4 L100.0,83.4 L129.0,83.4 L158.0,83.4 L187.0,83.4 L216.0,83.4 L245.0,83.4 L274.0,83.4 L303.0,83.4 L332.0,83.4 L361.0,83.4 L390.0,83.4 L419.0,83.4 L448.0,83.4' fill='none' stroke='#94a3b8' stroke-width='2'/><path d='M42.0,16.6 L71.0,20.4 L100.0,24.7 L129.0,29.5 L158.0,35.0 L187.0,41.3 L216.0,48.5 L245.0,56.9 L274.0,66.8 L303.0,78.8 L332.0,93.3 L361.0,111.6 L390.0,135.0 L419.0,166.3 L448.0,210.0' fill='none' stroke='#f59e0b' stroke-width='2' stroke-dasharray='4 3'/><path d='M42.0,16.6 L71.0,16.0 L100.0,16.4 L129.0,16.7 L158.0,18.6 L187.0,19.5 L216.0,19.3 L245.0,20.2 L274.0,23.6 L303.0,22.5 L332.0,23.6 L361.0,23.7 L390.0,24.5 L419.0,28.0 L448.0,31.9' fill='none' stroke='#3b82f6' stroke-width='2'/><text x='42.0' y='232' font-size='9' fill='currentColor' fill-opacity='0.7' text-anchor='middle'>5%</text><text x='245.0' y='232' font-size='9' fill='currentColor' fill-opacity='0.7' text-anchor='middle'>40%</text><text x='448.0' y='232' font-size='9' fill='currentColor' fill-opacity='0.7' text-anchor='middle'>75%</text><text x='42' y='12' font-size='9' fill='currentColor' fill-opacity='0.7'>net benefit</text><text x='448' y='232' font-size='9' fill='currentColor' fill-opacity='0.7' text-anchor='end'>decision threshold</text><g font-size='9' fill='currentColor'><rect x='42' y='16' width='10' height='3' fill='#3b82f6'/><text x='56' y='20'>DVXR screen</text><rect x='128' y='16' width='10' height='3' fill='#f59e0b'/><text x='142' y='20'>treat all</text><rect x='198' y='16' width='10' height='3' fill='#94a3b8'/><text x='212' y='20'>treat none</text></g></svg></div><p class="unote">Screening beats both treat-all and treat-none for decision thresholds 10–75%; peak added net benefit 0.441 at 55% (bootstrap 95% lower bound 0.312 &gt; 0) — ≈ 0.441 extra true cases caught per patient at no added false-alarm cost vs the best default. <span class="muted">(subject-level, held-out).</span></p></div><div class="ucard"><div class="uhead"><h3>Acute stress, wearable physiology</h3><span class="ubadge good">useful 5–70%</span></div><div class="usvg"><svg width='460' height='240' viewBox='0 0 460 240' style='max-width:100%;height:auto' role='img' aria-label='Decision-curve analysis: net benefit vs decision threshold'><line x1='42' y1='32.5' x2='448' y2='32.5' stroke='currentColor' stroke-opacity='0.25' stroke-width='1'/><path d='M42.0,32.5 L71.0,32.5 L100.0,32.5 L129.0,32.5 L158.0,32.5 L187.0,32.5 L216.0,32.5 L245.0,32.5 L274.0,32.5 L303.0,32.5 L332.0,32.5 L361.0,32.5 L390.0,32.5 L419.0,32.5 L448.0,32.5' fill='none' stroke='#94a3b8' stroke-width='2'/><path d='M42.0,17.6 L71.0,21.4 L100.0,25.7 L129.0,30.5 L158.0,35.9 L187.0,42.1 L216.0,49.3 L245.0,57.7 L274.0,67.6 L303.0,79.4 L332.0,93.9 L361.0,112.1 L390.0,135.4 L419.0,166.5 L448.0,210.0' fill='none' stroke='#f59e0b' stroke-width='2' stroke-dasharray='4 3'/><path d='M42.0,16.0 L71.0,18.0 L100.0,18.5 L129.0,19.1 L158.0,20.6 L187.0,21.7 L216.0,22.5 L245.0,23.4 L274.0,23.8 L303.0,25.0 L332.0,24.8 L361.0,25.5 L390.0,26.7 L419.0,27.1 L448.0,32.5' fill='none' stroke='#3b82f6' stroke-width='2'/><text x='42.0' y='232' font-size='9' fill='currentColor' fill-opacity='0.7' text-anchor='middle'>5%</text><text x='245.0' y='232' font-size='9' fill='currentColor' fill-opacity='0.7' text-anchor='middle'>40%</text><text x='448.0' y='232' font-size='9' fill='currentColor' fill-opacity='0.7' text-anchor='middle'>75%</text><text x='42' y='12' font-size='9' fill='currentColor' fill-opacity='0.7'>net benefit</text><text x='448' y='232' font-size='9' fill='currentColor' fill-opacity='0.7' text-anchor='end'>decision threshold</text><g font-size='9' fill='currentColor'><rect x='42' y='16' width='10' height='3' fill='#3b82f6'/><text x='56' y='20'>DVXR screen</text><rect x='128' y='16' width='10' height='3' fill='#f59e0b'/><text x='142' y='20'>treat all</text><rect x='198' y='16' width='10' height='3' fill='#94a3b8'/><text x='212' y='20'>treat none</text></g></svg></div><p class="unote">Screening beats both treat-all and treat-none for decision thresholds 5–70%; peak added net benefit 0.142 at 25% (bootstrap 95% lower bound 0.103 &gt; 0) — ≈ 0.142 extra true cases caught per patient at no added false-alarm cost vs the best default. <span class="muted">(window-level, held-out).</span></p></div><div class="ucard"><div class="uhead"><h3>Cognitive workload, EEG</h3><span class="ubadge good">useful 35–60%</span></div><div class="usvg"><svg width='460' height='240' viewBox='0 0 460 240' style='max-width:100%;height:auto' role='img' aria-label='Decision-curve analysis: net benefit vs decision threshold'><line x1='42' y1='78.4' x2='448' y2='78.4' stroke='currentColor' stroke-opacity='0.25' stroke-width='1'/><path d='M42.0,78.4 L71.0,78.4 L100.0,78.4 L129.0,78.4 L158.0,78.4 L187.0,78.4 L216.0,78.4 L245.0,78.4 L274.0,78.4 L303.0,78.4 L332.0,78.4 L361.0,78.4 L390.0,78.4 L419.0,78.4 L448.0,78.4' fill='none' stroke='#94a3b8' stroke-width='2'/><path d='M42.0,16.0 L71.0,19.8 L100.0,24.2 L129.0,29.0 L158.0,34.5 L187.0,40.7 L216.0,48.0 L245.0,56.4 L274.0,66.4 L303.0,78.4 L332.0,93.0 L361.0,111.3 L390.0,134.8 L419.0,166.1 L448.0,210.0' fill='none' stroke='#f59e0b' stroke-width='2' stroke-dasharray='4 3'/><path d='M42.0,16.0 L71.0,19.8 L100.0,24.2 L129.0,29.0 L158.0,34.5 L187.0,40.7 L216.0,43.0 L245.0,50.5 L274.0,56.0 L303.0,60.7 L332.0,68.1 L361.0,73.1 L390.0,80.0 L419.0,77.9 L448.0,78.4' fill='none' stroke='#3b82f6' stroke-width='2'/><text x='42.0' y='232' font-size='9' fill='currentColor' fill-opacity='0.7' text-anchor='middle'>5%</text><text x='245.0' y='232' font-size='9' fill='currentColor' fill-opacity='0.7' text-anchor='middle'>40%</text><text x='448.0' y='232' font-size='9' fill='currentColor' fill-opacity='0.7' text-anchor='middle'>75%</text><text x='42' y='12' font-size='9' fill='currentColor' fill-opacity='0.7'>net benefit</text><text x='448' y='232' font-size='9' fill='currentColor' fill-opacity='0.7' text-anchor='end'>decision threshold</text><g font-size='9' fill='currentColor'><rect x='42' y='16' width='10' height='3' fill='#3b82f6'/><text x='56' y='20'>DVXR screen</text><rect x='128' y='16' width='10' height='3' fill='#f59e0b'/><text x='142' y='20'>treat all</text><rect x='198' y='16' width='10' height='3' fill='#94a3b8'/><text x='212' y='20'>treat none</text></g></svg></div><p class="unote">Screening beats both treat-all and treat-none for decision thresholds 35–60%; peak added net benefit 0.134 at 50% (bootstrap 95% lower bound 0.079 &gt; 0) — ≈ 0.134 extra true cases caught per patient at no added false-alarm cost vs the best default. <span class="muted">(window-level, held-out).</span></p></div></div>
+
+  <h2 class="sec">Method contribution — do-no-harm fusion</h2>
+  <div class="method"><p>Reliability-gated do-no-harm fusion (dnh_gated) beats the proposal&#x27;s own learned cross-modal CACMF fusion on 4 of 6 tasks (stress +11%, wesad +28%, eegmat +18%, depression +53%) and the best single modality on 3 of 6.</p><p class="mcav"><span class="ctag">caveat</span> Nuanced positive, not a clean sweep: universal held-out do-no-harm does NOT hold at N&lt;=60 (loses to single-ECG on eegmat, slips on the near-chance DEAP pair). Reported, not hidden.</p></div>
+
+  <h2 class="sec">What this product does <em>not</em> claim</h2>
+  <div class="honesty">
+    <p class="caveat" style="margin-top:14px">The credibility of a screening tool is what it refuses
+      to overstate. These are excluded by design, and a CI honesty-audit blocks them from ever
+      surfacing as a product claim:</p>
+    <ul><li><span class="x">✕</span><span class="k">deap affect</span><span class="why">DEAP affective decoding is at chance (AUROC ~0.51-0.55) for every config — not a capability.</span></li><li><span class="x">✕</span><span class="k">cacmf as win</span><span class="why">The learned CACMF cross-modal fusion LOSES on all 6 real tasks — it is the negative result, never sold as the product model.</span></li><li><span class="x">✕</span><span class="k">llm as predictor</span><span class="why">The LLM-in-the-predictive-path (rep:llm) is the weakest config and is explanation-only in the product, never a predictor.</span></li><li><span class="x">✕</span><span class="k">mimic mortality</span><span class="why">MIMIC mortality is tiny/untrustworthy here — excluded from claims.</span></li><li><span class="x">✕</span><span class="k">cgmacros diabetes</span><span class="why">The old cgmacros_diabetes numbers had label leakage — excluded.</span></li><li><span class="x">✕</span><span class="k">diagnosis</span><span class="why">This is research-grade screening / decision-support, never a diagnostic claim.</span></li></ul>
+  </div>
+
+  <h2 class="sec">Literature</h2>
+  <ul class="lit"><li>LaBraM — Jiang et al., ICLR 2024, arXiv:2405.18765 (EEG foundation model)</li><li>Mumtaz et al., 2016 — MDD-vs-healthy resting-EEG cohort (labels)</li><li>WESAD — Schmidt et al., 2018 (wearable stress cohort)</li><li>PhysioNet EEG-during-Mental-Arithmetic — Zyma et al., 2019</li><li>LaBraM — Jiang et al., ICLR 2024, arXiv:2405.18765</li><li>PhysioNet Non-EEG — Birjandtalab et al., 2016 (peripheral physiology)</li><li>Super Learner — van der Laan et al., 2007 (do-no-harm oracle provenance)</li></ul>
+
+  <footer>
+    <strong>Research prototype — screening / decision-support only, never a diagnostic claim.</strong>
+    A positive screen is a prompt to consult a qualified clinician, not a conclusion. Numbers are
+    AUROC on subject-disjoint folds from research cohorts; small-N cohorts carry wide intervals.
+    DVXR Lab · reproducible via <span class="num">pip install -e . &amp;&amp; dvxr report</span>.
+  </footer>
+</div>

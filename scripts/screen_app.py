@@ -17,6 +17,7 @@ arbitrary recording). Research-grade screening, never a diagnosis.
 """
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -192,6 +193,29 @@ def main() -> None:
                                  "Protocol": e.protocol, "Source": f"{e.citation} — doi:{e.doi}"}
                                 for e in EXTERNAL_SOTA.get(task, [])])
             st.dataframe(xdf, hide_index=True)
+
+        st.markdown("#### Clinical utility — does acting on the screen help?")
+        st.caption("Decision-curve analysis (Vickers & Elkin, 2006): net benefit vs the treat-all / "
+                   "treat-none defaults, from held-out predictions. The useful band is bootstrap-"
+                   "gated, so a chance advantage reads as not useful.")
+        from dvxr.serve.utility import render_decision_curve_svg
+        _uroot = Path(__file__).resolve().parents[1] / "outputs" / "product" / "screeners"
+        for task in ("mumtaz_depression", "wesad_stress", "eegmat_workload"):
+            man = _uroot / task / "manifest.json"
+            if not man.exists():
+                continue
+            dca = json.loads(man.read_text())["heldout"].get("decision_curve")
+            if not dca or not dca.get("points"):
+                continue
+            s = dca.get("summary", {})
+            st.markdown(f"**{task}** — "
+                        + (f"useful over {int(s['useful_band'][0]*100)}–{int(s['useful_band'][1]*100)}% "
+                           f"(peak net benefit +{s['best_gain']}, bootstrap LB {s.get('best_gain_lo')})"
+                           if s.get("useful") else "no bootstrap-stable net-benefit advantage"))
+            st.markdown(f"<div style='color:var(--text-color,#333)'>{render_decision_curve_svg(dca)}</div>",
+                        unsafe_allow_html=True)
+            st.caption(f"{s.get('note','')} ({dca.get('level','window')}-level, held-out).")
+
         st.caption("Cross-subject (LOSO / subject-independent) is the honest bar; segment-level "
                    "numbers with subject leakage are not comparable to our subject-held-out CV. "
                    "Research-grade screening, never a diagnosis. Excluded by the honesty gate: "

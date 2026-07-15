@@ -99,6 +99,15 @@ class ProseSurfaceAudit(unittest.TestCase):
                             or "not a diagnostic" in low or "never a diagnostic" in low,
                             f"{name}: missing the research-prototype / not-a-diagnosis disclaimer")
 
+    def test_decision_curve_surface_is_attributed_and_honest(self):
+        # Wherever a net-benefit / decision curve is shown, it must name its method (Vickers & Elkin)
+        # and the default policies it is measured against — never presented as a bare "utility" number.
+        page = self._surfaces()["evidence_page"].lower()
+        if "net benefit" in page or "decision-curve" in page or "decision curve" in page:
+            self.assertIn("vickers", page, "decision-curve surface missing method attribution")
+            self.assertIn("treat", page, "decision-curve surface missing the treat-all/none baseline")
+            self.assertIn("bootstrap", page, "decision-curve surface must disclose the useful-band gate")
+
     def test_evidence_page_has_no_external_resource_loads(self):
         page = self._surfaces()["evidence_page"]
         # Resource LOADS are forbidden (CSP-blocked anyway); DOI hyperlinks (<a href>) are allowed.
