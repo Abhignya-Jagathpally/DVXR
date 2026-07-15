@@ -168,6 +168,26 @@ def cmd_demo(args) -> int:
     return subprocess.call(cmd)
 
 
+def cmd_triage(args) -> int:
+    """Score a whole cohort and rank subjects by calibrated risk (triage board)."""
+    from dvxr.serve.batch import write_triage
+    screener = _load_or_fit(args)
+    task = args.task or screener.task
+    out = Path(args.out) if args.out else (
+        Path(__file__).resolve().parents[2] / "outputs" / "product" / f"triage_{task}")
+    _eprint(f"[dvxr triage] scoring cohort {task}…")
+    df = write_triage(screener, out, task)
+    print(f"DVXR triage — {task}  ({len(df)} subjects, highest risk first) → {out}")
+    top = df.head(args.top)
+    for _, r in top.iterrows():
+        print(f"  #{int(r['rank']):>2}  {str(r['subject']):<14} risk {r['probability']:.3f}  "
+              f"{r['risk_band'].upper():<9} (cohort: {'case' if r['cohort_label'] else 'control'})")
+    bands = df["risk_band"].value_counts().to_dict()
+    print("  bands: " + ", ".join(f"{bands.get(b,0)} {b}" for b in
+                                   ["high", "elevated", "watch", "low"]))
+    return 0
+
+
 def cmd_screen(args) -> int:
     """Live-screen an uploaded recording end to end (headless form of the app's upload path)."""
     from dvxr.serve.live import screen_file
@@ -231,6 +251,13 @@ def build_parser() -> argparse.ArgumentParser:
     dm.add_argument("--out", help="output directory (default outputs/product)")
     dm.add_argument("--tasks", help="comma-separated subset (e.g. depression,stress)")
     dm.set_defaults(func=cmd_demo)
+
+    tr = sub.add_parser("triage", help="score a whole cohort and rank subjects by risk")
+    tr.add_argument("--task", required=True, choices=TASKS)
+    tr.add_argument("--screener", help="saved screener dir (omit to fit in-memory)")
+    tr.add_argument("--out", help="output dir (default outputs/product/triage_<task>)")
+    tr.add_argument("--top", type=int, default=10, help="how many top-risk rows to print")
+    tr.set_defaults(func=cmd_triage)
 
     sc = sub.add_parser("screen", help="live-screen an uploaded recording (.edf/.bdf/.csv)")
     sc.add_argument("--file", required=True, help="path to an EEG/wearable recording")
