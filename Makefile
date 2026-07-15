@@ -8,7 +8,7 @@ test:
 # The torch-free honesty-critical suite — what CI runs to prove "audit green" on a clean checkout.
 audit:
 	$(PYTHON) -m unittest tests.test_honesty_audit tests.test_docs_consistency tests.test_evidence \
-		tests.test_paper_product tests.test_utility tests.test_external_evidence
+		tests.test_paper_product tests.test_utility tests.test_external_evidence tests.test_glassbox
 
 mmf:
 	$(PYTHON) scripts/run_mmf_full.py --profile
