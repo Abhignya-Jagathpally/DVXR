@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DVXR Glass-box — eegmat_workload</title>
+<style>
+:root { --paper:#f5f7fa; --panel:#ffffff; --fg:#16202e; --muted:#5b6b80; --line:#dde4ee;
+  --accent:#0e8f8c; --accent-soft:#d6efee; --ink-soft:#eef2f7; --good:#1a9850; --warn:#e0952b; --bad:#cf3b2f; }
+@media (prefers-color-scheme: dark) {
+  :root { --paper:#0c1220; --panel:#141d2e; --fg:#e9eef6; --muted:#93a1b8; --line:#243247;
+    --accent:#3fd0c9; --accent-soft:#123634; --ink-soft:#101a2a; } }
+:root[data-theme="dark"] { --paper:#0c1220; --panel:#141d2e; --fg:#e9eef6; --muted:#93a1b8;
+  --line:#243247; --accent:#3fd0c9; --accent-soft:#123634; --ink-soft:#101a2a; }
+:root[data-theme="light"] { --paper:#f5f7fa; --panel:#ffffff; --fg:#16202e; --muted:#5b6b80;
+  --line:#dde4ee; --accent:#0e8f8c; --accent-soft:#d6efee; --ink-soft:#eef2f7; }
+* { box-sizing:border-box; }
+body { --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; color:var(--fg); background:var(--paper);
+  margin:0; line-height:1.5; -webkit-font-smoothing:antialiased; }
+.wrap { max-width:1080px; margin:0 auto; padding:0 20px 72px; }
+.num, .prob, .ci, .bv, .sbv, .metrics b { font-family:var(--mono); font-variant-numeric:tabular-nums; }
+.eyebrow { font-family:var(--mono); font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--accent); }
+.hero { margin-top:30px; padding:26px 24px; border:1px solid var(--line); border-radius:16px;
+  background:linear-gradient(160deg,var(--panel),var(--ink-soft)); }
+.hero h1 { font-size:28px; margin:8px 0 6px; letter-spacing:-.4px; text-wrap:balance; }
+.hero p { color:var(--muted); max-width:70ch; margin:0; }
+.disclaimer { margin-top:14px; padding:10px 12px; border-left:3px solid var(--warn);
+  background:var(--ink-soft); border-radius:6px; font-size:13px; color:var(--fg); }
+.sel { display:inline-flex; gap:8px; align-items:center; margin:22px 0 6px; font-size:13px; color:var(--muted); }
+.sel select { font:inherit; padding:4px 8px; border-radius:8px; border:1px solid var(--line);
+  background:var(--panel); color:var(--fg); }
+.synth { margin:14px 0; padding:8px 12px; border:1px dashed var(--line); border-radius:8px;
+  color:var(--muted); font-size:12px; }
+.subhead { display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin:18px 0 10px; }
+.sid { font-size:14px; }
+.ok { color:var(--good); font-size:12px; } .ood { color:var(--warn); font-size:12px; font-weight:600; }
+.cols { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+@media (max-width:820px) { .cols { grid-template-columns:1fr; } }
+.col { border:1px solid var(--line); border-radius:14px; padding:16px 16px 18px; background:var(--panel); }
+.col.proposed { background:linear-gradient(180deg,var(--panel),var(--ink-soft)); }
+.coltag { font-family:var(--mono); font-size:10.5px; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--accent); margin-bottom:6px; }
+.col h3 { font-size:16px; margin:2px 0 4px; } .enc { color:var(--muted); font-size:12.5px; margin:0 0 10px; }
+.big { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
+.prob { font-size:30px; font-weight:700; color:var(--accent); }
+.band { font-size:11px; padding:2px 8px; border-radius:20px; border:1px solid var(--line); text-transform:capitalize; }
+.band-elevated,.band-high { color:var(--bad); border-color:var(--bad); }
+.band-watch { color:var(--warn); border-color:var(--warn); } .band-low { color:var(--good); border-color:var(--good); }
+.ci { font-size:12px; color:var(--muted); }
+.cap { font-size:11px; color:var(--muted); margin:12px 0 5px; }
+.ink { color:var(--fg); }
+.metrics { display:flex; gap:16px; flex-wrap:wrap; font-size:12.5px; color:var(--muted); margin-top:8px; }
+.metrics b { color:var(--fg); }
+.drivers ul { margin:2px 0 0; padding-left:18px; font-size:12.5px; }
+.llm { margin-top:12px; padding:10px 12px; border-radius:8px; background:var(--ink-soft); }
+.llm p { margin:2px 0 0; font-size:13px; }
+.stage { margin-top:6px; }
+.bars { display:flex; flex-direction:column; gap:5px; }
+.bar { display:grid; grid-template-columns:64px 1fr 52px; align-items:center; gap:8px; }
+.bk { font-size:12px; color:var(--muted); } .bv { font-size:11.5px; text-align:right; color:var(--fg); }
+.bt { height:9px; border-radius:5px; background:var(--ink-soft); overflow:hidden; }
+.bf { display:block; height:100%; background:var(--accent); }
+.vq { display:flex; flex-direction:column; gap:5px; }
+.vqrow { display:grid; grid-template-columns:64px 1fr auto; align-items:center; gap:8px; }
+.cells { display:flex; flex-wrap:wrap; gap:2px; }
+.cell { width:11px; height:11px; border-radius:2px; display:inline-block; }
+.sub { font-size:12px; color:var(--muted); } .sub code { font-family:var(--mono); }
+.role { font-size:11.5px; color:var(--muted); margin:6px 0 0; }
+.note { font-size:11.5px; color:var(--muted); }
+.asis { margin-top:12px; padding:8px 10px; border-left:3px solid var(--warn); background:var(--ink-soft);
+  border-radius:6px; font-size:12px; }
+.scoreboard { margin-top:16px; border:1px solid var(--line); border-radius:14px; padding:16px; background:var(--panel); }
+.sbrow { display:flex; justify-content:space-between; gap:12px; padding:6px 0; border-bottom:1px solid var(--line); font-size:13px; }
+.sbk { color:var(--muted); } .sbv.good { color:var(--good); } .sbv.muted { color:var(--muted); }
+.sbverdict { margin-top:8px; font-weight:600; color:var(--bad); }
+.src { font-size:11px; } .sbnote { font-size:12.5px; color:var(--muted); margin:10px 0 0; }
+.muted { color:var(--muted); }
+code { font-family:var(--mono); }
+svg { max-width:100%; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <div class="eyebrow">Glass-box · proposed multimodal fLLM vs the winning model</div>
+    <h1>How the proposed model actually works — shown honestly, side by side</h1>
+    <p>The same subject flows through both pipelines. Left: the validated single-modality screener that
+      actually wins. Right: the proposed multimodal fLLM — VQ tokenization, cross-modal attention, and a
+      frozen-LLM soft-prompt reader — shown exactly as it performs. The scoreboard states the honest
+      verdict: fusion loses on full-observation accuracy; its real edge is missing-sensor robustness.</p>
+    <div class="disclaimer">Research-grade screening, not a diagnosis. The proposed multimodal path is shown exactly as it performs — on full observation it underperforms the single-modality screener; its honest edge is graceful degradation under missing sensors (see the scoreboard).</div>
+  </header>
+  <label class='sel'>Subject / sample entry <select id='pick' onchange='pick(this.value)'><option value='0'>subject Subject00</option><option value='1'>subject Subject10</option></select></label>
+  
+  
+    <div class="trace" data-trace="0" >
+      <div class="subhead"><span class="sid">subject <b>Subject00</b></span><span class='ok'>✓ held-out cohort subject — carries the validated number</span></div>
+      <div class="cols">
+        
+    <section class="col winner">
+      <div class="coltag">WINNER · single modality (validated)</div>
+      <h3>Cognitive-workload screen (rest vs task) from EEG</h3>
+      <p class="enc">real LaBraM EEG foundation model (frozen)</p>
+      <div class="big"><span class="prob">0.511</span>
+        <span class="band band-elevated">elevated</span>
+        <span class="ci">90% CI [0.000, 1.000]</span></div>
+      <div class="cap">Per-window calibrated probability (28 windows)</div>
+      <div class="ink"><svg viewBox='0 0 220 40' width='220' height='40' role='img' aria-label='per-window probabilities'><line x1='4' y1='20.0' x2='216' y2='20.0' stroke='currentColor' stroke-opacity='0.2'/><polyline points='4.0,23.4 11.9,20.8 19.7,19.3 27.6,22.5 35.4,23.3 43.3,25.8 51.1,23.8 59.0,26.0 66.8,24.4 74.7,24.7 82.5,22.8 90.4,18.3 98.2,23.2 106.1,23.7 113.9,14.0 121.8,17.9 129.6,13.9 137.5,14.2 145.3,15.9 153.2,15.4 161.0,17.5 168.9,15.6 176.7,14.3 184.6,22.7 192.4,17.0 200.3,16.5 208.1,15.7 216.0,17.3' fill='none' stroke='var(--accent)' stroke-width='1.6'/><circle cx='4.0' cy='23.4' r='1.6' fill='currentColor'/><circle cx='11.9' cy='20.8' r='1.6' fill='currentColor'/><circle cx='19.7' cy='19.3' r='1.6' fill='currentColor'/><circle cx='27.6' cy='22.5' r='1.6' fill='currentColor'/><circle cx='35.4' cy='23.3' r='1.6' fill='currentColor'/><circle cx='43.3' cy='25.8' r='1.6' fill='currentColor'/><circle cx='51.1' cy='23.8' r='1.6' fill='currentColor'/><circle cx='59.0' cy='26.0' r='1.6' fill='currentColor'/><circle cx='66.8' cy='24.4' r='1.6' fill='currentColor'/><circle cx='74.7' cy='24.7' r='1.6' fill='currentColor'/><circle cx='82.5' cy='22.8' r='1.6' fill='currentColor'/><circle cx='90.4' cy='18.3' r='1.6' fill='currentColor'/><circle cx='98.2' cy='23.2' r='1.6' fill='currentColor'/><circle cx='106.1' cy='23.7' r='1.6' fill='currentColor'/><circle cx='113.9' cy='14.0' r='1.6' fill='currentColor'/><circle cx='121.8' cy='17.9' r='1.6' fill='currentColor'/><circle cx='129.6' cy='13.9' r='1.6' fill='currentColor'/><circle cx='137.5' cy='14.2' r='1.6' fill='currentColor'/><circle cx='145.3' cy='15.9' r='1.6' fill='currentColor'/><circle cx='153.2' cy='15.4' r='1.6' fill='currentColor'/><circle cx='161.0' cy='17.5' r='1.6' fill='currentColor'/><circle cx='168.9' cy='15.6' r='1.6' fill='currentColor'/><circle cx='176.7' cy='14.3' r='1.6' fill='currentColor'/><circle cx='184.6' cy='22.7' r='1.6' fill='currentColor'/><circle cx='192.4' cy='17.0' r='1.6' fill='currentColor'/><circle cx='200.3' cy='16.5' r='1.6' fill='currentColor'/><circle cx='208.1' cy='15.7' r='1.6' fill='currentColor'/><circle cx='216.0' cy='17.3' r='1.6' fill='currentColor'/></svg></div>
+      <div class="metrics">
+        <span>Held-out AUROC <b>0.663</b></span>
+        <span>ECE <b>0.025</b></span>
+      </div>
+      <div class='dca'><div class='cap'>Decision curve — net benefit (Vickers &amp; Elkin), vs treat-all / treat-none</div><svg width='460' height='240' viewBox='0 0 460 240' style='max-width:100%;height:auto' role='img' aria-label='Decision-curve analysis: net benefit vs decision threshold'><line x1='42' y1='78.4' x2='448' y2='78.4' stroke='currentColor' stroke-opacity='0.25' stroke-width='1'/><path d='M42.0,78.4 L71.0,78.4 L100.0,78.4 L129.0,78.4 L158.0,78.4 L187.0,78.4 L216.0,78.4 L245.0,78.4 L274.0,78.4 L303.0,78.4 L332.0,78.4 L361.0,78.4 L390.0,78.4 L419.0,78.4 L448.0,78.4' fill='none' stroke='#94a3b8' stroke-width='2'/><path d='M42.0,16.0 L71.0,19.8 L100.0,24.2 L129.0,29.0 L158.0,34.5 L187.0,40.7 L216.0,48.0 L245.0,56.4 L274.0,66.4 L303.0,78.4 L332.0,93.0 L361.0,111.3 L390.0,134.8 L419.0,166.1 L448.0,210.0' fill='none' stroke='#f59e0b' stroke-width='2' stroke-dasharray='4 3'/><path d='M42.0,16.0 L71.0,19.8 L100.0,24.2 L129.0,29.0 L158.0,34.5 L187.0,40.7 L216.0,43.0 L245.0,50.5 L274.0,56.0 L303.0,60.7 L332.0,68.1 L361.0,73.1 L390.0,80.0 L419.0,77.9 L448.0,78.4' fill='none' stroke='#3b82f6' stroke-width='2'/><text x='42.0' y='232' font-size='9' fill='currentColor' fill-opacity='0.7' text-anchor='middle'>5%</text><text x='245.0' y='232' font-size='9' fill='currentColor' fill-opacity='0.7' text-anchor='middle'>40%</text><text x='448.0' y='232' font-size='9' fill='currentColor' fill-opacity='0.7' text-anchor='middle'>75%</text><text x='42' y='12' font-size='9' fill='currentColor' fill-opacity='0.7'>net benefit</text><text x='448' y='232' font-size='9' fill='currentColor' fill-opacity='0.7' text-anchor='end'>decision threshold</text><g font-size='9' fill='currentColor'><rect x='42' y='16' width='10' height='3' fill='#3b82f6'/><text x='56' y='20'>DVXR screen</text><rect x='128' y='16' width='10' height='3' fill='#f59e0b'/><text x='142' y='20'>treat all</text><rect x='198' y='16' width='10' height='3' fill='#94a3b8'/><text x='212' y='20'>treat none</text></g></svg></div>
+      <div class="drivers"><div class="cap">Top drivers</div><ul><li>latent[192]</li><li>latent[151]</li><li>latent[177]</li><li>latent[111]</li><li>latent[131]</li></ul></div>
+      <div class="llm"><div class="cap">LLM-generated assessment (grounded, explanation-only)</div>
+        <p>Clinician-facing summary (grounded):
+- Cognitive-workload screen (rest vs task) from EEG: probability 0.51, band elevated
+
+Caveat: this is a research prototype. Values are calibrated-model estimates and documented proxy signals, not a diagnosis; consult a qualified clinician for any medical decision.</p></div>
+    </section>
+        
+    <section class="col proposed">
+      <div class="coltag">PROPOSED · multimodal fLLM (shown as-is)</div>
+      <h3>VQ tokens → cross-modal attention → frozen-LLM soft prompts</h3>
+      <div class="stage"><div class="cap">1 · Per-modality VQ tokenization (code indices + codebook perplexity)</div>
+        <div class='vq'><div class='vqrow'><span class='bk'>eeg</span><span class='cells'><i class='cell' title='code 12' style='background:hsl(68 70% 50%)'></i><i class='cell' title='code 31' style='background:hsl(174 70% 50%)'></i><i class='cell' title='code 31' style='background:hsl(174 70% 50%)'></i><i class='cell' title='code 31' style='background:hsl(174 70% 50%)'></i><i class='cell' title='code 31' style='background:hsl(174 70% 50%)'></i><i class='cell' title='code 12' style='background:hsl(68 70% 50%)'></i><i class='cell' title='code 31' style='background:hsl(174 70% 50%)'></i><i class='cell' title='code 31' style='background:hsl(174 70% 50%)'></i><i class='cell' title='code 31' style='background:hsl(174 70% 50%)'></i><i class='cell' title='code 20' style='background:hsl(112 70% 50%)'></i><i class='cell' title='code 20' style='background:hsl(112 70% 50%)'></i><i class='cell' title='code 31' style='background:hsl(174 70% 50%)'></i><i class='cell' title='code 12' style='background:hsl(68 70% 50%)'></i><i class='cell' title='code 31' style='background:hsl(174 70% 50%)'></i><i class='cell' title='code 20' style='background:hsl(112 70% 50%)'></i><i class='cell' title='code 12' style='background:hsl(68 70% 50%)'></i><i class='cell' title='code 31' style='background:hsl(174 70% 50%)'></i><i class='cell' title='code 60' style='background:hsl(338 70% 50%)'></i><i class='cell' title='code 12' style='background:hsl(68 70% 50%)'></i><i class='cell' title='code 31' style='background:hsl(174 70% 50%)'></i><i class='cell' title='code 20' style='background:hsl(112 70% 50%)'></i><i class='cell' title='code 20' style='background:hsl(112 70% 50%)'></i><i class='cell' title='code 20' style='background:hsl(112 70% 50%)'></i><i class='cell' title='code 31' style='background:hsl(174 70% 50%)'></i><i class='cell' title='code 31' style='background:hsl(174 70% 50%)'></i><i class='cell' title='code 12' style='background:hsl(68 70% 50%)'></i><i class='cell' title='code 31' style='background:hsl(174 70% 50%)'></i><i class='cell' title='code 12' style='background:hsl(68 70% 50%)'></i></span><span class='bv' title='codebook perplexity'>ppl 3.1<span class='muted'>/64</span></span></div><div class='vqrow'><span class='bk'>physiology</span><span class='cells'><i class='cell' title='code 27' style='background:hsl(152 70% 50%)'></i><i class='cell' title='code 27' style='background:hsl(152 70% 50%)'></i><i class='cell' title='code 27' style='background:hsl(152 70% 50%)'></i><i class='cell' title='code 27' style='background:hsl(152 70% 50%)'></i><i class='cell' title='code 27' style='background:hsl(152 70% 50%)'></i><i class='cell' title='code 27' style='background:hsl(152 70% 50%)'></i><i class='cell' title='code 27' style='background:hsl(152 70% 50%)'></i><i class='cell' title='code 27' style='background:hsl(152 70% 50%)'></i><i class='cell' title='code 27' style='background:hsl(152 70% 50%)'></i><i class='cell' title='code 27' style='background:hsl(152 70% 50%)'></i><i class='cell' title='code 27' style='background:hsl(152 70% 50%)'></i><i class='cell' title='code 12' style='background:hsl(68 70% 50%)'></i><i class='cell' title='code 52' style='background:hsl(292 70% 50%)'></i><i class='cell' title='code 52' style='background:hsl(292 70% 50%)'></i><i class='cell' title='code 27' style='background:hsl(152 70% 50%)'></i><i class='cell' title='code 27' style='background:hsl(152 70% 50%)'></i><i class='cell' title='code 12' style='background:hsl(68 70% 50%)'></i><i class='cell' title='code 52' style='background:hsl(292 70% 50%)'></i><i class='cell' title='code 12' style='background:hsl(68 70% 50%)'></i><i class='cell' title='code 27' style='background:hsl(152 70% 50%)'></i><i class='cell' title='code 27' style='background:hsl(152 70% 50%)'></i><i class='cell' title='code 12' style='background:hsl(68 70% 50%)'></i><i class='cell' title='code 12' style='background:hsl(68 70% 50%)'></i><i class='cell' title='code 27' style='background:hsl(152 70% 50%)'></i><i class='cell' title='code 52' style='background:hsl(292 70% 50%)'></i><i class='cell' title='code 27' style='background:hsl(152 70% 50%)'></i><i class='cell' title='code 52' style='background:hsl(292 70% 50%)'></i><i class='cell' title='code 52' style='background:hsl(292 70% 50%)'></i></span><span class='bv' title='codebook perplexity'>ppl 2.6<span class='muted'>/64</span></span></div></div></div>
+      <div class="stage"><div class="cap">2 · Cross-modal fusion attention (α over modalities, sums to 1)</div>
+        <div class='bars' aria-label='cross-modal attention'><div class='bar'><span class='bk'>physiology</span><span class='bt'><span class='bf' style='width:100.0%'></span></span><span class='bv'>0.501</span></div><div class='bar'><span class='bk'>eeg</span><span class='bt'><span class='bf' style='width:99.6%'></span></span><span class='bv'>0.499</span></div></div></div>
+      <div class="stage"><div class="cap">3 · Frozen-LLM soft-prompt reader</div><div class='sub'>backend <code>Qwen/Qwen2.5-0.5B-Instruct</code>, pooled dim 896</div><div class='cap'>Modality attribution (L2 shift when a modality drops)</div><div class='bars' aria-label='modality attribution'><div class='bar'><span class='bk'>eeg</span><span class='bt'><span class='bf' style='width:100.0%'></span></span><span class='bv'>0.532</span></div><div class='bar'><span class='bk'>physiology</span><span class='bt'><span class='bf' style='width:87.9%'></span></span><span class='bv'>0.468</span></div></div><p class='role'>weakest predictor; validated role is explanation-only + missing-modality reader</p></div>
+      <div class="stage"><div class="cap">Proposed probability
+        <span class="muted">(subject-held-out, single subject — cohort verdict below)</span></div>
+        <div class="big"><span class='prob'>0.465</span></div>
+        <div class="note">frozen-LLM soft-prompt rep, leave-this-subject-out logistic head</div></div>
+      <div class="asis">Shown as-is. This is the proposed multimodal fLLM; on full observation it underperforms the single-modality winner (see scoreboard). Its real advantage is graceful degradation under missing sensors.</div>
+    </section>
+      </div>
+      
+    <section class="scoreboard">
+      <div class="coltag">HONEST SCOREBOARD · full-observation cohort verdict</div>
+      <div class='sbrow'><span class='sbk'>Best single-modality baseline</span><span class='sbv'>single:physiology · error 0.260</span></div><div class='sbrow'><span class='sbk'>Proposed fusion (full observation)</span><span class='sbv'>error 0.365 · RER -40.4%</span></div><div class='sbverdict'>proposed loses at full observation</div><div class='muted src'>source: outputs/benchmark_scoreboard.csv</div>
+      <div class='sbrow'><span class='sbk'>Sensor-dropout crossover</span><span class='sbv muted'>not recorded for this task (run the streaming showdown)</span></div>
+      <p class="sbnote">The proposed multimodal path loses on full-observation accuracy; its genuine
+        edge is graceful degradation under missing sensors. Both facts are shown here rather than hidden.</p>
+    </section>
+    </div>
+    <div class="trace" data-trace="1" style="display:none">
+      <div class="subhead"><span class="sid">subject <b>Subject10</b></span><span class='ok'>✓ held-out cohort subject — carries the validated number</span></div>
+      <div class="cols">
+        
+    <section class="col winner">
+      <div class="coltag">WINNER · single modality (validated)</div>
+      <h3>Cognitive-workload screen (rest vs task) from EEG</h3>
+      <p class="enc">real LaBraM EEG foundation model (frozen)</p>
+      <div class="big"><span class="prob">0.526</span>
+        <span class="band band-elevated">elevated</span>
+        <span class="ci">90% CI [0.000, 1.000]</span></div>
+      <div class="cap">Per-window calibrated probability (28 windows)</div>
+      <div class="ink"><svg viewBox='0 0 220 40' width='220' height='40' role='img' aria-label='per-window probabilities'><line x1='4' y1='20.0' x2='216' y2='20.0' stroke='currentColor' stroke-opacity='0.2'/><polyline points='4.0,18.6 11.9,26.0 19.7,21.9 27.6,16.3 35.4,21.8 43.3,25.8 51.1,23.1 59.0,24.6 66.8,23.7 74.7,22.4 82.5,25.9 90.4,24.8 98.2,25.5 106.1,22.5 113.9,17.2 121.8,14.4 129.6,16.9 137.5,15.9 145.3,14.1 153.2,15.1 161.0,15.0 168.9,13.7 176.7,17.7 184.6,15.1 192.4,16.3 200.3,14.1 208.1,13.7 216.0,14.2' fill='none' stroke='var(--accent)' stroke-width='1.6'/><circle cx='4.0' cy='18.6' r='1.6' fill='currentColor'/><circle cx='11.9' cy='26.0' r='1.6' fill='currentColor'/><circle cx='19.7' cy='21.9' r='1.6' fill='currentColor'/><circle cx='27.6' cy='16.3' r='1.6' fill='currentColor'/><circle cx='35.4' cy='21.8' r='1.6' fill='currentColor'/><circle cx='43.3' cy='25.8' r='1.6' fill='currentColor'/><circle cx='51.1' cy='23.1' r='1.6' fill='currentColor'/><circle cx='59.0' cy='24.6' r='1.6' fill='currentColor'/><circle cx='66.8' cy='23.7' r='1.6' fill='currentColor'/><circle cx='74.7' cy='22.4' r='1.6' fill='currentColor'/><circle cx='82.5' cy='25.9' r='1.6' fill='currentColor'/><circle cx='90.4' cy='24.8' r='1.6' fill='currentColor'/><circle cx='98.2' cy='25.5' r='1.6' fill='currentColor'/><circle cx='106.1' cy='22.5' r='1.6' fill='currentColor'/><circle cx='113.9' cy='17.2' r='1.6' fill='currentColor'/><circle cx='121.8' cy='14.4' r='1.6' fill='currentColor'/><circle cx='129.6' cy='16.9' r='1.6' fill='currentColor'/><circle cx='137.5' cy='15.9' r='1.6' fill='currentColor'/><circle cx='145.3' cy='14.1' r='1.6' fill='currentColor'/><circle cx='153.2' cy='15.1' r='1.6' fill='currentColor'/><circle cx='161.0' cy='15.0' r='1.6' fill='currentColor'/><circle cx='168.9' cy='13.7' r='1.6' fill='currentColor'/><circle cx='176.7' cy='17.7' r='1.6' fill='currentColor'/><circle cx='184.6' cy='15.1' r='1.6' fill='currentColor'/><circle cx='192.4' cy='16.3' r='1.6' fill='currentColor'/><circle cx='200.3' cy='14.1' r='1.6' fill='currentColor'/><circle cx='208.1' cy='13.7' r='1.6' fill='currentColor'/><circle cx='216.0' cy='14.2' r='1.6' fill='currentColor'/></svg></div>
+      <div class="metrics">
+        <span>Held-out AUROC <b>0.663</b></span>
+        <span>ECE <b>0.025</b></span>
+      </div>
+      <div class='dca'><div class='cap'>Decision curve — net benefit (Vickers &amp; Elkin), vs treat-all / treat-none</div><svg width='460' height='240' viewBox='0 0 460 240' style='max-width:100%;height:auto' role='img' aria-label='Decision-curve analysis: net benefit vs decision threshold'><line x1='42' y1='78.4' x2='448' y2='78.4' stroke='currentColor' stroke-opacity='0.25' stroke-width='1'/><path d='M42.0,78.4 L71.0,78.4 L100.0,78.4 L129.0,78.4 L158.0,78.4 L187.0,78.4 L216.0,78.4 L245.0,78.4 L274.0,78.4 L303.0,78.4 L332.0,78.4 L361.0,78.4 L390.0,78.4 L419.0,78.4 L448.0,78.4' fill='none' stroke='#94a3b8' stroke-width='2'/><path d='M42.0,16.0 L71.0,19.8 L100.0,24.2 L129.0,29.0 L158.0,34.5 L187.0,40.7 L216.0,48.0 L245.0,56.4 L274.0,66.4 L303.0,78.4 L332.0,93.0 L361.0,111.3 L390.0,134.8 L419.0,166.1 L448.0,210.0' fill='none' stroke='#f59e0b' stroke-width='2' stroke-dasharray='4 3'/><path d='M42.0,16.0 L71.0,19.8 L100.0,24.2 L129.0,29.0 L158.0,34.5 L187.0,40.7 L216.0,43.0 L245.0,50.5 L274.0,56.0 L303.0,60.7 L332.0,68.1 L361.0,73.1 L390.0,80.0 L419.0,77.9 L448.0,78.4' fill='none' stroke='#3b82f6' stroke-width='2'/><text x='42.0' y='232' font-size='9' fill='currentColor' fill-opacity='0.7' text-anchor='middle'>5%</text><text x='245.0' y='232' font-size='9' fill='currentColor' fill-opacity='0.7' text-anchor='middle'>40%</text><text x='448.0' y='232' font-size='9' fill='currentColor' fill-opacity='0.7' text-anchor='middle'>75%</text><text x='42' y='12' font-size='9' fill='currentColor' fill-opacity='0.7'>net benefit</text><text x='448' y='232' font-size='9' fill='currentColor' fill-opacity='0.7' text-anchor='end'>decision threshold</text><g font-size='9' fill='currentColor'><rect x='42' y='16' width='10' height='3' fill='#3b82f6'/><text x='56' y='20'>DVXR screen</text><rect x='128' y='16' width='10' height='3' fill='#f59e0b'/><text x='142' y='20'>treat all</text><rect x='198' y='16' width='10' height='3' fill='#94a3b8'/><text x='212' y='20'>treat none</text></g></svg></div>
+      <div class="drivers"><div class="cap">Top drivers</div><ul><li>latent[192]</li><li>latent[131]</li><li>latent[151]</li><li>latent[91]</li><li>latent[185]</li></ul></div>
+      <div class="llm"><div class="cap">LLM-generated assessment (grounded, explanation-only)</div>
+        <p>Clinician-facing summary (grounded):
+- Cognitive-workload screen (rest vs task) from EEG: probability 0.53, band elevated
+
+Caveat: this is a research prototype. Values are calibrated-model estimates and documented proxy signals, not a diagnosis; consult a qualified clinician for any medical decision.</p></div>
+    </section>
+        
+    <section class="col proposed">
+      <div class="coltag">PROPOSED · multimodal fLLM (shown as-is)</div>
+      <h3>VQ tokens → cross-modal attention → frozen-LLM soft prompts</h3>
+      <div class="stage"><div class="cap">1 · Per-modality VQ tokenization (code indices + codebook perplexity)</div>
+        <div class='vq'><div class='vqrow'><span class='bk'>eeg</span><span class='cells'><i class='cell' title='code 1' style='background:hsl(6 70% 50%)'></i><i class='cell' title='code 20' style='background:hsl(112 70% 50%)'></i><i class='cell' title='code 1' style='background:hsl(6 70% 50%)'></i><i class='cell' title='code 1' style='background:hsl(6 70% 50%)'></i><i class='cell' title='code 1' style='background:hsl(6 70% 50%)'></i><i class='cell' title='code 1' style='background:hsl(6 70% 50%)'></i><i class='cell' title='code 20' style='background:hsl(112 70% 50%)'></i><i class='cell' title='code 7' style='background:hsl(39 70% 50%)'></i><i class='cell' title='code 20' style='background:hsl(112 70% 50%)'></i><i class='cell' title='code 20' style='background:hsl(112 70% 50%)'></i><i class='cell' title='code 31' style='background:hsl(174 70% 50%)'></i><i class='cell' title='code 7' style='background:hsl(39 70% 50%)'></i><i class='cell' title='code 1' style='background:hsl(6 70% 50%)'></i><i class='cell' title='code 31' style='background:hsl(174 70% 50%)'></i><i class='cell' title='code 1' style='background:hsl(6 70% 50%)'></i><i class='cell' title='code 1' style='background:hsl(6 70% 50%)'></i><i class='cell' title='code 20' style='background:hsl(112 70% 50%)'></i><i class='cell' title='code 20' style='background:hsl(112 70% 50%)'></i><i class='cell' title='code 7' style='background:hsl(39 70% 50%)'></i><i class='cell' title='code 1' style='background:hsl(6 70% 50%)'></i><i class='cell' title='code 7' style='background:hsl(39 70% 50%)'></i><i class='cell' title='code 7' style='background:hsl(39 70% 50%)'></i><i class='cell' title='code 20' style='background:hsl(112 70% 50%)'></i><i class='cell' title='code 20' style='background:hsl(112 70% 50%)'></i><i class='cell' title='code 20' style='background:hsl(112 70% 50%)'></i><i class='cell' title='code 7' style='background:hsl(39 70% 50%)'></i><i class='cell' title='code 7' style='background:hsl(39 70% 50%)'></i><i class='cell' title='code 20' style='background:hsl(112 70% 50%)'></i></span><span class='bv' title='codebook perplexity'>ppl 3.6<span class='muted'>/64</span></span></div><div class='vqrow'><span class='bk'>physiology</span><span class='cells'><i class='cell' title='code 33' style='background:hsl(186 70% 50%)'></i><i class='cell' title='code 37' style='background:hsl(208 70% 50%)'></i><i class='cell' title='code 37' style='background:hsl(208 70% 50%)'></i><i class='cell' title='code 36' style='background:hsl(202 70% 50%)'></i><i class='cell' title='code 37' style='background:hsl(208 70% 50%)'></i><i class='cell' title='code 37' style='background:hsl(208 70% 50%)'></i><i class='cell' title='code 33' style='background:hsl(186 70% 50%)'></i><i class='cell' title='code 37' style='background:hsl(208 70% 50%)'></i><i class='cell' title='code 37' style='background:hsl(208 70% 50%)'></i><i class='cell' title='code 37' style='background:hsl(208 70% 50%)'></i><i class='cell' title='code 55' style='background:hsl(309 70% 50%)'></i><i class='cell' title='code 37' style='background:hsl(208 70% 50%)'></i><i class='cell' title='code 36' style='background:hsl(202 70% 50%)'></i><i class='cell' title='code 37' style='background:hsl(208 70% 50%)'></i><i class='cell' title='code 37' style='background:hsl(208 70% 50%)'></i><i class='cell' title='code 55' style='background:hsl(309 70% 50%)'></i><i class='cell' title='code 37' style='background:hsl(208 70% 50%)'></i><i class='cell' title='code 36' style='background:hsl(202 70% 50%)'></i><i class='cell' title='code 27' style='background:hsl(152 70% 50%)'></i><i class='cell' title='code 37' style='background:hsl(208 70% 50%)'></i><i class='cell' title='code 27' style='background:hsl(152 70% 50%)'></i><i class='cell' title='code 36' style='background:hsl(202 70% 50%)'></i><i class='cell' title='code 27' style='background:hsl(152 70% 50%)'></i><i class='cell' title='code 55' style='background:hsl(309 70% 50%)'></i><i class='cell' title='code 37' style='background:hsl(208 70% 50%)'></i><i class='cell' title='code 27' style='background:hsl(152 70% 50%)'></i><i class='cell' title='code 36' style='background:hsl(202 70% 50%)'></i><i class='cell' title='code 27' style='background:hsl(152 70% 50%)'></i></span><span class='bv' title='codebook perplexity'>ppl 4.1<span class='muted'>/64</span></span></div></div></div>
+      <div class="stage"><div class="cap">2 · Cross-modal fusion attention (α over modalities, sums to 1)</div>
+        <div class='bars' aria-label='cross-modal attention'><div class='bar'><span class='bk'>eeg</span><span class='bt'><span class='bf' style='width:100.0%'></span></span><span class='bv'>0.512</span></div><div class='bar'><span class='bk'>physiology</span><span class='bt'><span class='bf' style='width:95.5%'></span></span><span class='bv'>0.488</span></div></div></div>
+      <div class="stage"><div class="cap">3 · Frozen-LLM soft-prompt reader</div><div class='sub'>backend <code>Qwen/Qwen2.5-0.5B-Instruct</code>, pooled dim 896</div><div class='cap'>Modality attribution (L2 shift when a modality drops)</div><div class='bars' aria-label='modality attribution'><div class='bar'><span class='bk'>eeg</span><span class='bt'><span class='bf' style='width:100.0%'></span></span><span class='bv'>0.506</span></div><div class='bar'><span class='bk'>physiology</span><span class='bt'><span class='bf' style='width:97.6%'></span></span><span class='bv'>0.494</span></div></div><p class='role'>weakest predictor; validated role is explanation-only + missing-modality reader</p></div>
+      <div class="stage"><div class="cap">Proposed probability
+        <span class="muted">(subject-held-out, single subject — cohort verdict below)</span></div>
+        <div class="big"><span class='prob'>0.426</span></div>
+        <div class="note">frozen-LLM soft-prompt rep, leave-this-subject-out logistic head</div></div>
+      <div class="asis">Shown as-is. This is the proposed multimodal fLLM; on full observation it underperforms the single-modality winner (see scoreboard). Its real advantage is graceful degradation under missing sensors.</div>
+    </section>
+      </div>
+      
+    <section class="scoreboard">
+      <div class="coltag">HONEST SCOREBOARD · full-observation cohort verdict</div>
+      <div class='sbrow'><span class='sbk'>Best single-modality baseline</span><span class='sbv'>single:physiology · error 0.260</span></div><div class='sbrow'><span class='sbk'>Proposed fusion (full observation)</span><span class='sbv'>error 0.365 · RER -40.4%</span></div><div class='sbverdict'>proposed loses at full observation</div><div class='muted src'>source: outputs/benchmark_scoreboard.csv</div>
+      <div class='sbrow'><span class='sbk'>Sensor-dropout crossover</span><span class='sbv muted'>not recorded for this task (run the streaming showdown)</span></div>
+      <p class="sbnote">The proposed multimodal path loses on full-observation accuracy; its genuine
+        edge is graceful degradation under missing sensors. Both facts are shown here rather than hidden.</p>
+    </section>
+    </div>
+</div>
+<script>function pick(v){document.querySelectorAll('.trace').forEach(function(d){d.style.display=(d.getAttribute('data-trace')===v)?'block':'none';});}</script>
+</body>
+</html>
