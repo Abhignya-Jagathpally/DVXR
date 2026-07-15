@@ -99,6 +99,10 @@ documented opt-in with the negative reported rather than hidden. Persistence is 
 - **Fidelity-limited EEG:** the EEG cohorts are 64 Hz (≤32 Hz content) vs LaBraM's 200 Hz training;
   wins are real but under-resourced on sampling rate and would plausibly improve at native rate.
 - **Small cohorts (N≤60):** CIs are wide; the do-no-harm floor diverges from held-out subjects.
+- **Tokenizer improvement tried and failed (honest negative):** a pre-registered SimVQ tokenizer
+  (a recent anti-collapse method) *underperformed* the existing EMA + dead-code VQ on codebook
+  utilization at this scale (perplexity 3.03 vs 6.66 on WESAD); kept as an off-by-default flag, reported
+  not hidden (`docs/IMPROVEMENT_EXPERIMENT.md`).
 - **Not claimed — and blocked from being claimed:** DEAP affective decoding (at chance), the learned
   CACMF fusion as a win (loses on all 6 tasks), the LLM-in-the-loop as a predictor (weakest;
   explanation-only), MIMIC mortality (untrustworthy here), and the old `cgmacros_diabetes` numbers
