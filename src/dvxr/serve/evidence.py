@@ -109,6 +109,102 @@ METHOD_CLAIMS = [
      "literature": ["Super Learner — van der Laan et al., 2007 (do-no-harm oracle provenance)"]},
 ]
 
+# ----- our own numbers at BOTH granularities (window-level traces to scoreboards; subject-level is
+#       the screener's subject-held-out aggregation, reproducible via fit_screener) -----
+OUR_METRICS: Dict[str, dict] = {
+    "mumtaz_depression": {"window_auroc": 0.961, "subject_auroc": 0.986,
+                          "subject_ci": [0.966, 0.999], "n_subjects": 58,
+                          "cohort": "Mumtaz 2016", "protocol": "3x5 subject-held-out CV",
+                          "kind": "subject-level diagnosis"},
+    "wesad_stress": {"window_auroc": 0.955, "subject_auroc": None, "n_subjects": 8,
+                     "cohort": "WESAD", "protocol": "2x5 subject-held-out CV",
+                     "kind": "within-subject state (epoch-level unit)"},
+    "eegmat_workload": {"window_auroc": 0.663, "subject_auroc": None, "n_subjects": 20,
+                        "cohort": "eegmat / PhysioNet MAT", "protocol": "3x5 subject-held-out CV",
+                        "kind": "within-subject state (epoch-level unit); ECG modality reaches 0.74"},
+}
+
+
+@dataclass
+class ExternalResult:
+    """One published result on a comparable cohort. Carries its own provenance + protocol so it can
+    be shown honestly next to ours — never dressed as a head-to-head win across mismatched protocols."""
+    method: str
+    citation: str          # "Chen et al., 2025, Cereb Cortex"
+    doi: str               # bare DOI, rendered as https://doi.org/<doi>
+    cohort: str            # dataset the number was measured on (may differ from ours)
+    protocol: str          # LOSO | subject-independent | within-subject/segment | external-validation
+    metric: str            # "accuracy" | "AUROC"
+    value: float           # 0..1
+    note: str              # cohort/split-match caveat
+
+
+# Published results (via PubMed) — comparators, NOT our numbers. Cross-subject (LOSO / subject-
+# independent) is the honest bar; many high numbers are segment-level with subject leakage (labeled).
+EXTERNAL_SOTA: Dict[str, List[ExternalResult]] = {
+    "mumtaz_depression": [
+        ExternalResult("MDD-SSTNet (Sinc-CNN)", "Chen et al., 2025, Cereb Cortex",
+                       "10.1093/cercor/bhae505", "MODMA / HUSM", "LOSO (cross-subject)",
+                       "accuracy", 0.6508,
+                       "LOSO on MODMA = 65.1% (93.9% on HUSM) — cross-subject EEG-MDD is HARD; "
+                       "different cohort than Mumtaz (Mumtaz is comparatively more separable)."),
+        ExternalResult("GoogleNet CNN", "Metin et al., 2024, Clin EEG Neurosci",
+                       "10.1177/15500594241273181", "own clinical cohort", "external-validation",
+                       "accuracy", 0.7333,
+                       "88-90% within-study but drops to 73.3% on EXTERNAL validation — the "
+                       "generalization gap our subject-level number also probes."),
+        ExternalResult("EEGNet", "Yan et al., 2022, Biomed Tech",
+                       "10.1515/bmt-2021-0232", "own 3-electrode cohort", "within-subject/segment",
+                       "accuracy", 0.9374,
+                       "93.7% but 3-electrode, segment-level split — NOT subject-held-out; "
+                       "not comparable to our cross-subject protocol (shown for context only)."),
+    ],
+    "wesad_stress": [
+        ExternalResult("GB+ANN ensemble", "Vos et al., 2023, J Biomed Inform",
+                       "10.1016/j.jbi.2023.104556", "WESAD+SWELL+NEURO (merged)", "LOSO (cross-subject)",
+                       "accuracy", 0.85,
+                       "~85% under LOSO on unseen data; explicitly shows small single-study models "
+                       "DON'T generalize — the honest cross-subject bar for wearable stress."),
+        ExternalResult("GAF + DNN", "Ghosh et al., 2022, Biosensors",
+                       "10.3390/bios12121153", "WESAD (chest)", "within-subject/segment",
+                       "accuracy", 0.948,
+                       "94.8% segment-level (not LOSO) — high but not subject-held-out."),
+        ExternalResult("EDA + spectrogram ML", "Sriram Kumar & Ronickom, 2024, Int J Neural Syst",
+                       "10.1142/S0129065724500278", "WESAD (EDA)", "within-subject/segment",
+                       "accuracy", 0.9644,
+                       "96.4% 3-class segment-level (EDA only) — segment split, not cross-subject."),
+    ],
+    "eegmat_workload": [
+        ExternalResult("EMD + SVM (subject-independent)", "Khanam et al., 2023, PLoS One",
+                       "10.1371/journal.pone.0291576", "eegmat / PhysioNet MAT (36 subj)",
+                       "subject-independent", "accuracy", float("nan"),
+                       "Studies the subject-INDEPENDENT MAT setting and the rest-vs-task hypothesis "
+                       "directly — the honest cross-subject framing (accuracy varies with subject "
+                       "performance); the SAME cohort we use."),
+        ExternalResult("R-LMD + BAO + ensemble", "Yedukondalu et al., 2025, Sci Rep",
+                       "10.1038/s41598-024-84429-6", "eegmat / PhysioNet MAT", "within-subject/segment",
+                       "accuracy", 0.974,
+                       "97.4% on the MAT dataset but segment-level (4 s windows) — NOT subject-held-"
+                       "out; not comparable to our cross-subject AUROC."),
+    ],
+}
+
+
+def external_comparison(task: str) -> dict:
+    """Our numbers (both granularities) beside published results, protocol-labeled and honest."""
+    ours = OUR_METRICS.get(task, {})
+    ext = EXTERNAL_SOTA.get(task, [])
+    return {
+        "task": task,
+        "ours": ours,
+        "external": [vars(e) for e in ext],
+        "framing": ("Published numbers are shown WITH their protocol. Segment-level / within-subject "
+                    "splits are not comparable to our subject-held-out CV and are labeled as such — "
+                    "we never claim to beat a number measured under a different protocol. Cross-"
+                    "subject (LOSO / subject-independent) is the honest bar."),
+    }
+
+
 # ----- what must NEVER be presented as a product claim (the honesty gate) -----
 EXCLUDED_CLAIMS = {
     "deap_affect": "DEAP affective decoding is at chance (AUROC ~0.51-0.55) for every config — "
@@ -190,6 +286,20 @@ def render_report(screener_dir: Optional[str] = None) -> str:
         lines.append(f"  source : {c.source_file}")
         lines.append(f"  caveat : {c.caveat}")
         lines.append("")
+    lines.append("DVXR vs published SOTA (same/comparable cohort — protocol-labeled, honest):")
+    for task, ours in OUR_METRICS.items():
+        subj = (f", subject-level {ours['subject_auroc']}"
+                if ours.get("subject_auroc") is not None
+                else " (within-subject task → epoch-level unit)")
+        lines.append(f"  [{task}] ours: window-level AUROC {ours['window_auroc']}{subj} "
+                     f"({ours['protocol']}, n={ours['n_subjects']}, {ours['cohort']})")
+        for e in EXTERNAL_SOTA.get(task, []):
+            val = "n/a" if e.value != e.value else f"{e.value:.3f}"  # NaN check
+            lines.append(f"      · {e.method} — {e.metric} {val} [{e.protocol}] "
+                         f"({e.citation}, doi:{e.doi})")
+            lines.append(f"        {e.note}")
+    lines.append("  " + external_comparison("mumtaz_depression")["framing"])
+    lines.append("")
     lines.append("Method contribution:")
     for m in METHOD_CLAIMS:
         lines.append(f"  - {m['claim']}")

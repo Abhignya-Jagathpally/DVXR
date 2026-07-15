@@ -119,6 +119,25 @@ MODEL_CHOICES = [
 
 DATASET_CHOICES = [
     DatasetChoice(
+        dataset="Mumtaz-MDD (depression EEG)",
+        status="public, download required",
+        modalities="eeg",
+        goal1_use="HEADLINE screening cohort: MDD-vs-healthy resting EEG; LaBraM depression screener "
+                  "(window-level AUROC 0.961 / subject-level 0.986, subject-held-out CV).",
+        source="figshare 4244171 (Mumtaz et al., 2016, CC BY 4.0)",
+        note="19-ch 10-20 eyes-closed resting EEG; load with loaders.load_mumtaz_mdd_dataset. "
+             "Comparatively separable cohort vs MODMA (SOTA LOSO ~65%, doi:10.1093/cercor/bhae505).",
+    ),
+    DatasetChoice(
+        dataset="eegmat (PhysioNet Mental Arithmetic)",
+        status="public",
+        modalities="eeg, ecg",
+        goal1_use="Cognitive-workload screening cohort (rest vs serial-subtraction); ECG autonomic "
+                  "AUROC 0.74, LaBraM-EEG 0.663 (within-subject state task).",
+        source="https://physionet.org/content/eegmat/1.0.0/ (Zyma et al., 2019, doi:10.13026/C2JQ1P)",
+        note="19-ch EEG + ECG; load with loaders.load_eegmat_dataset.",
+    ),
+    DatasetChoice(
         dataset="WESAD",
         status="public, download required",
         modalities="ecg, eda, emg, resp, temp, ppg, motion",
