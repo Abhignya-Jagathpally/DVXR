@@ -44,6 +44,27 @@ class StructuredClaimAudit(unittest.TestCase):
             self.assertTrue(c.caveat.strip(), f"{c.task} missing caveat")
             self.assertTrue((ROOT / c.source_file).exists(), f"{c.source_file} missing")
 
+    def test_every_traceability_source_is_git_tracked(self):
+        """The clean-clone guarantee: every source a claim verifies against must be COMMITTED, not
+        just present locally. A source that exists only as an untracked artifact makes the "audit
+        green on a fresh checkout" promise false — the exact gap this test now blocks."""
+        import subprocess
+        from dvxr.serve.evidence import PRODUCT_CLAIMS
+        paths = {c.source_file for c in PRODUCT_CLAIMS}
+        paths |= {f"{c.verify_manifest}/manifest.json" for c in PRODUCT_CLAIMS if c.verify_manifest}
+        for rel in sorted(paths):
+            tracked = subprocess.run(["git", "ls-files", "--error-unmatch", rel],
+                                     cwd=ROOT, capture_output=True, text=True)
+            self.assertEqual(tracked.returncode, 0,
+                             f"traceability source not committed to git: {rel}")
+
+    def test_missing_source_degrades_to_problem_string_not_crash(self):
+        """A missing source must surface as a traceable audit failure, never an uncaught exception —
+        so this class of gap can't again masquerade as an unrelated stack trace."""
+        from dvxr.serve import evidence
+        self.assertIsNone(evidence._read_scoreboard("outputs/_no_such_board.csv"))
+        self.assertIsNone(evidence._manifest_auroc("outputs/_no_such_screener"))
+
     def test_llm_is_not_wired_as_a_predictor(self):
         from dvxr.serve.screener import REPRESENTATION_BY_TASK
         for rep in REPRESENTATION_BY_TASK.values():

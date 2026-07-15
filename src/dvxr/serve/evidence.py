@@ -39,6 +39,7 @@ class ProductClaim:
     literature: List[str]
     caveat: str
     headline: bool = False
+    verify_manifest: Optional[str] = None   # committed screener dir; its heldout.auroc must match too
 
 
 # ----- the allowed product claims (traceable, validated) -----
@@ -59,7 +60,8 @@ PRODUCT_CLAIMS: List[ProductClaim] = [
         ],
         caveat="Fidelity-limited: 64 Hz source (≤32 Hz content) vs LaBraM's 200 Hz training; "
                "would plausibly improve at native rate.",
-        headline=True),
+        headline=True,
+        verify_manifest="outputs/product/screeners/mumtaz_depression"),
     ProductClaim(
         task="wesad_stress",
         label="Acute-stress screen from wearable physiology",
@@ -219,8 +221,12 @@ EXCLUDED_CLAIMS = {
 }
 
 
-def _read_scoreboard(rel: str) -> Dict[str, dict]:
+def _read_scoreboard(rel: str) -> Optional[Dict[str, dict]]:
+    """Read a committed scoreboard CSV keyed by task. Returns None if the file is missing so the
+    audit reports a traceable problem string rather than crashing with a stack trace."""
     path = _ROOT / rel
+    if not path.exists():
+        return None
     rows: Dict[str, dict] = {}
     with open(path, newline="") as fh:
         for row in csv.DictReader(fh):
@@ -228,26 +234,51 @@ def _read_scoreboard(rel: str) -> Dict[str, dict]:
     return rows
 
 
-def verify_against_scoreboards(tol: float = 5e-3) -> List[str]:
-    """Re-read the committed scoreboards and confirm each claim's source_err still matches.
+def _manifest_auroc(rel: str) -> Optional[float]:
+    """Window-level held-out AUROC recorded in a saved screener's manifest, or None if unavailable."""
+    import json
+    path = _ROOT / rel / "manifest.json"
+    if not path.exists():
+        return None
+    try:
+        return float(json.loads(path.read_text())["heldout"]["auroc"])
+    except (KeyError, ValueError, TypeError):
+        return None
 
-    Returns a list of human-readable mismatch strings (empty ⇒ every number still traces cleanly).
-    Raises FileNotFoundError only if a scoreboard is missing.
+
+def verify_against_scoreboards(tol: float = 5e-3) -> List[str]:
+    """Re-read the committed sources and confirm each claim's number still traces.
+
+    For every claim, the pinned ``source_err`` must still match its scoreboard cell (drift guard).
+    Claims that also carry ``verify_manifest`` are cross-checked against the committed screener
+    manifest's held-out AUROC — the actually-served artifact. A missing source is reported as a
+    problem string, never raised: the blocking audit fails loud and traceable, it does not crash.
+
+    Returns a list of human-readable problem strings (empty ⇒ every number still traces cleanly).
     """
     problems: List[str] = []
-    cache: Dict[str, Dict[str, dict]] = {}
+    cache: Dict[str, Optional[Dict[str, dict]]] = {}
     for c in PRODUCT_CLAIMS:
         board = cache.setdefault(c.source_file, _read_scoreboard(c.source_file))
-        row = board.get(c.source_task)
-        if row is None:
-            problems.append(f"{c.task}: source_task {c.source_task!r} not in {c.source_file}")
-            continue
-        base_err = float(row["base_err"])
-        if abs(base_err - c.source_err) > tol:
-            problems.append(f"{c.task}: scoreboard base_err {base_err} != pinned {c.source_err}")
-        derived = round(1.0 - base_err, 3)
-        if abs(derived - c.auroc) > 1e-2:
-            problems.append(f"{c.task}: AUROC {c.auroc} != 1-err {derived}")
+        if board is None:
+            problems.append(f"{c.task}: source file {c.source_file} missing (not committed)")
+        else:
+            row = board.get(c.source_task)
+            if row is None:
+                problems.append(f"{c.task}: source_task {c.source_task!r} not in {c.source_file}")
+            else:
+                base_err = float(row["base_err"])
+                if abs(base_err - c.source_err) > tol:
+                    problems.append(f"{c.task}: scoreboard base_err {base_err} != pinned {c.source_err}")
+                derived = round(1.0 - base_err, 3)
+                if abs(derived - c.auroc) > 1e-2:
+                    problems.append(f"{c.task}: AUROC {c.auroc} != 1-err {derived}")
+        if c.verify_manifest:
+            m_auroc = _manifest_auroc(c.verify_manifest)
+            if m_auroc is None:
+                problems.append(f"{c.task}: verify_manifest {c.verify_manifest} missing or unreadable")
+            elif abs(round(m_auroc, 3) - c.auroc) > 1e-2:
+                problems.append(f"{c.task}: served manifest AUROC {m_auroc:.4f} != claimed {c.auroc}")
     return problems
 
 
