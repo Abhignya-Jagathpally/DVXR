@@ -73,6 +73,15 @@ patient data. Subject-disjoint folds throughout; the head is never fit on a test
 Platt calibration on out-of-fold predictions (ECE reported per screener); risk bands
 (low <0.25, watch <0.50, elevated <0.75, high); a 90% conformal interval from held-out residuals.
 
+**Serve-time personalization (opt-in, `dvxr fit --personalize`).** A per-subject recalibrator
+(`PersonalizedCalibrator`) can be wired into the screener for *within-subject* state tasks (a subject
+carries both classes; it does not apply to subject-level-diagnosis tasks like depression, where it is
+a correct no-op). Honest finding: on these **small** research cohorts it does **not** improve
+calibration — on WESAD (8 subjects) personalized ECE is *worse* (0.156 vs population 0.124) because
+each subject's calibration sample is too small. It is therefore **off by default**, retained as a
+documented opt-in with the negative reported rather than hidden. Persistence is versioned
+(`dvxr-screener/2`) and back-compatible (v1 artifacts load unchanged).
+
 ## Explicit limitations (the honesty gate)
 
 - **Fidelity-limited EEG:** the EEG cohorts are 64 Hz (≤32 Hz content) vs LaBraM's 200 Hz training;

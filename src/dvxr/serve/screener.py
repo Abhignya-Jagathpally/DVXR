@@ -66,6 +66,49 @@ def embed_cohort(task_name: str, representation: Optional[str] = None):
     return emb, y, subjects, task
 
 
+def _fit_personalization(subjects, oof_prob, y, covered, seed: int = 7):
+    """Fit a PersonalizedCalibrator on OOF probs and honestly measure its ECE gain.
+
+    Per-subject recalibration needs BOTH classes within a subject, so it applies to within-subject
+    STATE tasks (stress/workload) — not subject-level-diagnosis tasks (depression: one class per
+    subject → no per-subject model fits, falls back to population, a no-op). The reported ECE is on a
+    per-subject held-out split (calibrate on half a subject's windows, evaluate on the other half),
+    so the gain is honest, not fit-on-what-you-test. Returns (calibrator_or_None, metrics_dict).
+    """
+    from dvxr.calibration import expected_calibration_error
+    from dvxr.personalization import PersonalizedCalibrator
+
+    m = np.asarray(covered) & np.isfinite(oof_prob)
+    subs, p, yy = np.asarray(subjects)[m].astype(str), np.asarray(oof_prob)[m], np.asarray(y)[m]
+    # a subject is personalizable only if it carries both classes
+    per_subj_both = [s for s in np.unique(subs) if len(np.unique(yy[subs == s])) >= 2]
+    if not per_subj_both:
+        return None, {"applicable": False,
+                      "note": "subject-level-label task (one class per subject) — per-subject "
+                              "recalibration does not apply; population calibration used"}
+    rng = np.random.default_rng(seed)
+    tr_mask = np.zeros(len(p), dtype=bool)
+    for s in np.unique(subs):
+        idx = np.where(subs == s)[0]
+        rng.shuffle(idx)
+        tr_mask[idx[: max(1, len(idx) // 2)]] = True   # first half (shuffled) calibrates
+    te_mask = ~tr_mask
+    pop_ece = float(expected_calibration_error(yy[te_mask], p[te_mask]))
+    cal = PersonalizedCalibrator()
+    cal.fit(subs[tr_mask], p[tr_mask], yy[tr_mask])
+    pers_ece = float(expected_calibration_error(yy[te_mask], cal.predict(subs[te_mask], p[te_mask])))
+    # the DEPLOYED calibrator is fit on ALL OOF data (more per-subject signal at serve time)
+    deployed = PersonalizedCalibrator()
+    deployed.fit(subs, p, yy)
+    metrics = {"applicable": True, "population_ece": round(pop_ece, 4),
+               "personalized_ece": round(pers_ece, 4),
+               "ece_improvement": round(pop_ece - pers_ece, 4),
+               "n_personalized_subjects": len(per_subj_both),
+               "note": "per-subject held-out split (calibrate on half a subject's windows, "
+                       "evaluate on the other half) — honest gain"}
+    return deployed, metrics
+
+
 def _fit_head(emb: np.ndarray, y: np.ndarray, seed: int):
     """StandardScaler + balanced logistic head (the same shared head the benchmark scores)."""
     from sklearn.linear_model import LogisticRegression
@@ -133,18 +176,25 @@ class Screener:
     conformal: float                     # +/- radius on the calibrated probability
     heldout: dict                        # auroc, auroc_ci, ece, n_subjects, n_windows, metric
     meta: dict = field(default_factory=dict)   # encoder id, label, caveats, literature, thresholds
+    personal: object = None              # optional PersonalizedCalibrator (within-subject tasks)
 
     # ---- inference ----
-    def predict_windows(self, emb: np.ndarray) -> np.ndarray:
-        """Calibrated positive-class probability per window/embedding row."""
-        from dvxr.calibration import BinaryCalibrator  # noqa: F401 (type ref)
-        p = _head_proba(self.scaler, self.head, np.asarray(emb, dtype=float))
+    def predict_windows(self, emb: np.ndarray, subject_id=None) -> np.ndarray:
+        """Calibrated positive-class probability per window/embedding row.
+
+        If a ``subject_id`` is given AND this screener carries a per-subject calibrator, the
+        subject's own recalibrator is applied (unseen subjects fall back to the global one);
+        otherwise the population calibrator is used."""
+        emb = np.asarray(emb, dtype=float)
+        p = _head_proba(self.scaler, self.head, emb)
+        if subject_id is not None and self.personal is not None:
+            return np.asarray(self.personal.predict([str(subject_id)] * len(p), p), dtype=float)
         return np.asarray(self.calibrator.predict(p), dtype=float)
 
-    def score_subject(self, emb: np.ndarray) -> dict:
+    def score_subject(self, emb: np.ndarray, subject_id=None) -> dict:
         """Aggregate a subject's window embeddings into one screening result."""
         from dvxr.calibration import risk_band
-        probs = self.predict_windows(emb)
+        probs = self.predict_windows(emb, subject_id=subject_id)
         p = float(np.mean(probs))
         lo = float(max(0.0, p - self.conformal))
         hi = float(min(1.0, p + self.conformal))
@@ -168,11 +218,14 @@ class Screener:
         import joblib
         path = Path(path)
         path.mkdir(parents=True, exist_ok=True)
-        joblib.dump({"scaler": self.scaler, "head": self.head,
-                     "calibrator": self.calibrator}, path / "model.joblib")
+        blob = {"scaler": self.scaler, "head": self.head, "calibrator": self.calibrator}
+        if self.personal is not None:
+            blob["personal"] = self.personal
+        joblib.dump(blob, path / "model.joblib")
         manifest = {"task": self.task, "representation": self.representation,
                     "conformal": self.conformal, "heldout": self.heldout, "meta": self.meta,
-                    "format": "dvxr-screener/1"}
+                    "personalized": self.personal is not None,
+                    "format": "dvxr-screener/2" if self.personal is not None else "dvxr-screener/1"}
         (path / "manifest.json").write_text(json.dumps(manifest, indent=2))
         return path
 
@@ -184,11 +237,13 @@ class Screener:
         blob = joblib.load(path / "model.joblib")
         return cls(task=m["task"], representation=m["representation"],
                    scaler=blob["scaler"], head=blob["head"], calibrator=blob["calibrator"],
-                   conformal=float(m["conformal"]), heldout=m["heldout"], meta=m["meta"])
+                   conformal=float(m["conformal"]), heldout=m["heldout"], meta=m["meta"],
+                   personal=blob.get("personal"))  # v1 artifacts have no 'personal' → None
 
 
 def fit_screener(task_name: str, n_repeats: int = 3, n_folds: int = 5,
-                 seed: int = 7, representation: Optional[str] = None) -> Screener:
+                 seed: int = 7, representation: Optional[str] = None,
+                 personalize: bool = False) -> Screener:
     """Train + calibrate a Screener on a cohort, capturing its subject-held-out AUROC.
 
     The held-out CV both (a) yields the honest accuracy the product reports and (b) produces
@@ -235,6 +290,12 @@ def fit_screener(task_name: str, n_repeats: int = 3, n_folds: int = 5,
     ece = float(expected_calibration_error(y[cov], cal_oof))
     conformal = float(conformal_radius(np.abs(y[cov] - cal_oof), alpha=0.10))
 
+    # optional serve-time personalization (within-subject tasks only) + honest ECE gain
+    personal, personal_metrics = (None, {"applicable": False, "enabled": False})
+    if personalize:
+        personal, personal_metrics = _fit_personalization(subjects, oof_prob, y, covered, seed=seed)
+        personal_metrics["enabled"] = True
+
     # final deployable head on ALL windows
     scaler, head = _fit_head(emb, y, seed)
 
@@ -253,12 +314,13 @@ def fit_screener(task_name: str, n_repeats: int = 3, n_folds: int = 5,
                  "auroc_subject_ci": ([round(subj_lo, 4), round(subj_hi, 4)]
                                       if auroc_subj is not None else None),
                  "auroc_subject_note": subj_note, "n_subjects_scored": n_subj_scored,
-                 "ece": round(ece, 4),
+                 "ece": round(ece, 4), "personalization": personal_metrics,
                  "n_subjects": int(len(np.unique(subjects))), "n_windows": int(len(y)),
                  "n_folds": int(len(fold_auroc)), "protocol": f"{n_repeats}x{n_folds} subject-held-out CV"},
         meta={"label": TASK_LABEL.get(task_name, task_name), "encoder": encoder,
               "caveat": caveat, "band_thresholds": {"low": 0.25, "watch": 0.50, "elevated": 0.75},
-              "literature": _LITERATURE.get(representation, [])})
+              "literature": _LITERATURE.get(representation, [])},
+        personal=personal)
     return screener
 
 

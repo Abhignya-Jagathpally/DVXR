@@ -45,7 +45,8 @@ def cmd_fit(args) -> int:
     from dvxr.serve.screener import fit_screener
     _eprint(f"[dvxr fit] training screener for {args.task} "
             f"({args.repeats}x{args.folds} subject-held-out CV)…")
-    s = fit_screener(args.task, n_repeats=args.repeats, n_folds=args.folds, seed=args.seed)
+    s = fit_screener(args.task, n_repeats=args.repeats, n_folds=args.folds, seed=args.seed,
+                     personalize=args.personalize)
     out = Path(args.out)
     s.save(out)
     h = s.heldout
@@ -53,8 +54,19 @@ def cmd_fit(args) -> int:
     print(f"  task           : {s.meta.get('label', s.task)}")
     print(f"  representation : {s.representation} ({s.meta.get('encoder','')})")
     print(f"  held-out AUROC : {h['auroc']}  CI {h['auroc_ci']}  ECE {h.get('ece')}")
+    subj = h.get("auroc_subject")
+    if subj is not None:
+        print(f"  subject-level  : {subj}  CI {h.get('auroc_subject_ci')} (n={h.get('n_subjects_scored')})")
     print(f"  protocol       : {h.get('protocol')}  "
           f"({h.get('n_subjects')} subjects, {h.get('n_windows')} windows)")
+    if args.personalize:
+        pm = h.get("personalization", {})
+        if pm.get("applicable"):
+            print(f"  personalized   : population ECE {pm['population_ece']} → "
+                  f"personalized {pm['personalized_ece']} (Δ {pm['ece_improvement']:+.4f}, "
+                  f"{pm['n_personalized_subjects']} subjects) — {pm['note']}")
+        else:
+            print(f"  personalized   : not applicable — {pm.get('note','')}")
     return 0
 
 
@@ -242,6 +254,9 @@ def build_parser() -> argparse.ArgumentParser:
     f.add_argument("--out", required=True, help="output directory for the screener artifact")
     f.add_argument("--repeats", type=int, default=3)
     f.add_argument("--folds", type=int, default=5)
+    f.add_argument("--personalize", action="store_true",
+                   help="fit per-subject recalibration (within-subject tasks only; opt-in, "
+                        "reports population-vs-personalized ECE honestly)")
     f.set_defaults(func=cmd_fit)
 
     pr = sub.add_parser("predict", help="score a held-out subject with a screener")
