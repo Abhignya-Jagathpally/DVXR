@@ -169,9 +169,21 @@ def _scoreboard(sb: Dict) -> str:
     else:
         fo_html = "<span class='muted'>no committed full-observation row for this task</span>"
     if dx and dx.get("crossover") is not None:
+        model = f" ({_esc(dx.get('model'))})" if dx.get("model") else ""
         dx_html = (f"<div class='sbrow'><span class='sbk'>Sensor-dropout crossover</span>"
-                   f"<span class='sbv good'>proposed wins from {_esc(dx.get('crossover'))} "
+                   f"<span class='sbv good'>proposed wins{model} from {_esc(dx.get('crossover'))} "
                    f"dropped modalities</span></div><div class='muted'>{_esc(dx.get('note',''))}</div>")
+    elif dx and dx.get("degradation"):
+        # measured, but no CI-backed win — report the honest graceful-degradation nuance
+        d = dx["degradation"]
+        if d.get("narrows"):
+            body = (f"no CI-backed win — floor leads at every level, but the gap narrows from "
+                    f"RER {_num(d.get('rer_at_0_dropped'), 1)}% (0 dropped) to "
+                    f"{_num(d.get('best_rer'), 1)}% ({_esc(d.get('best_k'))} dropped): graceful degradation")
+        else:
+            body = "no CI-backed win — the floor leads at every dropout level"
+        dx_html = (f"<div class='sbrow'><span class='sbk'>Sensor-dropout robustness</span>"
+                   f"<span class='sbv muted'>{body}</span></div>")
     else:
         dx_html = ("<div class='sbrow'><span class='sbk'>Sensor-dropout crossover</span>"
                    "<span class='sbv muted'>not recorded for this task "

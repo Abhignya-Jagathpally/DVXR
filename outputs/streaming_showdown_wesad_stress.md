@@ -7,35 +7,23 @@ Metric: `1-AUROC` (lower = better). Floor: `xgboost` (imputes missing modalities
 | k dropped | proposed err | floor err | RER% | 95% CI | win |
 |---|---|---|---|---|---|
 | 0 | 0.1205 | 0.0762 | -58.1 | -397.5..22.9 | — |
-| 1 | 0.1250 | 0.0826 | -51.3 | -252.8..16.9 | — |
-| 2 | 0.1495 | 0.1032 | -44.8 | -198.8..15.5 | — |
-| 3 | 0.1240 | 0.0456 | -172.2 | -443.1..-63.2 | — |
-| 4 | 0.1758 | 0.1584 | -11.0 | -35.7..15.0 | — |
-| 5 | 0.2016 | 0.1213 | -66.2 | -163.2..-15.1 | — |
-| 6 | 0.2819 | 0.2918 | +3.4 | -11.1..17.6 | — |
+| 1 | 0.1343 | 0.0966 | -39.1 | -244.4..24.1 | — |
+| 2 | 0.1417 | 0.0981 | -44.5 | -139.5..9.0 | — |
+| 3 | 0.1758 | 0.1180 | -49.0 | -166.8..4.6 | — |
+| 4 | 0.1480 | 0.1256 | -17.9 | -44.3..10.2 | — |
+| 5 | 0.1955 | 0.1594 | -22.7 | -64.9..7.3 | — |
+| 6 | 0.3181 | 0.2754 | -15.5 | -34.5..3.5 | — |
 
 ## fused_robust vs floor `xgboost`
 
 | k dropped | proposed err | floor err | RER% | 95% CI | win |
 |---|---|---|---|---|---|
 | 0 | 0.1493 | 0.0762 | -95.8 | -502.0..6.2 | — |
-| 1 | 0.1586 | 0.0826 | -92.0 | -321.8..-6.8 | — |
-| 2 | 0.1826 | 0.1032 | -76.8 | -253.1..-5.0 | — |
-| 3 | 0.1512 | 0.0456 | -231.8 | -518.2..-104.6 | — |
-| 4 | 0.2166 | 0.1584 | -36.7 | -67.7..-5.4 | — |
-| 5 | 0.2444 | 0.1213 | -101.6 | -221.1..-41.9 | — |
-| 6 | 0.2891 | 0.2918 | +0.9 | -13.7..15.9 | — |
+| 1 | 0.1666 | 0.0966 | -72.5 | -326.8..7.2 | — |
+| 2 | 0.1775 | 0.0981 | -81.0 | -191.3..-13.4 | — |
+| 3 | 0.2004 | 0.1180 | -69.8 | -210.5..-9.9 | — |
+| 4 | 0.1826 | 0.1256 | -45.4 | -82.2..-8.3 | — |
+| 5 | 0.2151 | 0.1594 | -35.0 | -77.5..-4.8 | — |
+| 6 | 0.3392 | 0.2754 | -23.2 | -41.9..-5.6 | — |
 
-## llm vs floor `xgboost`
-
-| k dropped | proposed err | floor err | RER% | 95% CI | win |
-|---|---|---|---|---|---|
-| 0 | 0.2910 | 0.0762 | -281.8 | -1106.5..-110.0 | — |
-| 1 | 0.2828 | 0.0826 | -242.3 | -653.8..-115.3 | — |
-| 2 | 0.3370 | 0.1032 | -226.4 | -542.0..-115.1 | — |
-| 3 | 0.2742 | 0.0456 | -501.6 | -1014.5..-303.4 | — |
-| 4 | 0.3907 | 0.1584 | -146.7 | -177.8..-113.2 | — |
-| 5 | 0.3771 | 0.1213 | -211.0 | -328.1..-155.2 | — |
-| 6 | 0.4307 | 0.2918 | -47.6 | -70.5..-32.3 | — |
-
-**Verdict: no CI-backed crossover.** The tuned floor beats the proposed model at every dropout level on these summary-statistic features (gap smallest at k=6 for `fused`, RER +3.4%). Reported honestly — not faked. The proposal's genuine advantages are elsewhere (beats the deep open-weight SOTA encoder on every task; predicts under any modality subset; per-modality interpretability).
+**Verdict: no CI-backed crossover.** The tuned floor beats the proposed model at every dropout level on these summary-statistic features (gap smallest at k=6 for `fused`, RER -15.5%). Reported honestly — not faked. The proposal's genuine advantages are elsewhere (beats the deep open-weight SOTA encoder on every task; predicts under any modality subset; per-modality interpretability).

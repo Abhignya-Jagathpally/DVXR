@@ -250,13 +250,16 @@ tasks** (RER −20% … −186%), and the LLM-as-predictor is the weakest config
 (n = 58) — a foundation model, not fusion, not an LLM. This is stated, not hidden; the audit *blocks*
 selling fusion or the LLM as a win.
 
-**Where the proposed model genuinely wins — sensor dropout.** `bench/streaming_eval.py:1–16`: the POW's
-real regime is *streaming*, where sensors drop in and out. There the story flips — the CACMF fusion
-(absent tokens + masked attention) and the soft-prompt LLM **degrade gracefully**, while the tuned floor
-must impute a fixed-width vector. The module sweeps the number of dropped modalities and reports a
-**CI-backed crossover** — the smallest dropout level where a proposed model genuinely beats the floor
-with a bootstrap CI that excludes a tie. **Only a CI-backed crossover is called a win**; if none
-survives, the curve says so.
+**Sensor dropout — graceful degradation, but *not* a win (measured).** The POW's real regime is
+*streaming*, where sensors drop in and out; the CACMF fusion (absent tokens + masked attention) and the
+soft-prompt LLM degrade gracefully (no imputation), while the tuned floor must impute a fixed-width
+vector. We measured this honestly (`scripts/run_streaming_showdown.py`,
+`outputs/streaming_showdown_wesad_stress.{json,md}`): as modalities drop 0→6 on WESAD, the proposed
+model's gap to the floor **narrows** (RER −58% → −15.5%) — real graceful degradation — but the tuned
+floor **still leads at every level**, so there is **no CI-backed crossover**. A win is only claimed where
+the bootstrap CI excludes a tie; here none survives, and the curve says so. So the honest phrasing is
+*degrades more gracefully*, **not** *wins under dropout*. (The `streaming_eval.py` docstring's more
+optimistic "the story flips" was not borne out by the measurement — reported, not hidden.)
 
 **Why it's better *for users* (all real, all demoable):**
 - **Calibrated** probabilities (Platt) with **ECE** reported — a 0.7 means 0.7.
@@ -290,7 +293,7 @@ board **and** the dropout-crossover curve (`docs/IMPROVEMENT_EXPERIMENT.md`).
 | **LLM path** | frozen-random projection → **learned + LoRA** soft prompts | *honest-effort on GPU* — the documented full Option-3; overfit risk at small n |
 | **KV / latency** | int8/4-bit quantization, seq-len pruning, bigger batches | *safe* — speed with negligible accuracy cost |
 | **Inference** | mean-pool → attention-pool; Platt → temperature/isotonic; global → Mondrian conformal | *safe-to-modest* — better use of the same embeddings |
-| **Regime** | optimize for the **dropout crossover**, not full-obs accuracy | *strategic* — where the proposed model actually wins |
+| **Regime** | optimize the **dropout curve** (narrow the gap toward a real crossover), not full-obs accuracy | *strategic* — the gap narrows under dropout but no CI-backed crossover yet |
 
 **Tested (Phase 2 — an honest negative).** The glass-box surfaced low VQ codebook utilization (perplexity
 2.5–5.7 / 64), so we pre-registered and measured **SimVQ** (one-linear-layer codebook reparameterization).
@@ -302,6 +305,7 @@ ceiling (the same VQ reaches ~24 perplexity at 120 epochs) — a future, separat
 
 **Bottom line:** the proposed multimodal fLLM is real, fully wired, and demonstrable end-to-end; its
 honest value is calibrated, uncertainty-aware, explainable, missing-modality-robust screening — with a
-genuine accuracy edge specifically under sensor dropout — not a full-observation leaderboard win. The
+measurably more graceful degradation under sensor dropout (the gap narrows, though the floor still
+leads — no CI-backed win) — not a full-observation leaderboard win. The
 glass-box demo (`dvxr glassbox`) shows every stage above running side-by-side with the winning
 single-modality model, on real co-registered data, with the numbers traced to committed scoreboards.

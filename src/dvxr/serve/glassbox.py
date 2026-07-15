@@ -282,7 +282,8 @@ def scoreboard_panel(task_name: str) -> Dict:
 
 
 def _dropout_crossover(task_name: str) -> Optional[Dict]:
-    """Read a committed streaming-showdown result if present (the honest place the proposed model wins)."""
+    """Read a committed streaming-showdown result if present — the honest sensor-dropout record: does the
+    gap narrow (graceful degradation), and is there a CI-backed crossover (a win) or not?"""
     import json
     from pathlib import Path
     p = Path(f"outputs/streaming_showdown_{task_name}.json")
@@ -292,10 +293,26 @@ def _dropout_crossover(task_name: str) -> Optional[Dict]:
         data = json.loads(p.read_text())
     except Exception:  # noqa: BLE001
         return None
+    # partial_observation_showdown writes crossover_k (int|None), crossover_model, and a `curve`
+    # (one row per (k, model): rer_pct, win, ...). When no crossover survives we still report the
+    # HONEST graceful-degradation summary: does the proposed model's gap to the floor narrow as
+    # sensors drop? (a real, measurable property even without an outright win).
+    k = data.get("crossover_k", data.get("crossover"))
+    degradation = None
+    curve = data.get("curve") or []
+    fused = [r for r in curve if r.get("model") == "fused" and r.get("rer_pct") is not None]
+    if fused:
+        at_full = next((r["rer_pct"] for r in fused if r.get("k") == 0), fused[0]["rer_pct"])
+        best = max(fused, key=lambda r: r["rer_pct"])   # least-negative RER = smallest gap
+        degradation = {"model": "fused", "rer_at_0_dropped": round(float(at_full), 1),
+                       "best_rer": round(float(best["rer_pct"]), 1), "best_k": int(best["k"]),
+                       "narrows": best["rer_pct"] > at_full}
     return {"source_file": str(p),
-            "crossover": data.get("crossover", data.get("crossover_level")),
+            "crossover": k,
+            "model": data.get("crossover_model"),
+            "degradation": degradation,
             "note": "smallest #dropped-modalities where the proposed model beats the floor with a "
-                    "bootstrap CI excluding a tie; if null, no CI-backed crossover survived"}
+                    "bootstrap CI excluding a tie; null = no CI-backed crossover survived"}
 
 
 # ----------------------------------------------------------------- synthetic fixture

@@ -1,15 +1,17 @@
 """dvxr.bench.streaming_eval — the honest streaming / partial-observation showdown.
 
 At full observation the tuned floor (xgboost / raw->logistic) beats the proposed
-fusion+LLM model on every task (see benchmark_scoreboard.md). But the POW's regime is
-*streaming*: sensors drop in and out. There the story flips — the CACMF fusion model
-(learned per-modality absent tokens + masked attention) and the soft-prompt LLM
-(absent-token path) degrade gracefully, while the floor has no missing-modality entry
-point and must impute a fixed-width vector (NaN for xgboost's native handling, train-mean
-for the linear floor). This module sweeps the number of dropped modalities and finds the
-*crossover* — the smallest dropout level where a proposed model genuinely beats the floor
-with a bootstrap CI that excludes a tie. Only a CI-backed crossover is reported as a win;
-if none survives, the curve says so.
+fusion+LLM model on every task (see benchmark_scoreboard.md). The POW's regime is
+*streaming*: sensors drop in and out, where the CACMF fusion (learned per-modality absent
+tokens + masked attention) and the soft-prompt LLM (absent-token path) degrade gracefully,
+while the floor has no missing-modality entry point and must impute a fixed-width vector
+(NaN for xgboost's native handling, train-mean for the linear floor). The open question is
+whether that graceful degradation ever OVERTAKES the floor. This module sweeps the number of
+dropped modalities and looks for a *crossover* — the smallest dropout level where a proposed
+model beats the floor with a bootstrap CI that excludes a tie. Only a CI-backed crossover is
+reported as a win; if none survives, the curve says so. (Measured on WESAD: the gap narrows
+under dropout but the floor still leads at every level — graceful degradation, NOT a win; see
+outputs/streaming_showdown_wesad_stress.md.)
 
 Everything reuses the existing harness (subject-held-out folds, bootstrap CI, RER) so the
 comparison is apples-to-apples with the headline scoreboard. torch is required for the
