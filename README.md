@@ -41,6 +41,18 @@ Held-out cohort subjects carry the validated benchmark AUROC; **uploads are flag
 out-of-distribution / illustrative** — the validated number applies to the research cohort, not an
 arbitrary recording.
 
+**Deploy it as an HTTP API.** A thin Starlette service exposes the same serving core (offline / CPU /
+deterministic; every response carries the not-a-diagnosis caveat):
+
+```
+pip install -e ".[api]"                    # adds starlette + uvicorn
+dvxr serve-api                             # http://127.0.0.1:8000
+docker build -t dvxr-screen . && docker run --rm -p 8000:8000 dvxr-screen
+```
+
+`GET /health · /tasks · /evidence · /evidence/<task>` (DVXR vs published SOTA, DOI + protocol) `·
+/triage/<task>`, and `POST /screen/subject {task, subject?}` to live-score a held-out subject.
+
 `dvxr.serve.Screener` is the missing "train once → save → load → **predict(new subject)**" path: it
 wires each task to the representation that actually *wins* the benchmark — the real **LaBraM** EEG
 foundation model for EEG screening, calibrated band-power for wearable stress — returns a Platt-

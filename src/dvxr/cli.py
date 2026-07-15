@@ -244,6 +244,19 @@ def cmd_screen(args) -> int:
     return 0
 
 
+def cmd_serve_api(args) -> int:
+    """Launch the thin HTTP API (Starlette + uvicorn) over the saved screeners."""
+    try:
+        from dvxr.serve.api import serve
+    except ImportError as e:  # pragma: no cover - optional extra
+        _eprint(f"[dvxr serve-api] needs the api extra: pip install -e '.[api]'  ({e})")
+        return 1
+    _eprint(f"[dvxr serve-api] http://{args.host}:{args.port}  "
+            "(GET /health /tasks /evidence /evidence/<task> /triage/<task>, POST /screen/subject)")
+    serve(host=args.host, port=args.port)
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="dvxr", description=__doc__.splitlines()[0])
     p.add_argument("--seed", type=int, default=7, help="deterministic seed (default 7)")
@@ -298,6 +311,11 @@ def build_parser() -> argparse.ArgumentParser:
     sc.add_argument("--screener", help="saved screener dir (default: the task's cached screener)")
     sc.add_argument("--json", action="store_true", help="also emit the raw result as JSON")
     sc.set_defaults(func=cmd_screen)
+
+    ap = sub.add_parser("serve-api", help="serve the thin HTTP API (Starlette) over the screeners")
+    ap.add_argument("--host", default="127.0.0.1", help="bind host (default 127.0.0.1)")
+    ap.add_argument("--port", type=int, default=8000, help="bind port (default 8000)")
+    ap.set_defaults(func=cmd_serve_api)
     return p
 
 

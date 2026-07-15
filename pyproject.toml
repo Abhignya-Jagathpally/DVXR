@@ -33,7 +33,8 @@ eeg = ["torch", "transformers", "safetensors", "huggingface_hub", "mne", "einops
 floor = ["xgboost"]
 io = ["wfdb", "openpyxl", "pyarrow", "kagglehub"]
 app = ["streamlit"]                       # the live interactive demo (dvxr demo --serve)
-all = ["dvxr[eeg,floor,io,app]"]
+api = ["starlette", "uvicorn"]            # the thin HTTP API (dvxr serve-api)
+all = ["dvxr[eeg,floor,io,app,api]"]
 
 [project.scripts]
 dvxr = "dvxr.cli:main"
