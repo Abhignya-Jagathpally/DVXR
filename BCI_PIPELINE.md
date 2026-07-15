@@ -5,6 +5,17 @@ intended cube movement from EEG — the wearable-BCI analog of the real-time
 neural-manifold avatar decoding in Busch et al. (avatarRT / MRAE / TPHATE) — and
 emits figures, metrics, and a self-contained dashboard. Omics is deferred.
 
+> **Reproducibility scope (stated plainly).** This is an **exploratory single-subject /
+> single-session pilot**, not the product headline (that is the EEG depression screener, trained on
+> the public Mumtaz cohort; see [`paper/main.tex`](paper/main.tex) and the
+> [divergence note](GOAL1_COMPLIANCE.md#divergence-from-the-proposal-honest-scope)). The 4-class
+> decode uses **Emotiv-engine-derived labels** (engaged-vs-neutral neural controls are near chance).
+> Provenance of the committed data: the full raw recordings live under `data/real/`, which is
+> **gitignored / not redistributed**; a short **real** sample capture is committed under
+> `data/sample/{emotiv,openbci}/` alongside the computed `outputs/bci/metrics.json`, so the exact
+> 0.82/0.72 numbers are **not reproducible from the repo alone**. A pilot demonstrating the pipeline
+> on one self-collected subject, not a validated decode.
+
 ## Run
 
 ```bash

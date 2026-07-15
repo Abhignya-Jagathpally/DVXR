@@ -323,14 +323,18 @@ python3 scripts/convert_wesad_subject.py /path/to/WESAD/S2/S2.pkl data/sample/we
 python3 scripts/convert_deap_subject.py  /path/to/DEAP/s01.dat       data/sample/deap_s01_events.csv
 ```
 
-Real Galea / EMOTIV / VR-AR exports convert into the canonical event schema before modeling
-(each accepts `--demo` to run on a synthetic sample now):
+Device exports convert into the canonical event schema before modeling (each accepts `--demo`).
+**Status is honest per converter:** Galea/EMOTIV run on **real collected** recordings (`data/*.zip`);
+**VR/AR and omics are 🧪 synthetic-fixture only** — no real **public-dataset** exports have been wired
+for those two, so `--demo` is their only path (see the
+[divergence note](GOAL1_COMPLIANCE.md#divergence-from-the-proposal-honest-scope)). Every *validated*
+claim uses a real public dataset (Mumtaz, WESAD, PhysioNet), never synthetic data.
 
 ```bash
-python3 scripts/convert_galea_subject.py  --demo --output outputs/galea_demo.csv
-python3 scripts/convert_emotiv_subject.py --demo --device epocx --output outputs/emotiv_demo.csv
-python3 scripts/ingest_vr_session.py      --demo --output outputs/vr_demo.csv
-python3 scripts/convert_omics_subject.py  --demo --output outputs/omics_demo.csv
+python3 scripts/convert_galea_subject.py  --demo --output outputs/galea_demo.csv   # real data exists
+python3 scripts/convert_emotiv_subject.py --demo --device epocx --output outputs/emotiv_demo.csv  # real data exists
+python3 scripts/ingest_vr_session.py      --demo --output outputs/vr_demo.csv      # 🧪 synthetic only
+python3 scripts/convert_omics_subject.py  --demo --output outputs/omics_demo.csv   # 🧪 synthetic only
 ```
 
 ## Tests
