@@ -41,6 +41,21 @@ Held-out cohort subjects carry the validated benchmark AUROC; **uploads are flag
 out-of-distribution / illustrative** — the validated number applies to the research cohort, not an
 arbitrary recording.
 
+**See how the proposed multimodal fLLM actually works — the glass-box.** One command renders a
+self-contained, offline page putting the proposed multimodal path (VQ tokenization → cross-modal
+attention → frozen-LLM soft-prompt reader) *side by side* with the winning single-modality model on the
+same real co-registered subject, with the honest scoreboard shown (fusion loses on full-observation
+accuracy; its edge is graceful degradation under missing sensors). A `--sample` recording adds your own
+entry (out-of-distribution), which the LLM narrates:
+
+```
+dvxr glassbox --task wesad_stress                         # one held-out subject, both pipelines
+dvxr glassbox --task wesad_stress --subjects S2,S3        # a few subjects, with an in-page selector
+dvxr glassbox --task wesad_stress --sample recording.csv  # your sample entry → LLM-generated response
+```
+
+Full walkthrough of every stage: [`docs/PIPELINE_DEEP_DIVE.md`](docs/PIPELINE_DEEP_DIVE.md).
+
 **Deploy it as an HTTP API.** A thin Starlette service exposes the same serving core (offline / CPU /
 deterministic; every response carries the not-a-diagnosis caveat):
 

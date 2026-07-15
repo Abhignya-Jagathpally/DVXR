@@ -88,6 +88,7 @@ def _real_trace(task_name, sid, sample_events, seed, max_windows, include_llm) -
 
     screener = _load_or_fit_screener(task_name, Screener, fit_screener)
     live = run_screening_live(screener, task, sid, validated=validated, source=source)
+    heldout = getattr(screener, "heldout", {}) or {}
     winner = {
         "label": live["result"].get("label", task_name),
         "representation": live["embed_meta"].get("representation"),
@@ -99,6 +100,10 @@ def _real_trace(task_name, sid, sample_events, seed, max_windows, include_llm) -
         "drivers": live["drivers"],
         "narrative": live["narrative"],
         "heldout_auroc": live["result"].get("heldout_auroc"),
+        "heldout_auroc_subject": live["result"].get("heldout_auroc_subject"),
+        "ece": heldout.get("ece"),
+        "decision_curve": heldout.get("decision_curve"),
+        "caveat": live["result"].get("caveat", ""),
         "n_windows": live["embed_meta"].get("n_windows"),
         "stage_timings": live["stage_timings"],
     }
@@ -306,12 +311,22 @@ def _synthetic_trace(task_name: str, note: str) -> PipelineTrace:
     attention = {m: round(v / tot, 4) for m, v in alpha_raw.items()}
     vq = {m: {"codes": rng.integers(0, 64, size=8).tolist(),
               "perplexity": round(float(rng.uniform(8, 40)), 3), "n_codes": 64} for m in mods}
+    # a real (torch-free) decision curve from synthetic labels so the renderer's DCA panel is exercised
+    dca = None
+    try:
+        from dvxr.serve.utility import decision_curve
+        yy = (rng.uniform(0, 1, size=60) < 0.4).astype(int)
+        pp = np.clip(yy * 0.6 + rng.uniform(0, 0.4, size=60), 0, 1)
+        dca = decision_curve(yy.tolist(), pp.tolist())
+    except Exception:  # noqa: BLE001
+        dca = None
     winner = {"label": "Acute-stress screen (illustrative)", "representation": "bandpower_concat",
               "encoder": "band-power physiology features", "probability": 0.82,
               "risk_band": "elevated", "interval": [0.71, 0.93],
               "window_probs": [round(float(x), 3) for x in rng.uniform(0.6, 0.95, size=10)],
               "drivers": [], "narrative": {"clinician": DISCLAIMER, "personal": "", "facts": ""},
-              "heldout_auroc": 0.955, "n_windows": 10, "stage_timings": {}}
+              "heldout_auroc": 0.955, "heldout_auroc_subject": None, "ece": 0.06,
+              "decision_curve": dca, "caveat": DISCLAIMER, "n_windows": 10, "stage_timings": {}}
     proposed = {"modalities": mods, "vq": vq, "attention": attention, "fused_dim": 48,
                 "llm": {"included": True, "backend": "frozen causal LM (illustrative)", "pooled_dim": 896,
                         "attribution": attention,

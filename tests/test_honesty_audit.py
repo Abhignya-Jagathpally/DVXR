@@ -171,6 +171,47 @@ class ProseSurfaceAudit(unittest.TestCase):
         self.assertNotIn("http", stripped, "evidence page has a non-hyperlink external URL")
 
 
+class GlassBoxSurfaceAudit(unittest.TestCase):
+    """The glass-box demo shows the proposed multimodal path as-is: it must disclaim diagnosis, flag a
+    sample as out-of-distribution, state the honest full-observation loss, never sell fusion/LLM as a
+    full-obs win, and load no external resource (offline / CSP-safe)."""
+
+    def _page(self, n: int = 2) -> str:
+        from dvxr.serve.glassbox import _synthetic_trace
+        from dvxr.serve.glassbox_render import render_glassbox
+        traces = []
+        for i in range(n):
+            t = _synthetic_trace("wesad_stress", note="audit fixture").to_dict()
+            t["subject"] = f"S{i}"
+            traces.append(t)
+        return render_glassbox(traces)
+
+    def test_no_external_resource_loads(self):
+        # inline <script>/<style> are allowed; loading from any external host is not.
+        page = self._page().lower()
+        for bad in ("src=", "@import", "url(http", "<link", "<script src", "http://", "https://"):
+            self.assertNotIn(bad, page, f"glass-box loads an external resource: {bad}")
+
+    def test_disclaims_diagnosis(self):
+        page = self._page(1).lower()
+        self.assertTrue("not a diagnosis" in page or "not a diagnostic" in page,
+                        "glass-box missing the not-a-diagnosis disclaimer")
+
+    def test_states_the_honest_full_obs_loss(self):
+        self.assertIn("loses on full-observation accuracy", self._page(1).lower(),
+                      "glass-box must state the proposed path's full-observation loss")
+
+    def test_never_sells_fusion_or_llm_as_a_full_obs_win(self):
+        page = self._page().lower()
+        for bad in ("fusion outperforms", "cacmf outperforms", "cacmf wins", "learned fusion wins",
+                    "outperforms the single-modality", "fusion is the win", "llm-based prediction wins"):
+            self.assertNotIn(bad, page, f"glass-box frames the proposed path as a full-obs win: {bad!r}")
+
+    def test_sample_entry_is_flagged_out_of_distribution(self):
+        # the synthetic/upload trace is not validated → the OOD badge must appear
+        self.assertIn("out-of-distribution", self._page(1).lower())
+
+
 class UploadOutOfDistributionAudit(unittest.TestCase):
     """The live upload path must never present an upload's number as the validated cohort AUROC."""
 

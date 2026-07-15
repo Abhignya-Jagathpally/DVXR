@@ -244,6 +244,60 @@ def cmd_screen(args) -> int:
     return 0
 
 
+def cmd_glassbox(args) -> int:
+    """Render the side-by-side glass-box: proposed multimodal fLLM vs the winning single-modality model.
+
+    Traces one or more held-out cohort subjects and/or a user-provided sample recording (out-of-
+    distribution), then writes one self-contained, offline HTML page. Traces are cached as JSON so
+    re-renders are instant; ``--refresh`` recomputes them.
+    """
+    import json as _json
+
+    from dvxr.serve.glassbox import trace_pipeline
+    from dvxr.serve.glassbox_render import render_glassbox
+
+    task = args.task or "wesad_stress"
+    root = Path(__file__).resolve().parents[2]
+    cache = root / "outputs" / "product" / "glassbox"
+    cache.mkdir(parents=True, exist_ok=True)
+    out_path = Path(args.out) if args.out else cache / f"glassbox_{task}.html"
+
+    traces = []
+
+    def _cached(key: str, builder):
+        cf = cache / f"trace_{task}_{key}.json"
+        if cf.exists() and not args.refresh:
+            _eprint(f"[dvxr glassbox] using cached trace {cf.name}")
+            return _json.loads(cf.read_text())
+        _eprint(f"[dvxr glassbox] tracing {key} (live compute — this can take a minute)…")
+        tr = builder().to_dict()
+        cf.write_text(_json.dumps(tr, indent=2))
+        return tr
+
+    # held-out cohort subjects (validated)
+    subjects = [s for s in (args.subjects or "").split(",") if s.strip()]
+    if not subjects and not args.sample:
+        subjects = [""]  # a single default held-out subject
+    for sid in subjects:
+        key = (sid or "default").replace("/", "_")
+        traces.append(_cached(key, lambda sid=sid: trace_pipeline(
+            task, sid=(sid or None), include_llm=not args.no_llm)))
+
+    # user sample entry (out-of-distribution) — the LLM response is generated during this trace
+    if args.sample:
+        from dvxr.serve.live import ingest_upload
+        _eprint(f"[dvxr glassbox] ingesting sample {args.sample} (OOD — not the validated number)…")
+        events = ingest_upload(args.sample)
+        traces.append(trace_pipeline(task, sample_events=events,
+                                     include_llm=not args.no_llm).to_dict())
+
+    html_doc = render_glassbox(traces, title=f"DVXR Glass-box — {task}")
+    out_path.write_text(html_doc)
+    print(f"DVXR glass-box written to {out_path}  ({len(traces)} trace(s))")
+    print("  open it in a browser — self-contained, offline, no external loads.")
+    return 0
+
+
 def cmd_serve_api(args) -> int:
     """Launch the thin HTTP API (Starlette + uvicorn) over the saved screeners."""
     try:
@@ -311,6 +365,16 @@ def build_parser() -> argparse.ArgumentParser:
     sc.add_argument("--screener", help="saved screener dir (default: the task's cached screener)")
     sc.add_argument("--json", action="store_true", help="also emit the raw result as JSON")
     sc.set_defaults(func=cmd_screen)
+
+    gb = sub.add_parser("glassbox", help="render the side-by-side glass-box demo "
+                                         "(proposed multimodal fLLM vs the winning model)")
+    gb.add_argument("--task", choices=TASKS, help="task/cohort (default wesad_stress — co-registered)")
+    gb.add_argument("--subjects", help="comma-separated held-out subject ids (default: one)")
+    gb.add_argument("--sample", help="a user sample recording (.edf/.bdf/.csv) — OOD entry the LLM narrates")
+    gb.add_argument("--out", help="output HTML path (default outputs/product/glassbox/glassbox_<task>.html)")
+    gb.add_argument("--no-llm", action="store_true", help="skip the frozen-LLM path (faster)")
+    gb.add_argument("--refresh", action="store_true", help="recompute cached traces")
+    gb.set_defaults(func=cmd_glassbox)
 
     ap = sub.add_parser("serve-api", help="serve the thin HTTP API (Starlette) over the screeners")
     ap.add_argument("--host", default="127.0.0.1", help="bind host (default 127.0.0.1)")
