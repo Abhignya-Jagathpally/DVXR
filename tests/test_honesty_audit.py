@@ -58,12 +58,44 @@ class StructuredClaimAudit(unittest.TestCase):
             self.assertEqual(tracked.returncode, 0,
                              f"traceability source not committed to git: {rel}")
 
+    def test_provenance_verifier_passes(self):
+        """The offline provenance tool must confirm the committed board matches the manifest — the
+        network-free half of `docs/REPRODUCE.md` (the other half is the real re-run recorded there)."""
+        import build_dnh_labram_scoreboard as prov
+        self.assertEqual(prov.verify(), 0)
+
     def test_missing_source_degrades_to_problem_string_not_crash(self):
         """A missing source must surface as a traceable audit failure, never an uncaught exception —
         so this class of gap can't again masquerade as an unrelated stack trace."""
         from dvxr.serve import evidence
         self.assertIsNone(evidence._read_scoreboard("outputs/_no_such_board.csv"))
         self.assertIsNone(evidence._manifest_auroc("outputs/_no_such_screener"))
+
+    def test_depression_headline_is_consistent_across_every_committed_artifact(self):
+        """Cross-artifact traceability: the depression headline (AUROC 0.9608 / base_err 0.0392 /
+        rounded 0.961) must agree across EVERY committed surface that carries it — the served screener
+        manifest, the benchmark board, the evidence.py pin, and the findings doc. A number with many
+        homes drifts unless they are checked against each other; this makes that drift a test failure."""
+        import csv as _csv
+        from dvxr.serve import evidence
+        # 1. served screener manifest — the trained artifact
+        manifest_auroc = evidence._manifest_auroc("outputs/product/screeners/mumtaz_depression")
+        self.assertIsNotNone(manifest_auroc)
+        self.assertAlmostEqual(manifest_auroc, 0.9608, places=3)
+        # 2. committed benchmark board — the audited source
+        board = evidence._read_scoreboard("outputs/_dnh_labram/benchmark_scoreboard.csv")
+        self.assertIsNotNone(board, "committed _dnh_labram board is missing")
+        board_err = float(board["mumtaz_depression"]["base_err"])
+        self.assertAlmostEqual(board_err, round(1.0 - manifest_auroc, 4), places=3,
+                               msg="board base_err disagrees with the manifest AUROC")
+        # 3. evidence.py pin — the product claim
+        claim = next(c for c in evidence.PRODUCT_CLAIMS if c.task == "mumtaz_depression")
+        self.assertAlmostEqual(claim.source_err, board_err, places=3)
+        self.assertAlmostEqual(claim.auroc, round(1.0 - board_err, 3), places=3)
+        # 4. findings doc — the prose record
+        findings = (ROOT / "BENCHMARK_FINDINGS.md").read_text()
+        self.assertIn("0.0392", findings)
+        self.assertIn("0.961", findings)
 
     def test_llm_is_not_wired_as_a_predictor(self):
         from dvxr.serve.screener import REPRESENTATION_BY_TASK

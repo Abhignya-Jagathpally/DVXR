@@ -1,6 +1,6 @@
 PYTHON ?= python3
 
-.PHONY: test audit mmf ablation scoreboard-labram paper all
+.PHONY: test audit dnh-verify mmf ablation scoreboard-labram paper all
 
 test:
 	$(PYTHON) -m unittest discover -s tests
@@ -18,10 +18,16 @@ mmf:
 ablation:
 	$(PYTHON) scripts/run_ablation.py
 
+# Offline provenance guard (no torch/network): committed depression board base_err == 1 - the served
+# screener manifest's AUROC. See docs/REPRODUCE.md.
+dnh-verify:
+	$(PYTHON) scripts/build_dnh_labram_scoreboard.py --verify
+
 # Regenerate the LaBraM-inclusive depression/workload scoreboard the honesty audit pins the
 # depression headline to. HEAVY: needs torch + cached LaBraM weights; not part of `make all`.
 # The committed outputs/_dnh_labram/benchmark_scoreboard.csv is the audited artifact — regenerate
-# only when re-benchmarking (deterministic: same seed reproduces the same 1-AUROC cells).
+# only when re-benchmarking (deterministic: same seed reproduces the same 1-AUROC cells, verified
+# byte-for-byte in docs/REPRODUCE.md).
 scoreboard-labram:
 	OMP_NUM_THREADS=4 $(PYTHON) scripts/run_benchmark.py --tasks mumtaz_depression eegmat_workload \
 		--repeats 3 --folds 5 --out outputs/_dnh_labram

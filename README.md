@@ -60,7 +60,9 @@ calibrated probability, a risk band, and a conformal interval, and carries the *
 AUROC the benchmark reports. Explanations come through `dvxr.serve.explain` (grounded, always caveated).
 
 **Validated capabilities** (AUROC, subject-held-out CV, each traced to `outputs/*scoreboard*`; see
-[`docs/MODEL_CARD.md`](docs/MODEL_CARD.md) and `dvxr.serve.evidence`):
+[`docs/MODEL_CARD.md`](docs/MODEL_CARD.md) and `dvxr.serve.evidence`). The depression headline was
+**re-derived from raw EEG + the real LaBraM model** (byte-for-byte identical board) — full
+reproduction record + commands in [`docs/REPRODUCE.md`](docs/REPRODUCE.md):
 
 | Capability | Model | AUROC (95% CI) |
 |---|---|---|

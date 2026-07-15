@@ -119,3 +119,7 @@ dvxr predict --screener screeners/depression                   # score a held-ou
 dvxr report                                                     # this evidence, scoreboard-traced
 dvxr demo                                                       # self-contained HTML on real subjects
 ```
+
+The depression headline was re-derived from raw EEG + the real LaBraM model (byte-for-byte identical
+board) and its provenance is guarded offline; full record and commands in
+[`REPRODUCE.md`](REPRODUCE.md).
