@@ -274,8 +274,21 @@ def cmd_glassbox(args) -> int:
         cf.write_text(_json.dumps(tr, indent=2))
         return tr
 
-    # held-out cohort subjects (validated)
-    subjects = [s for s in (args.subjects or "").split(",") if s.strip()]
+    # held-out cohort subjects (validated). "auto:N" picks N spread-out cohort subjects for the selector.
+    spec = (args.subjects or "").strip()
+    if spec.lower().startswith("auto:"):
+        try:
+            n = max(1, int(spec.split(":", 1)[1]))
+        except ValueError:
+            n = 3
+        from dvxr.bench.tasks import TASK_BUILDERS
+        import numpy as _np
+        uniq = list(dict.fromkeys(_np.asarray(TASK_BUILDERS[task]().subject_ids).tolist()))
+        step = max(1, len(uniq) // n)
+        subjects = uniq[::step][:n] or uniq[:n]
+        _eprint(f"[dvxr glassbox] auto-selected subjects: {subjects}")
+    else:
+        subjects = [s for s in spec.split(",") if s.strip()]
     if not subjects and not args.sample:
         subjects = [""]  # a single default held-out subject
     for sid in subjects:
@@ -369,7 +382,8 @@ def build_parser() -> argparse.ArgumentParser:
     gb = sub.add_parser("glassbox", help="render the side-by-side glass-box demo "
                                          "(proposed multimodal fLLM vs the winning model)")
     gb.add_argument("--task", choices=TASKS, help="task/cohort (default wesad_stress — co-registered)")
-    gb.add_argument("--subjects", help="comma-separated held-out subject ids (default: one)")
+    gb.add_argument("--subjects", help="comma-separated held-out subject ids, or 'auto:N' to pick N "
+                                       "spread-out cohort subjects for the selector (default: one)")
     gb.add_argument("--sample", help="a user sample recording (.edf/.bdf/.csv) — OOD entry the LLM narrates")
     gb.add_argument("--out", help="output HTML path (default outputs/product/glassbox/glassbox_<task>.html)")
     gb.add_argument("--no-llm", action="store_true", help="skip the frozen-LLM path (faster)")
