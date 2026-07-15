@@ -168,6 +168,17 @@ def cmd_demo(args) -> int:
     return subprocess.call(cmd)
 
 
+def cmd_report_subject(args) -> int:
+    """Write a self-contained per-subject screening report (HTML)."""
+    from dvxr.serve.report import write_subject_report
+    screener = _load_or_fit(args)
+    task = args.task or screener.task
+    _eprint(f"[dvxr report-subject] scoring {args.subject or 'a held-out subject'} in {task}…")
+    out = write_subject_report(screener, task, args.subject, args.out)
+    print(f"Wrote per-subject report → {out}")
+    return 0
+
+
 def cmd_triage(args) -> int:
     """Score a whole cohort and rank subjects by calibrated risk (triage board)."""
     from dvxr.serve.batch import write_triage
@@ -251,6 +262,13 @@ def build_parser() -> argparse.ArgumentParser:
     dm.add_argument("--out", help="output directory (default outputs/product)")
     dm.add_argument("--tasks", help="comma-separated subset (e.g. depression,stress)")
     dm.set_defaults(func=cmd_demo)
+
+    rs = sub.add_parser("report-subject", help="write a self-contained per-subject report (HTML)")
+    rs.add_argument("--task", required=True, choices=TASKS)
+    rs.add_argument("--subject", help="subject id (default: a held-out one)")
+    rs.add_argument("--screener", help="saved screener dir (omit to fit in-memory)")
+    rs.add_argument("--out", help="output HTML path")
+    rs.set_defaults(func=cmd_report_subject)
 
     tr = sub.add_parser("triage", help="score a whole cohort and rank subjects by risk")
     tr.add_argument("--task", required=True, choices=TASKS)

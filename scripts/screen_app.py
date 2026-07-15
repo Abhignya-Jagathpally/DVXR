@@ -238,6 +238,22 @@ def _render_result(st, pd, out, screener):
         st.code(str(note), language="text")
     st.caption(f"⏱ stage timings (s): {out['stage_timings']}")
 
+    # downloadable self-contained per-subject report
+    try:
+        from dvxr.serve.report import render_report_html
+        h = screener.heldout
+        rep = dict(out)
+        rep["evidence"] = {"window_auroc": h.get("auroc"), "window_ci": h.get("auroc_ci"),
+                           "subject_auroc": h.get("auroc_subject"),
+                           "subject_ci": h.get("auroc_subject_ci"), "ece": h.get("ece"),
+                           "protocol": h.get("protocol"), "n_subjects": h.get("n_subjects"),
+                           "literature": screener.meta.get("literature", [])}
+        html_report = render_report_html(rep, screener)
+        st.download_button("⬇ Download this subject's report (HTML)", data=html_report,
+                           file_name=f"dvxr_report_{out['subject']}.html", mime="text/html")
+    except Exception:
+        pass
+
 
 if __name__ == "__main__":
     main()
