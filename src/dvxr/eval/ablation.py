@@ -92,6 +92,9 @@ def make_synthetic_dataset(n_subjects: int = 12, per_subject: int = 12,
     return {
         "features": feats,
         "subject_ids": np.array(sids),
+        # synthetic fixtures co-register every modality on the same synthetic subject, so they are
+        # genuinely synchronized and the fusion gate lets them through (see dvxr.cohort).
+        "cohort_id": "synthetic",
         "tasks": {
             "stress_detection": {"kind": "classification", "y": np.array(stress)},
             "glucose": {"kind": "forecast", "y": np.array(glucose)},
@@ -115,6 +118,15 @@ def run_ablation(dataset: Dict, config=DEFAULTS, test_frac: float = 0.3,
     mods = list(feats.keys())
     present = "|".join(mods)
     input_dims = {m: feats[m].shape[1] for m in mods}
+
+    # Honesty gate (spec §1.B/§4): a multimodal fusion claim is only valid on a cohort that genuinely
+    # co-registers those modalities on the same subjects. When the dataset declares its cohort, refuse
+    # to compute fused rows over a modality set the cohort does not synchronize (e.g. EEG+CGM, which no
+    # public cohort co-registers). Single-modality rows are always allowed.
+    cohort_id = dataset.get("cohort_id")
+    if cohort_id is not None and len(mods) > 1:
+        from dvxr.cohort import require_synchronized_for_fusion
+        require_synchronized_for_fusion(cohort_id, mods)
 
     tr, te = subject_holdout_split(sids, test_frac, seed)
 
