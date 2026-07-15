@@ -173,3 +173,22 @@ with tests, all honesty-gated.
 **Product delivered.** A user can `pip install -e .`, feed a research-cohort EEG subject, and get a
 calibrated, explained, evidence-backed depression screening score (AUROC ≈0.96) — research-grade
 screening, never a diagnosis — plus a demo and a scoreboard-traced evidence page.
+
+## Live-demo + evidence/usefulness arc (2026-07-14, continued)
+
+- **Live app:** `dvxr demo --serve` (Streamlit) — pick a held-out subject or upload a file, hit Run,
+  watch raw→LaBraM embed→calibrate→score→explain compute live (~0.2s/subject; live≡cohort verified).
+  Upload path flagged out-of-distribution. `serve/live.py`, `screen_app.py`, `dvxr screen --file`.
+- **Evidence phase (E1–E3):** (E1) subject-level AUROC alongside window-level — depression window
+  0.961 / **subject 0.986** (n=58); higher, not inflated by window-pooling; within-subject tasks
+  correctly get no subject number. (E2) `EXTERNAL_SOTA` registry of published cross-subject results
+  via PubMed, each with DOI + protocol — the honest bar (MDD-SSTNet LOSO 65% MODMA; WESAD LOSO ~85%;
+  90%+ numbers are segment-level w/ leakage, labeled not-comparable). (E3) surfaced on model card,
+  evidence Artifact (republished), and app; honesty audit extended (external DOI+protocol, both metrics).
+- **Usefulness phase (U1–U3):** (U1) `dvxr triage` — cohort risk ranking; depression triage separates
+  perfectly (all 29 top-half subjects are MDD cases, gap 0.837). (U2) `dvxr report-subject` —
+  self-contained per-subject HTML report + app download. (U3) serve-time personalization wired
+  (`dvxr-screener/2`, back-compat) with an **honest negative**: per-subject recalibration applies only
+  to within-subject tasks and does NOT help on small cohorts (WESAD ECE 0.156 vs 0.124) — off by
+  default, documented. Complements E1 (diagnosis↔subject-level, state↔personalization; mutually excl.).
+- Future work (noted, not built): thin FastAPI/Docker deployment (U4, optional).
