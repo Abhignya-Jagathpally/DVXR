@@ -114,16 +114,18 @@ baseline behind capability checks. The **"Runs here"** column is the ground trut
 | Wearable | MOMENT `AutonLab/MOMENT-1-large` | ✅ **MOMENT real weights** | Loaded via `momentfm`; fed summary-stat pseudo-series (ceiling C2). |
 | EHR | CEHR-BERT-style (train-local) | ✅ **Bio_ClinicalBERT real weights** | Loaded via `transformers`; fed pseudo-text of summary stats. |
 | Omics | Geneformer `ctheodoris/Geneformer` | ✅ **Geneformer real weights** | Loaded via `transformers`. |
-| EEG | LaBraM `braindecode/labram-pretrained` | ⚠️ **band-power + VQ baseline** | LaBraM is **not wired** — there is no `braindecode` loader, so `make_primary_backend("eeg")` returns `None`. Wiring it needs `braindecode[hug]` **and** a raw-signal path (LaBraM cannot consume the summary-stat table). |
+| EEG | LaBraM `braindecode/labram-pretrained` | ⚠️ baseline in CACMF · ✅ **real LaBraM in the product screener** | Two code paths. In the CACMF fusion pipeline `make_primary_backend("eeg")` returns `None` (band-power + VQ baseline runs — LaBraM cannot consume the summary-stat table). The **delivered product** wires real LaBraM via the vendored `src/dvxr/encoders/labram_real.py` (safetensors, raw-signal frozen probe) — this is the depression-screener headline (AUROC 0.961). |
 | CGM | CGM-JEPA `CRUISEResearchGroup/CGM-JEPA` | ⚠️ **conformal Ridge baseline** | CGM-JEPA has no HF-text-loadable weights; the primary returns `None` and the baseline runs. |
 | Insight LLM | Anthropic Claude API / Qwen2.5 (local) | template / Qwen | **Insight only — explains, never predicts.** |
 
-So real pretrained weights are live for **wearable, EHR, and omics**; **EEG and CGM run the
-baseline** (honestly labeled — not faked). `config.use_real_weights=True` is the intent, but
-capability checks mean **the whole pipeline runs with no network and no GPU**. The BCI/EEG
-modality — central to the proposal — currently rides the band-power + VQ baseline; a real EEG
-foundation model (LaBraM/EEGPT) is future work gated on the raw-signal path (see
-`BENCHMARK_FINDINGS.md` finding C2).
+So in the **CACMF fusion pipeline**, real pretrained weights are live for **wearable, EHR, and
+omics**; **EEG and CGM run the baseline** there (honestly labeled — not faked). `config.use_real_
+weights=True` is the intent, but capability checks mean **the whole pipeline runs with no network
+and no GPU**. Separately, the **delivered product** does run a real EEG foundation model: the
+depression screener embeds resting EEG through a frozen **LaBraM** probe
+(`src/dvxr/encoders/labram_real.py`) for its headline AUROC 0.961 — see the divergence note in
+[`GOAL1_COMPLIANCE.md`](GOAL1_COMPLIANCE.md#divergence-from-the-proposal-honest-scope) for how the
+project's actual win relates to the proposal's LLM-fusion thesis.
 
 ### Run CACMF (one command, offline/CPU/deterministic)
 
@@ -185,19 +187,22 @@ and calibrated risk bands / prediction intervals in `outputs/`.
 
 ## Real collected BCI data → decoding + dashboard (EMOTIV + Galea)
 
-The headline tangible result. Runs the full pipeline on the **collected** EMOTIV
-EPOC X (mental commands: Neutral/Left/Right/Push/Pull) and Galea recordings in
-`data/*.zip`, producing a self-contained dashboard, figures, and metrics:
+An **exploratory single-subject / single-session pilot** (not the product headline — that is the
+EEG depression screener above). Runs the full pipeline on the **collected** EMOTIV EPOC X (mental
+commands: Neutral/Left/Right/Push/Pull) and Galea recordings in `data/*.zip`, producing a
+self-contained dashboard, figures, and metrics:
 
 ```bash
 venv/bin/python scripts/run_bci_pipeline.py
 # -> outputs/bci/dashboard.html  + PNG figures + metrics.json
 ```
 
-Decodes intended cube movement from EEG (the avatarRT / MRAE / TPHATE analog):
-4-class command direction at **bal-acc 0.82 trial-grouped / 0.72 drift-controlled**
-(chance 0.25), with a PHATE neural manifold, leakage-controlled CV, real-time
-streaming decode, and explainable channel×band biomarkers. Full writeup:
+Decodes intended cube movement from EEG (the avatarRT / MRAE / TPHATE analog): 4-class command
+direction at **bal-acc 0.82 trial-grouped / 0.72 drift-controlled** (chance 0.25), with a PHATE
+neural manifold, leakage-controlled CV, real-time streaming decode, and explainable channel×band
+biomarkers. **Scope, stated plainly:** one subject, one session, with Emotiv-engine-derived labels
+(engaged-vs-neutral neural controls are near chance) — a pilot demonstrating the pipeline, not a
+validated decode; raw recordings are not redistributed. Full writeup + caveats:
 [`BCI_PIPELINE.md`](BCI_PIPELINE.md).
 
 ## End-to-end Goal 1 run (all capabilities)

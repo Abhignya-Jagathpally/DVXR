@@ -4,7 +4,41 @@ This document maps the Goal 1 deliverable to what the pipeline actually implemen
 Run `python3 scripts/run_goal1_full.py` to exercise every capability below on
 always-runnable synthetic fixtures.
 
-Status legend: ✅ implemented · ⚠️ implemented as a baseline/proxy (documented) · ❌ not present
+Status legend: ✅ implemented (real data) · 🧪 implemented, runs on **synthetic fixtures only** (no
+real exports supplied) · ⚠️ implemented as a baseline/proxy (documented) · ❌ not present
+
+## Divergence from the proposal (honest scope)
+
+The delivered work is an honest, evidence-driven **pivot** from the original Plan of Work, not a
+fulfillment of its central bet. Stated plainly so every table below is read in context:
+
+- **Thesis pivot — the LLM-fusion bet does not win.** The POW centered *LLM-based multimodal fusion*
+  as the contribution. In the code, learned cross-modal fusion (CACMF) **loses on all six real tasks**
+  and the LLM-in-the-predictive-path is off-by-default and weakest. The delivered flagship is a
+  **single-modality** EEG depression screener (frozen LaBraM probe, AUROC ≈0.96) — a foundation model,
+  not an LLM, and not fusion. The LLM's validated role is **explanation only** (`dvxr/llm/insight.py`).
+  The contribution that *does* hold is a **reliability-gated do-no-harm late fusion** that beats the
+  learned CACMF fusion on 4/6 tasks (see `BENCHMARK_FINDINGS.md`).
+- **Cross-modal fusion is structurally untested.** **No single dataset co-registers EEG+CGM+EHR per
+  subject**, so the proposal's core cross-domain integration hypothesis is never actually tested;
+  fusion evidence lives *within* a modality family (peripheral-physiology stress), not across the full
+  EEG+wearable+CGM+EHR span. This is a structural gap, not merely a negative result.
+- **Diabetes / omics / VR-AR are under-delivered.** Real CGM *forecasting* works (Shanghai, MAE
+  ~11 mg/dL), but the one diabetes-*risk classification* signal had label leakage and is **permanently
+  excluded** from claims (`dvxr.serve.evidence.EXCLUDED_CLAIMS`). Multi-omics and VR/AR are implemented
+  as converters but run on **synthetic fixtures** (🧪) — no real exports.
+- **"Fine-tune the selected models" → train-from-scratch.** The neural encoder is trained via
+  self-supervision, *not* fine-tuned from published checkpoints. Real weights load only for wearable
+  (MOMENT), EHR (Bio_ClinicalBERT), omics (Geneformer), and EEG (LaBraM, as a frozen probe in the
+  product screener). Proposal-named EEG-X, GluFormer, and Med-BERT have **no usable open weights** and
+  degrade to baselines.
+- **Scoped future work (explicit, not implied wins):** the LLM-as-predictor path and a genuine
+  cross-modal fusion win on a **co-registered** multimodal cohort remain open goals, recorded here so
+  they are never read as delivered.
+
+The validated product claims and their exclusions are machine-checked in `dvxr.serve.evidence`
+(`PRODUCT_CLAIMS` / `EXCLUDED_CLAIMS`, enforced by `tests/test_honesty_audit.py`); this document and
+`README.md` defer to that registry as the single source of truth.
 
 ## Top-line: three broader modalities → model pipeline
 
@@ -12,7 +46,7 @@ Status legend: ✅ implemented · ⚠️ implemented as a baseline/proxy (docume
 |---|---|---|
 | PHR via wearables | ✅ | `loaders.load_noneeg_*` (real PhysioNet Non-EEG: EDA/GSR, temp, HR, SpO2, motion) |
 | EHR by clinicians | ✅ | `loaders.load_mimic_demo_ehr` (real MIMIC-IV demo labs + demographics) |
-| Multi-omics | ✅ | `omics.py` — genomics/proteomics/metabolomics ingestion + `scripts/convert_omics_subject.py` |
+| Multi-omics | 🧪 | `omics.py` — genomics/proteomics/metabolomics ingestion + `scripts/convert_omics_subject.py`. **Synthetic fixtures only** — no real omics exports; Geneformer wired but unexercised on real data. |
 | Foundation-model representation | ✅ | `neural_encoders.NeuralBiosignalEncoder` — torch BIOT-style transformer producing learned embeddings (replaces PCA) |
 
 ## Sub-deliverable 1: pipeline for wearable & BCI data
@@ -23,7 +57,7 @@ Status legend: ✅ implemented · ⚠️ implemented as a baseline/proxy (docume
 | a) physiological wearable signals | ✅ | Non-EEG loaders; `features.build_signal_windows` |
 | b) EEG signals | ✅ | DEAP loader + EMOTIV/Galea converters |
 | c) biosensor streams | ✅ | EDA/PPG/resp in canonical schema |
-| d) behavioral metrics | ✅ | VR/AR `behavior` modality (gaze/interactions) via `ingest_vr_session.py` |
+| d) behavioral metrics | 🧪 | VR/AR `behavior` modality (gaze/interactions) via `ingest_vr_session.py` — **synthetic fixtures only** |
 | e) diabetes monitoring | ✅ | `loaders.load_shanghai_cgm_*` (real CGM) |
 
 ### Data sources
@@ -34,7 +68,7 @@ Status legend: ✅ implemented · ⚠️ implemented as a baseline/proxy (docume
 | c) smart wearables | ✅ | Non-EEG wrist loaders |
 | d) CGMs | ✅ | Shanghai CGM loader |
 | e) mobile health devices | ⚠️ | Covered by the generic canonical-CSV loader (`loaders.load_canonical_csv`); no device-specific parser |
-| f) VR/AR environments | ✅ | `scripts/ingest_vr_session.py` (head pose, gaze, HR overlay) |
+| f) VR/AR environments | 🧪 | `scripts/ingest_vr_session.py` (head pose, gaze, HR overlay) — **synthetic fixtures only** |
 
 ### Literature review → model selection
 ✅ `registry.py` + `sota.py` document and score EEG foundation models (EEG-X, LaBraM,
@@ -138,17 +172,16 @@ importable via re-export shims. Run everything with `python3 scripts/run_mmf_ful
 - `EEG-X`, `GluFormer`, `Med-BERT`, and `PH-LLM` have **no usable open weights**. Verified
   real substitutes are **named** in `dvxr.config.FOUNDATION_MODELS`, but only some have a
   loader wired here: **MOMENT (wearable), Bio_ClinicalBERT (EHR), and Geneformer (omics) load
-  real weights**; **LaBraM (EEG) and CGM-JEPA (CGM) are NOT wired** — there is no
-  `braindecode` loader and CGM-JEPA has no HF-text-loadable weights, so
-  `make_primary_backend` returns `None` for both and the band-power+VQ / conformal-Ridge
-  baselines run instead (see the README "Runs here" table and finding C2).
-- **LaBraM wiring — attempted, blocked by an env incompatibility (documented, not hidden).**
-  `braindecode` installs but **cannot import** under the pinned `torch==2.12.0`: it hard-imports
-  `torchaudio.functional`, and there is **no torchaudio build for torch 2.12** (PyPI/pytorch-cpu
-  cap at torchaudio 2.11, which needs torch 2.11 and ABI-fails against 2.12). Downgrading torch
-  would destabilize MOMENT/CACMF, which run on 2.12. So LaBraM is **not runnable in this env** and
-  the band-power+VQ baseline stands as the truthful EEG path (config == what runs). Wiring LaBraM
-  is future work gated on a torch/torchaudio-compatible env **plus** the raw-signal path (Slice H)
-  — LaBraM cannot consume the summary-stat table. The one HF weights repo found
-  (`eeg-telecom-paris/labram-base-official`) is unverified.
+  real weights**. **In the CACMF fusion pipeline**, LaBraM (EEG) and CGM-JEPA (CGM) are NOT wired —
+  `make_primary_backend` returns `None` for both and the band-power+VQ / conformal-Ridge baselines
+  run there (see the README "Runs here" table and finding C2). **The delivered product screener,
+  however, does run real LaBraM** (below).
+- **LaBraM — the braindecode blocker was worked around; real LaBraM now runs in the product.**
+  `braindecode` installs but **cannot import** under the pinned `torch==2.12.0` (it hard-imports
+  `torchaudio.functional`; no torchaudio build exists for torch 2.12). Rather than downgrade torch
+  (which would destabilize MOMENT/CACMF), the EEG foundation model is loaded via a **vendored
+  forward pass** over the LaBraM safetensors (`src/dvxr/encoders/labram_real.py`, strict load, no
+  braindecode import). This is the path behind the **headline depression screener (AUROC 0.961)** —
+  so a real EEG FM *is* delivered, on a raw-signal frozen probe. It is simply not plumbed into the
+  CACMF `make_primary_backend` fusion path (which cannot consume the summary-stat table).
 - Paper prose is placeholder TODO; only the result tables are auto-generated.

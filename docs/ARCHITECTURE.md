@@ -1,5 +1,11 @@
 # CACMF Architecture & Math Spec
 
+> **Pivot caveat.** This spec describes the full 6-modality cross-modal-fusion *design*. In the
+> delivered evaluation, learned CACMF fusion **loses on all six real tasks**; the flagship result is a
+> single-modality EEG depression screener, and the validated fusion contribution is a reliability-gated
+> *do-no-harm late* fusion — not this cross-modal transformer. See
+> [`GOAL1_COMPLIANCE.md`](../GOAL1_COMPLIANCE.md#divergence-from-the-proposal-honest-scope).
+
 CACMF = **Cross-modal Aligned Codebook Multimodal Fusion**. This is the implementation
 spec for `src/dvxr/`. Every constant lives in `dvxr.config.CACMFConfig` (§A7), never
 hard-coded. Sections §A2–A7 are implemented across Stages 2–11 of `docs/REFRACTOR_PLAN.md`.

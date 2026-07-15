@@ -3,6 +3,11 @@
 > Paste-as-background for every stage. This is the ground truth + guardrails for
 > refactoring the existing DVXR research repo into the CACMF framework. We are
 > **refactoring a working repo, not greenfielding** — respect what is there.
+>
+> **Pivot caveat.** CACMF cross-modal fusion is the *design goal* of this brief, but in the delivered
+> evaluation it **loses on all six real tasks**; the delivered flagship is a single-modality EEG
+> depression screener and the validated fusion win is a do-no-harm *late* fusion. See
+> [`GOAL1_COMPLIANCE.md`](../GOAL1_COMPLIANCE.md#divergence-from-the-proposal-honest-scope).
 
 ## 1.1 What the repo already does (verified from the codebase)
 

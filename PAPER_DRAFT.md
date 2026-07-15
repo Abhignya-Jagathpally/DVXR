@@ -1,5 +1,11 @@
 # Decoding Intended Movement from Consumer-Grade EEG: A Multimodal Manifold-Based BCI Pipeline
 
+> **SUPERSEDED — see [`paper/main.tex`](paper/main.tex).** This early draft leads with the
+> single-subject/single-session BCI decode (bal-acc 0.82), which the project's own honesty audit has
+> since demoted to an exploratory pilot. The current paper is the DVXR Screen write-up (calibrated,
+> cross-subject-honest EEG/wearable screening); its numbers are auto-generated from
+> `dvxr.serve.evidence`. Retained for history only — do not cite this draft's framing or numbers.
+
 *Draft methods + results section (IEEE conference format) — DVXR Lab, UNT, Summer 2026.*
 *Author: Abhignya Jagathpally. Advisors: Dr. Sharad Sharma (Director), Dr. Bishnu Sarker.*
 
