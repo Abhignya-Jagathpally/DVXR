@@ -1,0 +1,6 @@
+product_headline.tex  <-  dvxr.serve.evidence.PRODUCT_CLAIMS+OUR_METRICS  (4 rows)
+fusion_contribution.tex  <-  dvxr.serve.evidence.PRODUCT_CLAIMS.comparators+METHOD_CLAIMS  (4 rows)
+external_sota.tex  <-  dvxr.serve.evidence.EXTERNAL_SOTA  (8 rows)
+clinical_utility.tex  <-  outputs/product/screeners/*/manifest.json (decision_curve)  (3 rows)
+
+method claim: Reliability-gated do-no-harm fusion (dnh_gated) beats the proposal's own learned cross-modal CACMF fusion on 4 of 6 tasks (stress +11%, wesad +28%, eegmat +18%, depression +53%) and the best single modality on 3 of 6.

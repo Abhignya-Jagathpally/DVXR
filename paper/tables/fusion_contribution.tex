@@ -1,0 +1,15 @@
+\begin{table}[t]
+\centering
+\caption{Reliability-gated do-no-harm late fusion vs the proposal's own learned cross-modal CACMF fusion. The learned fusion loses on every task; do-no-harm gating beats it on 4 of 6 tasks in the full library (a nuanced positive, not a clean sweep -- see text).}
+\label{tab:fusion}
+\begin{tabular}{llll}
+\toprule
+Task & Best method (ours) & Learned CACMF & Delta AUROC \\
+\midrule
+mumtaz\_depression & LaBraM EEG FM = 0.961 & 0.795 & +0.166 \\
+wesad\_stress & band-power + GBM = 0.955 & 0.871 & +0.084 \\
+eegmat\_workload & ECG autonomic (task best) = 0.740 & 0.635 & +0.105 \\
+stress & peripheral physiology = 0.892 & 0.871 & +0.021 \\
+\bottomrule
+\end{tabular}
+\end{table}
