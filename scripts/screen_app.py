@@ -177,7 +177,24 @@ def main() -> None:
                             "Winning model": r["winner_method"], "Source": r["source"]}
                            for r in rows])
         st.dataframe(df, hide_index=True)
-        st.caption("Research-grade screening, never a diagnosis. Excluded by the honesty gate: "
+
+        st.markdown("#### DVXR vs published SOTA — same cohort, protocol-labeled")
+        from dvxr.serve.evidence import OUR_METRICS, EXTERNAL_SOTA, external_comparison
+        st.caption(external_comparison("mumtaz_depression")["framing"])
+        for task, ours in OUR_METRICS.items():
+            subj = (f" · subject-level **{ours['subject_auroc']}**"
+                    if ours.get("subject_auroc") is not None
+                    else " · _within-subject task → epoch-level unit_")
+            st.markdown(f"**{task}** — DVXR window-level **{ours['window_auroc']}**{subj} "
+                        f"({ours['protocol']}, n={ours['n_subjects']}, {ours['cohort']})")
+            xdf = pd.DataFrame([{"Published method": e.method, "Score": (
+                                    "n/a" if e.value != e.value else f"{e.value:.3f} {e.metric}"),
+                                 "Protocol": e.protocol, "Source": f"{e.citation} — doi:{e.doi}"}
+                                for e in EXTERNAL_SOTA.get(task, [])])
+            st.dataframe(xdf, hide_index=True)
+        st.caption("Cross-subject (LOSO / subject-independent) is the honest bar; segment-level "
+                   "numbers with subject leakage are not comparable to our subject-held-out CV. "
+                   "Research-grade screening, never a diagnosis. Excluded by the honesty gate: "
                    "DEAP affect (chance), the learned CACMF fusion (loses), the LLM as a predictor, "
                    "mortality, the diabetes-leak numbers — see docs/MODEL_CARD.md.")
 
@@ -200,8 +217,11 @@ def _render_result(st, pd, out, screener):
         if out["validated"]:
             ci = res.get("heldout_auroc_ci") or []
             ci_s = f" (CI [{ci[0]}, {ci[1]}])" if len(ci) == 2 else ""
-            st.success(f"Held-out benchmark AUROC {res['heldout_auroc']}{ci_s} — the same validated "
-                       f"number, reproduced by this screener.")
+            subj = res.get("heldout_auroc_subject")
+            subj_s = (f" · subject-level {subj}" if subj is not None else "")
+            st.success(f"Held-out benchmark AUROC {res['heldout_auroc']}{ci_s}{subj_s} — the same "
+                       f"validated number, reproduced by this screener (window-level shown; "
+                       f"subject-level is the conservative per-subject aggregate).")
     with c2:
         st.caption("Per-window calibrated probability (the pipeline ran window-by-window)")
         wp = out["window_probs"]

@@ -49,6 +49,22 @@ class StructuredClaimAudit(unittest.TestCase):
         for rep in REPRESENTATION_BY_TASK.values():
             self.assertNotIn("llm", rep.lower())
 
+    def test_every_external_result_carries_doi_and_protocol(self):
+        """External comparators must never appear without their provenance + protocol label."""
+        from dvxr.serve.evidence import EXTERNAL_SOTA
+        ok_protocols = {"LOSO (cross-subject)", "subject-independent",
+                        "within-subject/segment", "external-validation"}
+        for task, results in EXTERNAL_SOTA.items():
+            for e in results:
+                self.assertRegex(e.doi, r"^10\.\d{4,}/", f"{task}:{e.method} DOI")
+                self.assertIn(e.protocol, ok_protocols, f"{task}:{e.method} protocol")
+
+    def test_report_shows_both_auroc_granularities(self):
+        from dvxr.serve.evidence import render_report
+        r = render_report().lower()
+        self.assertIn("window-level", r)
+        self.assertIn("subject-level", r)
+
 
 _NEGATOR = re.compile(r"not |never |rather than|decision-support|screening|isn't|is not")
 
@@ -83,10 +99,14 @@ class ProseSurfaceAudit(unittest.TestCase):
                             or "not a diagnostic" in low or "never a diagnostic" in low,
                             f"{name}: missing the research-prototype / not-a-diagnosis disclaimer")
 
-    def test_evidence_page_has_no_external_resources(self):
+    def test_evidence_page_has_no_external_resource_loads(self):
         page = self._surfaces()["evidence_page"]
-        self.assertNotIn("http://", page)
-        self.assertNotIn("https://", page)
+        # Resource LOADS are forbidden (CSP-blocked anyway); DOI hyperlinks (<a href>) are allowed.
+        for bad in ("src=", "@import", "url(http", "<link", "<script"):
+            self.assertNotIn(bad, page, f"evidence page loads an external resource: {bad}")
+        # after removing hyperlinks, no bare URL should remain (i.e. every URL is a navigation link)
+        stripped = re.sub(r'href="[^"]*"', "", page)
+        self.assertNotIn("http", stripped, "evidence page has a non-hyperlink external URL")
 
 
 class UploadOutOfDistributionAudit(unittest.TestCase):

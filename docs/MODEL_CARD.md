@@ -32,6 +32,31 @@ the scoreboard's `1-AUROC` error cell.
 | Cognitive workload (rest vs task) | ECG autonomic (task best) | 0.740 | LaBraM-EEG 0.663 > band-power EEG 0.636 | `outputs/benchmark_scoreboard.csv` |
 | Stress, peripheral physiology | band-power (concat) | 0.892 | CACMF 0.871 | `outputs/benchmark_scoreboard.csv` |
 
+### Two granularities (depression)
+
+The depression AUROC is reported at **window-level 0.961** (every held-out window scored) AND
+**subject-level 0.986** (CI 0.966–0.999, n=58 — each subject's windows aggregated to one probability,
+then AUROC over subjects). Subject-level is *higher* because averaging a subject's ~14 window
+probabilities denoises the per-subject signal, so the headline is **not** inflated by window-pooling.
+Honest caveats: N=58 is small (wide CI), and Mumtaz is a comparatively separable cohort. Workload and
+stress are *within-subject state* tasks (a subject carries both classes) → the epoch/window-level
+AUROC is the appropriate unit; a subject-level number does not apply and is not reported.
+
+### DVXR vs published SOTA (same/comparable cohort — protocol-labeled)
+
+Cross-subject (leave-one-subject-out / subject-independent) is the honest bar; many published 90%+
+numbers are segment-level with subject leakage and are **not** comparable to our subject-held-out CV
+(shown for context, never as a head-to-head win). Numbers via PubMed.
+
+| Cohort | DVXR (subject-held-out CV) | Published (cross-subject) | Published (segment-level) |
+|---|---|---|---|
+| Depression EEG | window **0.961** / subject **0.986** AUROC | MDD-SSTNet LOSO **65.1% acc** on MODMA ([doi](https://doi.org/10.1093/cercor/bhae505)); Metin ext-val **73.3%** ([doi](https://doi.org/10.1177/15500594241273181)) | EEGNet 93.7% ([doi](https://doi.org/10.1515/bmt-2021-0232), 3-ch segment) |
+| WESAD stress | window **0.955** AUROC | Vos LOSO **~85% acc** ([doi](https://doi.org/10.1016/j.jbi.2023.104556)) | Ghosh 94.8% ([doi](https://doi.org/10.3390/bios12121153)); EDA 96.4% ([doi](https://doi.org/10.1142/S0129065724500278)) |
+| eegmat workload | window **0.663** (EEG) / **0.740** (ECG) AUROC | Khanam subject-independent MAT ([doi](https://doi.org/10.1371/journal.pone.0291576)) | Yedukondalu 97.4% ([doi](https://doi.org/10.1038/s41598-024-84429-6), 4 s segment) |
+
+Different cohorts (MODMA/HUSM ≠ Mumtaz) and different protocols are noted per row; our contribution
+is a *calibrated, cross-subject-honest, evidence-forward* screener, not a leaderboard accuracy.
+
 **Method contribution:** reliability-gated **do-no-harm** late fusion (`dnh_gated`) beats the
 proposal's own learned cross-modal CACMF fusion on **4 of 6** tasks and the best single modality on
 3 of 6 — a nuanced positive (universal held-out do-no-harm does *not* hold at N≤60; reported, not

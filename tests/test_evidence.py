@@ -40,13 +40,18 @@ class EvidenceTraceTest(unittest.TestCase):
 
 class EvidencePageTest(unittest.TestCase):
     def test_page_is_self_contained(self):
+        import re
         from build_evidence_page import render_page
         h = render_page()
         self.assertIn("DVXR Screen", h)
         self.assertIn("0.961", h)
-        self.assertNotIn("http://", h)
-        self.assertNotIn("https://", h)       # CSP-safe: no external resources
+        # CSP-safe: no external resource LOADS (DOI <a href> navigation links are allowed)
+        for bad in ("src=", "@import", "url(http", "<link", "<script"):
+            self.assertNotIn(bad, h)
+        self.assertNotIn("http", re.sub(r'href="[^"]*"', "", h))
         self.assertIn("does <em>not</em> claim", h)
+        self.assertIn("subject-level", h)      # both granularities surfaced
+        self.assertIn("doi.org", h)            # external SOTA cited with DOIs
 
 
 if __name__ == "__main__":

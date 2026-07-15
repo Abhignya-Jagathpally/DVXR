@@ -57,6 +57,42 @@ def _task_block(row: dict) -> str:
     </article>"""
 
 
+_PROTO_COLOR = {"LOSO (cross-subject)": "#1a9850", "subject-independent": "#1a9850",
+                "external-validation": "#e0952b", "within-subject/segment": "#cf3b2f"}
+
+
+def _external_html() -> str:
+    """The 'DVXR vs published SOTA' section — protocol-labeled, DOI-linked, honest."""
+    from dvxr.serve.evidence import OUR_METRICS, EXTERNAL_SOTA, external_comparison
+    blocks = []
+    for task, ours in OUR_METRICS.items():
+        subj = (f' · subject-level <strong>{ours["subject_auroc"]}</strong>'
+                if ours.get("subject_auroc") is not None
+                else ' · <span class="muted">within-subject task → epoch-level unit</span>')
+        rows = []
+        for e in EXTERNAL_SOTA.get(task, []):
+            val = "n/a" if e.value != e.value else f"{e.value:.3f}"
+            col = _PROTO_COLOR.get(e.protocol, "#888")
+            rows.append(
+                f'<tr><td>{html.escape(e.method)}</td>'
+                f'<td class="num">{val}<span class="unit"> {html.escape(e.metric)}</span></td>'
+                f'<td><span class="proto" style="border-color:{col};color:{col}">'
+                f'{html.escape(e.protocol)}</span></td>'
+                f'<td><a href="https://doi.org/{html.escape(e.doi)}" target="_blank" '
+                f'rel="noopener">{html.escape(e.citation)}</a><div class="mnote">'
+                f'{html.escape(e.note)}</div></td></tr>')
+        blocks.append(
+            f'<div class="xcohort"><div class="xhead">{html.escape(task)} · '
+            f'<span class="ours">DVXR window-level <strong>{ours["window_auroc"]}</strong>'
+            f'{subj}</span> <span class="muted">({html.escape(ours["protocol"])}, '
+            f'n={ours["n_subjects"]}, {html.escape(ours["cohort"])})</span></div>'
+            f'<table class="xtable"><thead><tr><th>published method</th><th>score</th>'
+            f'<th>protocol</th><th>source</th></tr></thead><tbody>{"".join(rows)}</tbody>'
+            f'</table></div>')
+    framing = external_comparison("mumtaz_depression")["framing"]
+    return (f'<p class="blurb">{html.escape(framing)}</p>{"".join(blocks)}')
+
+
 def render_page() -> str:
     from dvxr.serve.evidence import (comparative_table, METHOD_CLAIMS, EXCLUDED_CLAIMS,
                                      PRODUCT_CLAIMS, verify_against_scoreboards)
@@ -77,6 +113,7 @@ def render_page() -> str:
     lit_html = "".join(f"<li>{html.escape(x)}</li>" for x in lit)
 
     tasks_html = "".join(_task_block(r) for r in rows)
+    external_html = _external_html()
     excl_html = "".join(
         f'<li><span class="x">✕</span><span class="k">{html.escape(k.replace("_"," "))}</span>'
         f'<span class="why">{html.escape(v)}</span></li>'
@@ -185,6 +222,21 @@ h2.sec {{ font-size:13px; letter-spacing:.16em; text-transform:uppercase; color:
 .honesty .k {{ font-weight:600; text-transform:capitalize; }}
 .honesty .why {{ color:var(--muted); }}
 
+.xcohort {{ border:1px solid var(--line); border-radius:12px; padding:14px 16px; margin:12px 0;
+  background:var(--panel); overflow-x:auto; }}
+.xhead {{ font-size:14px; margin-bottom:10px; }} .xhead .ours {{ color:var(--accent); }}
+.muted {{ color:var(--muted); font-weight:400; }}
+.xtable {{ width:100%; border-collapse:collapse; font-size:12.5px; }}
+.xtable th {{ text-align:left; color:var(--muted); font-weight:600; font-size:11px;
+  text-transform:uppercase; letter-spacing:.04em; border-bottom:1px solid var(--line);
+  padding:4px 8px; }}
+.xtable td {{ padding:7px 8px; border-bottom:1px solid var(--line); vertical-align:top; }}
+.xtable td.num {{ font-family:var(--mono); font-variant-numeric:tabular-nums; white-space:nowrap; }}
+.xtable .unit {{ color:var(--muted); font-size:10px; }}
+.xtable a {{ color:var(--accent); text-decoration:none; }} .xtable a:hover {{ text-decoration:underline; }}
+.proto {{ font-family:var(--mono); font-size:10px; border:1px solid; border-radius:10px;
+  padding:1px 6px; white-space:nowrap; }}
+.mnote {{ color:var(--muted); font-size:11.5px; margin-top:3px; }}
 .lit {{ font-size:13.5px; color:var(--fg); }} .lit li {{ margin:6px 0; }}
 footer {{ margin-top:40px; padding-top:18px; border-top:1px solid var(--line); color:var(--muted);
   font-size:12.5px; }}
@@ -207,8 +259,9 @@ footer strong {{ color:var(--fg); }}
       — reproduced live by the shipped screener, not quoted from a paper. Screening, not diagnosis.</p>
     <div class="big">
       <div class="v">{headline['auroc']:.3f}</div>
-      <div class="cap">held-out AUROC · MDD vs healthy · real LaBraM EEG foundation model<br>
-        95% CI [{headline['ci'][0]}, {headline['ci'][1]}] · Mumtaz 2016 cohort</div>
+      <div class="cap">window-level held-out AUROC · MDD vs healthy · real LaBraM EEG FM<br>
+        95% CI [{headline['ci'][0]}, {headline['ci'][1]}] · subject-level 0.986 (n=58) ·
+        Mumtaz 2016, subject-held-out CV</div>
     </div>
     <div class="badges">
       <span class="badge">offline · CPU · deterministic</span>
@@ -220,6 +273,9 @@ footer strong {{ color:var(--fg); }}
 
   <h2 class="sec">Comparative results — the numbers speak</h2>
   {tasks_html}
+
+  <h2 class="sec">DVXR vs published SOTA — same cohort, protocol-labeled</h2>
+  {external_html}
 
   <h2 class="sec">Method contribution — do-no-harm fusion</h2>
   {method_html}
