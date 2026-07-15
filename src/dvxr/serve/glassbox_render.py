@@ -193,8 +193,10 @@ def _scoreboard(sb: Dict) -> str:
       <div class="coltag">HONEST SCOREBOARD · full-observation cohort verdict</div>
       {fo_html}
       {dx_html}
-      <p class="sbnote">The proposed multimodal path loses on full-observation accuracy; its genuine
-        edge is graceful degradation under missing sensors. Both facts are shown here rather than hidden.</p>
+      <p class="sbnote">The proposed multimodal path loses on full-observation accuracy, and the tuned
+        floor still leads under sensor dropout too. Its genuine differentiator is <em>operational</em>:
+        it accepts any modality subset and degrades gracefully (the gap narrows), which a single-modality
+        model cannot do at all. Both the loss and the graceful degradation are shown, not hidden.</p>
     </section>"""
 
 
@@ -324,7 +326,9 @@ svg {{ max-width:100%; }}
     <p>The same subject flows through both pipelines. Left: the validated single-modality screener that
       actually wins. Right: the proposed multimodal fLLM — VQ tokenization, cross-modal attention, and a
       frozen-LLM soft-prompt reader — shown exactly as it performs. The scoreboard states the honest
-      verdict: fusion loses on full-observation accuracy; its real edge is missing-sensor robustness.</p>
+      verdict: fusion loses on full-observation accuracy, and the floor still leads under dropout — the
+      proposed model's genuine differentiator is operational (it runs on any modality subset and degrades
+      gracefully), not an accuracy win.</p>
     <div class="disclaimer">{_esc(DISCLAIMER)}</div>
   </header>
   {selector}

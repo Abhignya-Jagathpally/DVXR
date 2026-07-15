@@ -31,7 +31,8 @@ import numpy as np
 
 DISCLAIMER = ("Research-grade screening, not a diagnosis. The proposed multimodal path is shown exactly "
               "as it performs — on full observation it underperforms the single-modality screener; its "
-              "honest edge is graceful degradation under missing sensors (see the scoreboard).")
+              "genuine differentiator is operational — it runs on any modality subset and degrades "
+              "gracefully — not an accuracy win (the floor leads even under dropout; see the scoreboard).")
 
 # WESAD is the default subject because it is genuinely co-registered (one device, many signals).
 DEFAULT_TASK = "wesad_stress"

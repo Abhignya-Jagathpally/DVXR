@@ -88,8 +88,10 @@ svg { max-width:100%; }
     <p>The same subject flows through both pipelines. Left: the validated single-modality screener that
       actually wins. Right: the proposed multimodal fLLM — VQ tokenization, cross-modal attention, and a
       frozen-LLM soft-prompt reader — shown exactly as it performs. The scoreboard states the honest
-      verdict: fusion loses on full-observation accuracy; its real edge is missing-sensor robustness.</p>
-    <div class="disclaimer">Research-grade screening, not a diagnosis. The proposed multimodal path is shown exactly as it performs — on full observation it underperforms the single-modality screener; its honest edge is graceful degradation under missing sensors (see the scoreboard).</div>
+      verdict: fusion loses on full-observation accuracy, and the floor still leads under dropout — the
+      proposed model's genuine differentiator is operational (it runs on any modality subset and degrades
+      gracefully), not an accuracy win.</p>
+    <div class="disclaimer">Research-grade screening, not a diagnosis. The proposed multimodal path is shown exactly as it performs — on full observation it underperforms the single-modality screener; its genuine differentiator is operational — it runs on any modality subset and degrades gracefully — not an accuracy win (the floor leads even under dropout; see the scoreboard).</div>
   </header>
   <label class='sel'>Subject / sample entry <select id='pick' onchange='pick(this.value)'><option value='0'>subject S2</option><option value='1'>subject S4</option><option value='2'>subject S6</option></select></label>
   
@@ -140,8 +142,10 @@ Caveat: this is a research prototype. Values are calibrated-model estimates and 
       <div class="coltag">HONEST SCOREBOARD · full-observation cohort verdict</div>
       <div class='sbrow'><span class='sbk'>Best single-modality baseline</span><span class='sbv'>xgboost · error 0.045</span></div><div class='sbrow'><span class='sbk'>Proposed fusion (full observation)</span><span class='sbv'>error 0.129 · RER -185.9%</span></div><div class='sbverdict'>proposed loses at full observation</div><div class='muted src'>source: outputs/benchmark_scoreboard.csv</div>
       <div class='sbrow'><span class='sbk'>Sensor-dropout robustness</span><span class='sbv muted'>no CI-backed win — floor leads at every level, but the gap narrows from RER -58.1% (0 dropped) to -15.5% (6 dropped): graceful degradation</span></div>
-      <p class="sbnote">The proposed multimodal path loses on full-observation accuracy; its genuine
-        edge is graceful degradation under missing sensors. Both facts are shown here rather than hidden.</p>
+      <p class="sbnote">The proposed multimodal path loses on full-observation accuracy, and the tuned
+        floor still leads under sensor dropout too. Its genuine differentiator is <em>operational</em>:
+        it accepts any modality subset and degrades gracefully (the gap narrows), which a single-modality
+        model cannot do at all. Both the loss and the graceful degradation are shown, not hidden.</p>
     </section>
     </div>
     <div class="trace" data-trace="1" style="display:none">
@@ -190,8 +194,10 @@ Caveat: this is a research prototype. Values are calibrated-model estimates and 
       <div class="coltag">HONEST SCOREBOARD · full-observation cohort verdict</div>
       <div class='sbrow'><span class='sbk'>Best single-modality baseline</span><span class='sbv'>xgboost · error 0.045</span></div><div class='sbrow'><span class='sbk'>Proposed fusion (full observation)</span><span class='sbv'>error 0.129 · RER -185.9%</span></div><div class='sbverdict'>proposed loses at full observation</div><div class='muted src'>source: outputs/benchmark_scoreboard.csv</div>
       <div class='sbrow'><span class='sbk'>Sensor-dropout robustness</span><span class='sbv muted'>no CI-backed win — floor leads at every level, but the gap narrows from RER -58.1% (0 dropped) to -15.5% (6 dropped): graceful degradation</span></div>
-      <p class="sbnote">The proposed multimodal path loses on full-observation accuracy; its genuine
-        edge is graceful degradation under missing sensors. Both facts are shown here rather than hidden.</p>
+      <p class="sbnote">The proposed multimodal path loses on full-observation accuracy, and the tuned
+        floor still leads under sensor dropout too. Its genuine differentiator is <em>operational</em>:
+        it accepts any modality subset and degrades gracefully (the gap narrows), which a single-modality
+        model cannot do at all. Both the loss and the graceful degradation are shown, not hidden.</p>
     </section>
     </div>
     <div class="trace" data-trace="2" style="display:none">
@@ -240,8 +246,10 @@ Caveat: this is a research prototype. Values are calibrated-model estimates and 
       <div class="coltag">HONEST SCOREBOARD · full-observation cohort verdict</div>
       <div class='sbrow'><span class='sbk'>Best single-modality baseline</span><span class='sbv'>xgboost · error 0.045</span></div><div class='sbrow'><span class='sbk'>Proposed fusion (full observation)</span><span class='sbv'>error 0.129 · RER -185.9%</span></div><div class='sbverdict'>proposed loses at full observation</div><div class='muted src'>source: outputs/benchmark_scoreboard.csv</div>
       <div class='sbrow'><span class='sbk'>Sensor-dropout robustness</span><span class='sbv muted'>no CI-backed win — floor leads at every level, but the gap narrows from RER -58.1% (0 dropped) to -15.5% (6 dropped): graceful degradation</span></div>
-      <p class="sbnote">The proposed multimodal path loses on full-observation accuracy; its genuine
-        edge is graceful degradation under missing sensors. Both facts are shown here rather than hidden.</p>
+      <p class="sbnote">The proposed multimodal path loses on full-observation accuracy, and the tuned
+        floor still leads under sensor dropout too. Its genuine differentiator is <em>operational</em>:
+        it accepts any modality subset and degrades gracefully (the gap narrows), which a single-modality
+        model cannot do at all. Both the loss and the graceful degradation are shown, not hidden.</p>
     </section>
     </div>
 </div>

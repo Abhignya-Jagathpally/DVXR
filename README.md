@@ -45,8 +45,9 @@ arbitrary recording.
 self-contained, offline page putting the proposed multimodal path (VQ tokenization → cross-modal
 attention → frozen-LLM soft-prompt reader) *side by side* with the winning single-modality model on the
 same real co-registered subject, with the honest scoreboard shown (fusion loses on full-observation
-accuracy; its edge is graceful degradation under missing sensors). A `--sample` recording adds your own
-entry (out-of-distribution), which the LLM narrates:
+accuracy, and the floor still leads under sensor dropout — the proposed model's differentiator is
+operational: it runs on any modality subset and degrades gracefully). A `--sample` recording adds your
+own entry (out-of-distribution), which the LLM narrates:
 
 ```
 dvxr glassbox --task wesad_stress                         # one held-out subject, both pipelines
@@ -76,8 +77,9 @@ AUROC the benchmark reports. Explanations come through `dvxr.serve.explain` (gro
 
 For a code-grounded walkthrough of the whole pipeline — data in, preprocessing, tokenization, embeddings,
 attention, the frozen-LLM soft-prompt path, KV cache, fine-tuning/inference, LSL, and the honest SOTA
-comparison (fusion loses at full observation; the proposed model's real edge is graceful degradation
-under sensor dropout) — see [`docs/PIPELINE_DEEP_DIVE.md`](docs/PIPELINE_DEEP_DIVE.md).
+comparison (fusion loses at full observation; the proposed model's genuine differentiator is
+*operational* — it accepts any modality subset and degrades gracefully as sensors drop, though the tuned
+floor still leads on accuracy at every level) — see [`docs/PIPELINE_DEEP_DIVE.md`](docs/PIPELINE_DEEP_DIVE.md).
 
 **Validated capabilities** (AUROC, subject-held-out CV, each traced to `outputs/*scoreboard*`; see
 [`docs/MODEL_CARD.md`](docs/MODEL_CARD.md) and `dvxr.serve.evidence`). The depression headline was
