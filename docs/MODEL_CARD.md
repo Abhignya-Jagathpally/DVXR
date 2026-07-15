@@ -73,6 +73,18 @@ patient data. Subject-disjoint folds throughout; the head is never fit on a test
 Platt calibration on out-of-fold predictions (ECE reported per screener); risk bands
 (low <0.25, watch <0.50, elevated <0.75, high); a 90% conformal interval from held-out residuals.
 
+**Clinical utility — decision-curve analysis (net benefit).** AUROC measures ranking, not whether
+*acting* on the screen helps. Each screener also carries a **decision curve** (Vickers & Elkin,
+2006, [doi](https://doi.org/10.1177/0272989X06295361)) computed from the same held-out out-of-fold
+predictions behind the AUROC — subject-level for the single-class-per-subject screening tasks,
+epoch-level for within-subject state tasks. It plots net benefit — `TP/n − (FP/n)·pₜ/(1−pₜ)` — against the decision threshold `pₜ`,
+beside the two default policies (**treat-all**, **treat-none**), and reports the threshold band where
+screening beats *both*. The "useful" verdict is **bootstrap-gated**: the peak net-benefit gain's
+one-sided 95% lower bound must stay positive, so a noise-level advantage (a random score can win a
+single threshold by chance) reads as *not useful* rather than being oversold. Surfaced in the
+per-subject report and the evidence one-pager; the honest negative — where a screener shows no
+stable net-benefit advantage — is reported, not hidden.
+
 **Serve-time personalization (opt-in, `dvxr fit --personalize`).** A per-subject recalibrator
 (`PersonalizedCalibrator`) can be wired into the screener for *within-subject* state tasks (a subject
 carries both classes; it does not apply to subject-level-diagnosis tasks like depression, where it is

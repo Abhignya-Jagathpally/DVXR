@@ -32,7 +32,15 @@ def _report(validated=True):
         "validated": validated,
         "evidence": {"window_auroc": 0.961, "window_ci": [0.942, 0.976], "subject_auroc": 0.986,
                      "subject_ci": [0.966, 0.999], "ece": 0.03, "protocol": "3x5 subject-held-out CV",
-                     "n_subjects": 58, "literature": _Screener.meta["literature"]},
+                     "n_subjects": 58, "literature": _Screener.meta["literature"],
+                     "decision_curve": {
+                         "prevalence": 0.5, "n": 58, "level": "subject",
+                         "points": [{"threshold": t / 100, "model": 0.4, "all": 0.3, "none": 0.0}
+                                    for t in (5, 25, 50, 75)],
+                         "summary": {"useful": True, "useful_band": [0.05, 0.75],
+                                     "best_threshold": 0.25, "best_gain": 0.1, "best_gain_lo": 0.07,
+                                     "note": "Screening beats both treat-all and treat-none for "
+                                             "decision thresholds 5-75%."}}},
     }
 
 
@@ -48,6 +56,17 @@ class ReportRenderTest(unittest.TestCase):
         self.assertIn("<svg", h)                               # per-window trace
         self.assertIn("latent[7]", h)                          # drivers
         self.assertIn("not a diagnosis", " ".join(h.lower().split()))
+
+    def test_decision_curve_panel_rendered_with_attribution(self):
+        from dvxr.serve.report import render_report_html
+        h = render_report_html(_report(), _Screener())
+        low = " ".join(h.lower().split())
+        self.assertIn("decision-curve analysis", low)      # clinical-utility panel present
+        self.assertIn("net benefit", low)                  # SVG axis label
+        self.assertIn("vickers", low)                      # method attribution
+        self.assertIn("treat-all", low)                    # honest comparison policies
+        self.assertNotIn("http://", h)
+        self.assertNotIn("https://", h)                    # SVG self-contained (currentColor)
 
     def test_upload_report_shows_ood_banner(self):
         from dvxr.serve.report import render_report_html

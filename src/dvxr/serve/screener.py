@@ -290,6 +290,20 @@ def fit_screener(task_name: str, n_repeats: int = 3, n_folds: int = 5,
     ece = float(expected_calibration_error(y[cov], cal_oof))
     conformal = float(conformal_radius(np.abs(y[cov] - cal_oof), alpha=0.10))
 
+    # clinical utility: decision-curve / net benefit on the same held-out calibrated predictions,
+    # at the granularity that matches the task (subject-level for single-class-per-subject diagnosis
+    # tasks; window-level for within-subject state tasks — mirrors the AUROC granularity choice).
+    from dvxr.serve.utility import decision_curve, subject_aggregate
+    subs_cov, y_cov = subjects[cov], y[cov]
+    single_class = all(len(np.unique(y_cov[subs_cov == s])) == 1 for s in np.unique(subs_cov))
+    if single_class and len(np.unique(subs_cov)) >= 2:
+        dca_y, dca_p = subject_aggregate(subs_cov, cal_oof, y_cov)
+        dca_level = "subject"
+    else:
+        dca_y, dca_p, dca_level = y_cov, cal_oof, "window"
+    dca = decision_curve(dca_y, dca_p)
+    dca["level"] = dca_level
+
     # optional serve-time personalization (within-subject tasks only) + honest ECE gain
     personal, personal_metrics = (None, {"applicable": False, "enabled": False})
     if personalize:
@@ -314,7 +328,7 @@ def fit_screener(task_name: str, n_repeats: int = 3, n_folds: int = 5,
                  "auroc_subject_ci": ([round(subj_lo, 4), round(subj_hi, 4)]
                                       if auroc_subj is not None else None),
                  "auroc_subject_note": subj_note, "n_subjects_scored": n_subj_scored,
-                 "ece": round(ece, 4), "personalization": personal_metrics,
+                 "ece": round(ece, 4), "personalization": personal_metrics, "decision_curve": dca,
                  "n_subjects": int(len(np.unique(subjects))), "n_windows": int(len(y)),
                  "n_folds": int(len(fold_auroc)), "protocol": f"{n_repeats}x{n_folds} subject-held-out CV"},
         meta={"label": TASK_LABEL.get(task_name, task_name), "encoder": encoder,

@@ -27,6 +27,7 @@ def subject_report(screener, task, sid, encoder=None, validated: bool = True) ->
         "subject_auroc": h.get("auroc_subject"), "subject_ci": h.get("auroc_subject_ci"),
         "ece": h.get("ece"), "protocol": h.get("protocol"),
         "n_subjects": h.get("n_subjects"), "literature": screener.meta.get("literature", []),
+        "decision_curve": h.get("decision_curve"),
     }
     return out
 
@@ -53,6 +54,22 @@ def _meter(prob, band) -> str:
             f'</div></div>')
 
 
+def _decision_curve_block(dca) -> str:
+    """Clinical-utility (net-benefit) panel — the SVG curve + an honest one-line verdict."""
+    if not dca or not dca.get("points"):
+        return ""
+    from dvxr.serve.utility import render_decision_curve_svg
+    s = dca.get("summary", {})
+    svg = render_decision_curve_svg(dca)
+    verdict = html.escape(str(s.get("note", "")))
+    lvl = dca.get("level", "window")
+    return (f'<div class="box" style="margin-top:14px"><h2>Clinical utility — decision-curve analysis'
+            f'</h2><div style="color:var(--ink)">{svg}</div>'
+            f'<div class="sub" style="margin-top:8px">Net benefit vs treat-all / treat-none at each '
+            f'decision threshold ({html.escape(lvl)}-level, held-out; Vickers &amp; Elkin 2006). '
+            f'{verdict}</div></div>')
+
+
 def render_report_html(report: dict, screener) -> str:
     res = report["result"]
     ev = report["evidence"]
@@ -70,6 +87,7 @@ def render_report_html(report: dict, screener) -> str:
             else ' · within-subject task → epoch-level unit')
     lit = "".join(f"<li>{html.escape(x)}</li>" for x in ev.get("literature", []))
     note = html.escape(str(report["narrative"].get("clinician", "")))
+    dca_block = _decision_curve_block(ev.get("decision_curve"))
     return f"""<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>DVXR screening report — subject {html.escape(report['subject'])}</title>
@@ -131,6 +149,8 @@ def render_report_html(report: dict, screener) -> str:
        <div>Calibration ECE: {ev['ece']} · {html.escape(str(ev['protocol']))} ·
          {ev['n_subjects']} subjects</div>
      </div></div>
+
+   {dca_block}
 
    <div class="box" style="margin-top:14px"><h2>Grounded explanation</h2><pre>{note}</pre></div>
 

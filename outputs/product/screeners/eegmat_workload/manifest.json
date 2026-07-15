@@ -1,0 +1,151 @@
+{
+  "task": "eegmat_workload",
+  "representation": "labram_eeg",
+  "conformal": 0.6660920765847723,
+  "heldout": {
+    "metric": "AUROC",
+    "auroc": 0.6627,
+    "auroc_level": "window",
+    "auroc_ci": [
+      0.6164,
+      0.7129
+    ],
+    "auroc_subject": null,
+    "auroc_subject_ci": null,
+    "auroc_subject_note": "within-subject state task (a subject carries both classes); the epoch/window-level AUROC is the appropriate unit \u2014 subject-level AUROC does not apply",
+    "n_subjects_scored": 20,
+    "ece": 0.0247,
+    "personalization": {
+      "applicable": false,
+      "enabled": false
+    },
+    "decision_curve": {
+      "prevalence": 0.5,
+      "n": 560,
+      "points": [
+        {
+          "threshold": 0.05,
+          "model": 0.47368,
+          "all": 0.47368,
+          "none": 0.0
+        },
+        {
+          "threshold": 0.1,
+          "model": 0.44444,
+          "all": 0.44444,
+          "none": 0.0
+        },
+        {
+          "threshold": 0.15,
+          "model": 0.41176,
+          "all": 0.41176,
+          "none": 0.0
+        },
+        {
+          "threshold": 0.2,
+          "model": 0.375,
+          "all": 0.375,
+          "none": 0.0
+        },
+        {
+          "threshold": 0.25,
+          "model": 0.33333,
+          "all": 0.33333,
+          "none": 0.0
+        },
+        {
+          "threshold": 0.3,
+          "model": 0.28571,
+          "all": 0.28571,
+          "none": 0.0
+        },
+        {
+          "threshold": 0.35,
+          "model": 0.26841,
+          "all": 0.23077,
+          "none": 0.0
+        },
+        {
+          "threshold": 0.4,
+          "model": 0.2119,
+          "all": 0.16667,
+          "none": 0.0
+        },
+        {
+          "threshold": 0.45,
+          "model": 0.16964,
+          "all": 0.09091,
+          "none": 0.0
+        },
+        {
+          "threshold": 0.5,
+          "model": 0.13393,
+          "all": 0.0,
+          "none": 0.0
+        },
+        {
+          "threshold": 0.55,
+          "model": 0.07778,
+          "all": -0.11111,
+          "none": 0.0
+        },
+        {
+          "threshold": 0.6,
+          "model": 0.04018,
+          "all": -0.25,
+          "none": 0.0
+        },
+        {
+          "threshold": 0.65,
+          "model": -0.01276,
+          "all": -0.42857,
+          "none": 0.0
+        },
+        {
+          "threshold": 0.7,
+          "model": 0.00357,
+          "all": -0.66667,
+          "none": 0.0
+        },
+        {
+          "threshold": 0.75,
+          "model": 0.0,
+          "all": -1.0,
+          "none": 0.0
+        }
+      ],
+      "summary": {
+        "useful": true,
+        "useful_band": [
+          0.35,
+          0.6
+        ],
+        "best_threshold": 0.5,
+        "best_gain": 0.13393,
+        "best_gain_lo": 0.07857,
+        "note": "Screening beats both treat-all and treat-none for decision thresholds 35\u201360%; peak added net benefit 0.134 at 50% (bootstrap 95% lower bound 0.079 > 0) \u2014 \u2248 0.134 extra true cases caught per patient at no added false-alarm cost vs the best default."
+      },
+      "level": "window"
+    },
+    "n_subjects": 20,
+    "n_windows": 560,
+    "n_folds": 15,
+    "protocol": "3x5 subject-held-out CV"
+  },
+  "meta": {
+    "label": "Cognitive-workload screen (rest vs task) from EEG",
+    "encoder": "real LaBraM EEG foundation model (frozen, vendored forward)",
+    "caveat": "Research-grade screening, not a diagnosis. Held-out AUROC is a subject-disjoint estimate on a research cohort (dataset-specific; EEG sampled at 64 Hz, below LaBraM's 200 Hz training).",
+    "band_thresholds": {
+      "low": 0.25,
+      "watch": 0.5,
+      "elevated": 0.75
+    },
+    "literature": [
+      "LaBraM \u2014 Jiang et al., ICLR 2024, arXiv:2405.18765 (EEG foundation model; real weights braindecode/labram-pretrained)",
+      "Mumtaz et al., 2016 \u2014 MDD-vs-healthy resting-EEG cohort (labels)"
+    ]
+  },
+  "personalized": false,
+  "format": "dvxr-screener/1"
+}

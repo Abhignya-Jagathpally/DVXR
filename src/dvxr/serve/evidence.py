@@ -319,4 +319,8 @@ def render_report(screener_dir: Optional[str] = None) -> str:
         lines.append("")
         lines.append(f"Loaded screener [{m['task']}]: AUROC {h['auroc']} CI {h['auroc_ci']} "
                      f"ECE {h.get('ece')} ({h.get('protocol')})")
+        dca = h.get("decision_curve")
+        if dca and dca.get("summary"):
+            lines.append(f"  clinical utility (decision-curve, {dca.get('level','window')}-level, "
+                         f"Vickers & Elkin 2006): {dca['summary'].get('note')}")
     return "\n".join(lines)
