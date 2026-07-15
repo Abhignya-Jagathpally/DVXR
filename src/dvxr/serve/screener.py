@@ -84,6 +84,44 @@ def _head_proba(sc, clf, emb: np.ndarray) -> np.ndarray:
     return clf.predict_proba(sc.transform(emb))[:, pos]
 
 
+def _subject_level_auroc(subjects, oof_prob, y, covered, seed: int = 7, n_boot: int = 1000):
+    """Subject-level AUROC from out-of-fold window probabilities — only for subject-level-label tasks.
+
+    Window-level AUROC pools every held-out window, so correlated windows from the same subject
+    inflate it relative to the clinically meaningful question ("is THIS SUBJECT a case?"). For a
+    subject-level-label task (e.g. depression: every window of a subject shares the diagnosis) this
+    aggregates each subject's OOF windows to one probability (the same mean `score_subject` uses) and
+    scores AUROC over subjects — the conservative number, with a subject-resampling bootstrap CI.
+
+    For a WITHIN-subject state task (workload rest-vs-task, stress rest-vs-stress: a subject carries
+    BOTH classes), the label is per-window state, not a per-subject diagnosis, so subject-level AUROC
+    is undefined and the epoch/window-level number is the appropriate unit — we return that note.
+    Returns (auroc, ci_lo, ci_hi, n_subjects_scored, note).
+    """
+    from sklearn.metrics import roc_auc_score
+    m = np.asarray(covered) & np.isfinite(oof_prob)
+    subs, p, yy = np.asarray(subjects)[m], np.asarray(oof_prob)[m], np.asarray(y)[m]
+    uniq = np.unique(subs)
+    single_class = all(len(np.unique(yy[subs == s])) == 1 for s in uniq)
+    if not single_class:
+        return None, None, None, int(len(uniq)), (
+            "within-subject state task (a subject carries both classes); the epoch/window-level "
+            "AUROC is the appropriate unit — subject-level AUROC does not apply")
+    sp = np.array([p[subs == s].mean() for s in uniq])
+    sy = np.array([int(round(float(yy[subs == s].mean()))) for s in uniq])
+    if len(np.unique(sy)) < 2:
+        return None, None, None, int(len(uniq)), "only one subject-level class present"
+    point = float(roc_auc_score(sy, sp))
+    rng = np.random.default_rng(seed)
+    idx = np.arange(len(uniq))
+    boots = [roc_auc_score(sy[b], sp[b]) for b in
+             (rng.choice(idx, size=len(idx), replace=True) for _ in range(n_boot))
+             if len(np.unique(sy[b])) >= 2]
+    lo, hi = ((float(np.percentile(boots, 5)), float(np.percentile(boots, 95)))
+              if boots else (point, point))
+    return point, lo, hi, int(len(uniq)), "subject-level (one prediction per subject)"
+
+
 @dataclass
 class Screener:
     """A trained, persistable screener wired to a validated representation + calibrated head."""
@@ -119,6 +157,8 @@ class Screener:
             "n_windows": int(len(probs)),
             "heldout_auroc": self.heldout.get("auroc"),
             "heldout_auroc_ci": self.heldout.get("auroc_ci"),
+            "heldout_auroc_subject": self.heldout.get("auroc_subject"),
+            "heldout_auroc_subject_ci": self.heldout.get("auroc_subject_ci"),
             "basis": self.meta.get("encoder", self.representation),
             "caveat": self.meta.get("caveat", ""),
         }
@@ -184,6 +224,10 @@ def fit_screener(task_name: str, n_repeats: int = 3, n_folds: int = 5,
     auroc = float(np.mean(fold_auroc)) if fold_auroc else float("nan")
     ci = bootstrap_ci(fold_auroc, seed=seed) if len(fold_auroc) >= 2 else (auroc, auroc)
 
+    # subject-level AUROC (the conservative, clinically meaningful number) alongside window-level
+    auroc_subj, subj_lo, subj_hi, n_subj_scored, subj_note = _subject_level_auroc(
+        subjects, oof_prob, y, covered, seed=seed)
+
     # calibrate on out-of-fold predictions (honest, uses no test leakage into the head fit)
     cov = covered & np.isfinite(oof_prob)
     calibrator = fit_platt_calibrator(oof_prob[cov], y[cov])
@@ -203,8 +247,13 @@ def fit_screener(task_name: str, n_repeats: int = 3, n_folds: int = 5,
     screener = Screener(
         task=task_name, representation=representation, scaler=scaler, head=head,
         calibrator=calibrator, conformal=conformal,
-        heldout={"metric": "AUROC", "auroc": round(auroc, 4),
-                 "auroc_ci": [round(ci[0], 4), round(ci[1], 4)], "ece": round(ece, 4),
+        heldout={"metric": "AUROC", "auroc": round(auroc, 4), "auroc_level": "window",
+                 "auroc_ci": [round(ci[0], 4), round(ci[1], 4)],
+                 "auroc_subject": (round(auroc_subj, 4) if auroc_subj is not None else None),
+                 "auroc_subject_ci": ([round(subj_lo, 4), round(subj_hi, 4)]
+                                      if auroc_subj is not None else None),
+                 "auroc_subject_note": subj_note, "n_subjects_scored": n_subj_scored,
+                 "ece": round(ece, 4),
                  "n_subjects": int(len(np.unique(subjects))), "n_windows": int(len(y)),
                  "n_folds": int(len(fold_auroc)), "protocol": f"{n_repeats}x{n_folds} subject-held-out CV"},
         meta={"label": TASK_LABEL.get(task_name, task_name), "encoder": encoder,

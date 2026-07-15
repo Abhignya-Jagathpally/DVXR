@@ -34,6 +34,36 @@ def _synthetic_screener(seed=0):
                           "caveat": "test only"}), emb, y
 
 
+class SubjectLevelAurocTest(unittest.TestCase):
+    def test_subject_level_label_task(self):
+        """When every window of a subject shares one label, subject-level AUROC is computed."""
+        from dvxr.serve.screener import _subject_level_auroc
+        rng = np.random.default_rng(0)
+        subs = np.repeat([f"s{i}" for i in range(20)], 10)      # 20 subjects, 10 windows each
+        y = np.repeat((np.arange(20) % 2), 10)                  # subject-level label
+        # OOF prob correlated with label + window noise
+        oof = y * 0.5 + 0.25 + rng.normal(0, 0.15, len(y))
+        oof = np.clip(oof, 0, 1)
+        auroc, lo, hi, n, note = _subject_level_auroc(subs, oof, y, np.ones(len(y), bool))
+        self.assertIsNotNone(auroc)
+        self.assertEqual(n, 20)
+        self.assertGreater(auroc, 0.7)
+        self.assertLessEqual(lo, auroc)
+        self.assertGreaterEqual(hi, auroc)
+        self.assertIn("subject-level", note)
+
+    def test_within_subject_task_returns_note_not_number(self):
+        """When a subject carries both classes, subject-level AUROC does not apply."""
+        from dvxr.serve.screener import _subject_level_auroc
+        rng = np.random.default_rng(1)
+        subs = np.repeat([f"s{i}" for i in range(8)], 20)
+        y = np.tile([0, 1], 80)                                 # each subject has both classes
+        oof = np.clip(y * 0.4 + 0.3 + rng.normal(0, 0.2, len(y)), 0, 1)
+        auroc, lo, hi, n, note = _subject_level_auroc(subs, oof, y, np.ones(len(y), bool))
+        self.assertIsNone(auroc)
+        self.assertIn("within-subject", note)
+
+
 class ScreenerMechanicsTest(unittest.TestCase):
     def test_predict_and_score(self):
         s, emb, y = _synthetic_screener()
