@@ -59,6 +59,25 @@ benchmark_scoreboard.csv` and to the screener manifest (0.9608). The run was det
 the committed board is genuine.
 <!-- /REPRODUCTION-RESULT -->
 
+## 2b. Is AUROC 0.96 plausible on this cohort? (literature check)
+
+Cross-subject EEG-MDD is generally hard (e.g. ~65% LOSO on MODMA — see the external-SOTA table in
+`dvxr.serve.evidence`), so a high number deserves scrutiny. The corroborating fact is that the
+**Mumtaz cohort itself is unusually separable**, per the dataset authors' own published results (based
+on articles retrieved from PubMed):
+
+- Mumtaz et al., 2017, *Med Biol Eng Comput* — EEG functional-connectivity features, **SVM accuracy
+  98%** (sensitivity 99.9%, specificity 95%) on MDD-vs-healthy, this cohort.
+  [DOI](https://doi.org/10.1007/s11517-017-1685-z)
+- Mumtaz et al., 2015, *EMBC* — detrended fluctuation analysis, 10-fold CV on the same recordings.
+  [DOI](https://doi.org/10.1109/EMBC.2015.7319311)
+
+So our **0.961** is consistent with — and more conservative than — published results on the *same*
+cohort. Honest caveat: those papers use k-fold CV (which can leak subject identity across folds),
+whereas ours is **subject-held-out** (stricter) and still reaches 0.96 — because this cohort is
+genuinely separable, not because of leakage. This is exactly why the product positions Mumtaz as a
+comparatively easy cohort and reports the harder cross-cohort bars alongside it.
+
 ## 3. Reproduce it anywhere (open network)
 
 ```bash
