@@ -39,3 +39,15 @@ modalities:
 - ehr
 - omics
 - behavior
+
+# Prospective glucose-excursion outcome definition (Gate 1). Versioned here so a label set is always
+# traceable to the exact thresholds that produced it; mirrored by dvxr.targets.ExcursionThresholds.
+# Not consumed by CACMFConfig (unknown keys are ignored) — it is the study-config source of truth.
+outcome_definition:
+  version: pilot-v1
+  low_mg_dl: 70.0
+  high_mg_dl: 180.0
+  horizons_minutes: [30, 60]
+  history_minutes: 240
+  target_tolerance_minutes: 5.0
+  min_history_samples: 1
