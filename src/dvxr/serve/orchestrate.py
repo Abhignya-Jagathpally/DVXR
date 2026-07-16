@@ -43,9 +43,14 @@ _REPORT_MODALITIES = {
 }
 
 
-def _cgm_history_from_events(events, cutoff: str):
-    """Assemble a causal CGM history frame (timestamp, glucose) from provenance events at/before the
-    cutoff. Returns None when no CGM values are present (⇒ the predictor abstains)."""
+def _cgm_history_from_events(events, *, tenant_id: str, patient_id: str, cutoff: str):
+    """Assemble a causal CGM history frame (timestamp, glucose) from provenance events.
+
+    ISOLATION (Gate A, spec §7): an event is admitted ONLY if it belongs to this exact
+    ``tenant_id`` AND ``patient_id`` AND was observed at or before ``cutoff``. An event whose tenant
+    or patient identity is MISSING is rejected (never inferred from the request), so a mixed event list
+    can never let patient A's prediction read patient B's glucose. Returns None when no admissible CGM
+    values remain (⇒ the predictor abstains)."""
     if not events:
         return None
     import pandas as pd
@@ -53,6 +58,12 @@ def _cgm_history_from_events(events, cutoff: str):
     for ev in events:
         if str(ev.get("modality")) != "cgm":
             continue
+        ev_tenant = ev.get("tenant_id")
+        ev_patient = ev.get("patient_id")
+        if not ev_tenant or not ev_patient:          # missing identity ⇒ reject, never infer
+            continue
+        if str(ev_tenant) != str(tenant_id) or str(ev_patient) != str(patient_id):
+            continue                                 # wrong tenant/patient ⇒ never admit
         val = ev.get("value", ev.get("glucose"))
         ts = ev.get("observed_at_utc") or ev.get("timestamp_utc") or ev.get("timestamp")
         if val is None or ts is None:
@@ -130,7 +141,8 @@ def generate_risk_report(
 
     if require_consent:
         purpose = _ROLE_PURPOSE.get(req.user_role, req.user_role)
-        ok = consent_store is not None and consent_store.check(req.patient_id, purpose)
+        ok = consent_store is not None and consent_store.check(
+            req.patient_id, purpose, tenant_id=req.tenant_id)
         if not ok:
             audit_store.append({"request_id": req.request_id, "event": "generate.denied.consent",
                                 "patient_id": req.patient_id, "purpose": purpose})
@@ -141,7 +153,7 @@ def generate_risk_report(
     # (spec §18): patient A's prediction can never be returned for patient B's request.
     scoped_key = _scoped_idempotency_key(req)
     if scoped_key:
-        existing = prediction_store.get_by_idempotency_key(scoped_key)
+        existing = prediction_store.get_by_idempotency_key(scoped_key, tenant_id=req.tenant_id)
         if existing is not None:
             audit_store.append({"request_id": req.request_id, "event": "generate.reused",
                                 "prediction_id": existing.get("prediction_id")})
@@ -153,7 +165,8 @@ def generate_risk_report(
     # assemble the reproducible cutoff-bound snapshot (Gate 2) — only events <= cutoff are admitted
     snapshot = build_patient_snapshot(
         events or [], patient_id=req.patient_id, data_cutoff_at=req.data_cutoff_at,
-        feature_version=FEATURE_VERSION, expected_modalities=GLUCOSE_FUSION_MODALITIES)
+        tenant_id=req.tenant_id, feature_version=FEATURE_VERSION,
+        expected_modalities=GLUCOSE_FUSION_MODALITIES)
     audit_store.append({"request_id": req.request_id, "event": "snapshot.created",
                         "snapshot": snapshot.to_dict()})
 
@@ -165,7 +178,8 @@ def generate_risk_report(
         report_type=req.report_type,
         horizons_minutes=req.prediction_horizons_minutes,
         snapshot=snapshot,
-        cgm_history=_cgm_history_from_events(events, req.data_cutoff_at),
+        cgm_history=_cgm_history_from_events(events, tenant_id=req.tenant_id,
+                                             patient_id=req.patient_id, cutoff=req.data_cutoff_at),
         requested_modalities=_REPORT_MODALITIES.get(req.report_type, tuple(sorted(GLUCOSE_FUSION_MODALITIES))),
         cutoff=req.data_cutoff_at or None,
     )

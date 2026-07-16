@@ -43,8 +43,8 @@ class GenerateRequest:
     def with_request_id(self) -> "GenerateRequest":
         """Return a copy carrying a deterministic request_id derived from the request content."""
         rid = self.request_id or _stable_id(
-            "req", self.patient_id, self.report_type, tuple(self.prediction_horizons_minutes),
-            self.data_cutoff_at, self.idempotency_key or "")
+            "req", self.tenant_id, self.patient_id, self.report_type,
+            tuple(self.prediction_horizons_minutes), self.data_cutoff_at, self.idempotency_key or "")
         return GenerateRequest(**{**asdict(self), "request_id": rid})
 
     def to_dict(self) -> Dict[str, Any]:
@@ -81,8 +81,9 @@ class RiskPrediction:
 
     def with_prediction_id(self) -> "RiskPrediction":
         pid = self.prediction_id or _stable_id(
-            "pred", self.request_id, self.patient_id, self.report_type,
-            json.dumps(self.risk, sort_keys=True), self.abstained, self.model_version)
+            "pred", self.tenant_id, self.request_id, self.patient_id, self.report_type,
+            json.dumps(self.risk, sort_keys=True), self.abstained, self.model_version,
+            self.feature_version, self.calibration_version, self.data_cutoff_at, self.snapshot_id)
         return RiskPrediction(**{**asdict(self), "prediction_id": pid})
 
     def to_dict(self) -> Dict[str, Any]:
@@ -135,7 +136,9 @@ class PatientSnapshot:
     exactly which events + versions produced the prediction, so it is fully reproducible."""
     patient_id: str
     data_cutoff_at: str
+    tenant_id: str = "default"
     event_ids: List[str] = field(default_factory=list)
+    event_content_hashes: List[str] = field(default_factory=list)
     modalities_present: List[str] = field(default_factory=list)
     missing_modalities: List[str] = field(default_factory=list)
     quality_by_modality: Dict[str, float] = field(default_factory=dict)
@@ -144,8 +147,12 @@ class PatientSnapshot:
     snapshot_id: str = ""
 
     def with_snapshot_id(self) -> "PatientSnapshot":
+        # the id hashes a canonical manifest: tenant+patient+cutoff, the exact event ids AND their
+        # content hashes (so a quality/value change changes the id), plus the versions the model saw.
         sid = self.snapshot_id or _stable_id(
-            "snap", self.patient_id, self.data_cutoff_at, tuple(sorted(self.event_ids)))
+            "snap", self.tenant_id, self.patient_id, self.data_cutoff_at,
+            tuple(sorted(self.event_ids)), tuple(sorted(self.event_content_hashes)),
+            self.feature_version, self.schema_version)
         return PatientSnapshot(**{**asdict(self), "snapshot_id": sid})
 
     def to_dict(self) -> Dict[str, Any]:

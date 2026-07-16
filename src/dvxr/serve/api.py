@@ -173,7 +173,10 @@ def create_app(screener_root: str | Path = _SCREENER_ROOT,
         except AuthError as e:
             return JSONResponse({"error": str(e)}, status_code=401)
         pid = request.path_params["prediction_id"]
-        rec = pred_store.get(pid)
+        # fetch is TENANT-SCOPED to the caller's principal: a prediction_id that exists only under a
+        # different tenant is a 404 here (it never leaves storage), so a cross-tenant id collision can
+        # never surface another tenant's record. authorize() below is defense-in-depth on patient scope.
+        rec = pred_store.get(pid, tenant_id=principal.tenant_id)
         if rec is None:
             return JSONResponse({"error": f"unknown prediction {pid!r}"}, status_code=404)
         try:

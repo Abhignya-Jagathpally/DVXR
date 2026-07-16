@@ -17,11 +17,14 @@ from dvxr.contracts import _stable_id
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS predictions (
     seq INTEGER PRIMARY KEY AUTOINCREMENT,
-    prediction_id TEXT UNIQUE,
+    tenant_id TEXT DEFAULT 'default',
+    prediction_id TEXT,
     patient_id TEXT,
     request_id TEXT,
-    idempotency_key TEXT UNIQUE,
-    payload TEXT NOT NULL
+    idempotency_key TEXT,
+    payload TEXT NOT NULL,
+    UNIQUE(tenant_id, prediction_id),
+    UNIQUE(tenant_id, idempotency_key)
 );
 CREATE TABLE IF NOT EXISTS audit (
     seq INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -30,8 +33,10 @@ CREATE TABLE IF NOT EXISTS audit (
     payload TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS consent (
-    patient_id TEXT PRIMARY KEY,
-    scope TEXT NOT NULL
+    tenant_id TEXT DEFAULT 'default',
+    patient_id TEXT,
+    scope TEXT NOT NULL,
+    PRIMARY KEY (tenant_id, patient_id)
 );
 CREATE TABLE IF NOT EXISTS models (
     seq INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -56,37 +61,55 @@ class LocalPredictionStore:
         self._c = conn
 
     def put(self, prediction: Dict[str, Any], *, idempotency_key: Optional[str] = None) -> str:
-        # idempotency: a repeated key returns the ALREADY stored prediction, never a second row.
+        # idempotency + rows are TENANT-SCOPED so one tenant's id/key never resolves another's payload.
+        tenant = str(prediction.get("tenant_id", "default"))
         if idempotency_key:
-            existing = self.get_by_idempotency_key(idempotency_key)
+            existing = self.get_by_idempotency_key(idempotency_key, tenant_id=tenant)
             if existing is not None:
                 return existing["prediction_id"]
         pid = prediction.get("prediction_id") or _stable_id(
-            "pred", prediction.get("request_id"), prediction.get("patient_id"),
+            "pred", tenant, prediction.get("request_id"), prediction.get("patient_id"),
             json.dumps(prediction.get("risk"), sort_keys=True))
         prediction = {**prediction, "prediction_id": pid}
         self._c.execute(
-            "INSERT OR IGNORE INTO predictions(prediction_id, patient_id, request_id, "
-            "idempotency_key, payload) VALUES (?,?,?,?,?)",
-            (pid, prediction.get("patient_id"), prediction.get("request_id"),
+            "INSERT OR IGNORE INTO predictions(tenant_id, prediction_id, patient_id, request_id, "
+            "idempotency_key, payload) VALUES (?,?,?,?,?,?)",
+            (tenant, pid, prediction.get("patient_id"), prediction.get("request_id"),
              idempotency_key, json.dumps(prediction)))
         self._c.commit()
         return pid
 
-    def get(self, prediction_id: str) -> Optional[Dict[str, Any]]:
-        row = self._c.execute("SELECT payload FROM predictions WHERE prediction_id=?",
-                              (prediction_id,)).fetchone()
+    def get(self, prediction_id: str, *, tenant_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        if tenant_id is not None:
+            row = self._c.execute(
+                "SELECT payload FROM predictions WHERE prediction_id=? AND tenant_id=?",
+                (prediction_id, str(tenant_id))).fetchone()
+        else:
+            row = self._c.execute("SELECT payload FROM predictions WHERE prediction_id=?",
+                                  (prediction_id,)).fetchone()
         return json.loads(row["payload"]) if row else None
 
-    def get_by_idempotency_key(self, idempotency_key: str) -> Optional[Dict[str, Any]]:
-        row = self._c.execute("SELECT payload FROM predictions WHERE idempotency_key=?",
-                              (idempotency_key,)).fetchone()
+    def get_by_idempotency_key(self, idempotency_key: str, *,
+                               tenant_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        if tenant_id is not None:
+            row = self._c.execute(
+                "SELECT payload FROM predictions WHERE idempotency_key=? AND tenant_id=?",
+                (idempotency_key, str(tenant_id))).fetchone()
+        else:
+            row = self._c.execute("SELECT payload FROM predictions WHERE idempotency_key=?",
+                                  (idempotency_key,)).fetchone()
         return json.loads(row["payload"]) if row else None
 
-    def latest_for_patient(self, patient_id: str) -> Optional[Dict[str, Any]]:
-        row = self._c.execute(
-            "SELECT payload FROM predictions WHERE patient_id=? ORDER BY seq DESC LIMIT 1",
-            (patient_id,)).fetchone()
+    def latest_for_patient(self, patient_id: str, *,
+                           tenant_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        if tenant_id is not None:
+            row = self._c.execute(
+                "SELECT payload FROM predictions WHERE patient_id=? AND tenant_id=? "
+                "ORDER BY seq DESC LIMIT 1", (patient_id, str(tenant_id))).fetchone()
+        else:
+            row = self._c.execute(
+                "SELECT payload FROM predictions WHERE patient_id=? ORDER BY seq DESC LIMIT 1",
+                (patient_id,)).fetchone()
         return json.loads(row["payload"]) if row else None
 
 
@@ -113,17 +136,20 @@ class LocalConsentStore:
     def __init__(self, conn: sqlite3.Connection):
         self._c = conn
 
-    def set_scope(self, patient_id: str, scope: Dict[str, Any]) -> None:
-        self._c.execute("INSERT OR REPLACE INTO consent(patient_id, scope) VALUES (?,?)",
-                       (patient_id, json.dumps(scope)))
+    def set_scope(self, patient_id: str, scope: Dict[str, Any], *, tenant_id: str = "default") -> None:
+        # consent is TENANT-SCOPED: tenant B recording consent for a patient id never satisfies a
+        # consent check made under tenant A for the same raw patient id.
+        self._c.execute("INSERT OR REPLACE INTO consent(tenant_id, patient_id, scope) VALUES (?,?,?)",
+                       (str(tenant_id), patient_id, json.dumps(scope)))
         self._c.commit()
 
-    def get(self, patient_id: str) -> Optional[Dict[str, Any]]:
-        row = self._c.execute("SELECT scope FROM consent WHERE patient_id=?", (patient_id,)).fetchone()
+    def get(self, patient_id: str, *, tenant_id: str = "default") -> Optional[Dict[str, Any]]:
+        row = self._c.execute("SELECT scope FROM consent WHERE tenant_id=? AND patient_id=?",
+                              (str(tenant_id), patient_id)).fetchone()
         return json.loads(row["scope"]) if row else None
 
-    def check(self, patient_id: str, purpose: str) -> bool:
-        scope = self.get(patient_id)
+    def check(self, patient_id: str, purpose: str, *, tenant_id: str = "default") -> bool:
+        scope = self.get(patient_id, tenant_id=tenant_id)
         if not scope:
             return False               # no recorded consent ⇒ deny (fail-closed)
         purposes = scope.get("purposes", [])

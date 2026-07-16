@@ -110,7 +110,7 @@ class OrchestratorPredictorTest(unittest.TestCase):
         # feed causal CGM events for one subject as the request's event stream
         sub = cgm[cgm.subject_id == "s0"].copy()
         cutoff = pd.to_datetime(sub["timestamp"]).iloc[120].isoformat()
-        events = [{"event_id": f"e{i}", "patient_id": "P1", "modality": "cgm",
+        events = [{"event_id": f"e{i}", "patient_id": "P1", "tenant_id": "default", "modality": "cgm",
                    "observed_at_utc": r["timestamp"].isoformat(), "value": float(r["glucose"]),
                    "quality_score": 0.9}
                   for i, r in sub.iloc[:130].iterrows()]

@@ -85,9 +85,11 @@ class ApiSecurityTest(unittest.TestCase):
 
     def test_cross_tenant_prediction_retrieval_is_denied(self):
         pid = self._post("key-clin", "P1").json()["prediction_id"]
-        # a principal from another tenant cannot read it
+        # a principal from another tenant cannot read it. The fetch is tenant-scoped (Gate A), so the
+        # record never leaves storage under the other tenant — a 404 (non-disclosure of existence),
+        # which is STRONGER than a 403 that would confirm the id exists in some other tenant.
         g = self.client.get(f"/v1/predictions/{pid}", headers={"X-API-Key": "key-other"})
-        self.assertEqual(g.status_code, 403)
+        self.assertEqual(g.status_code, 404)
         # the owning principal can
         g2 = self.client.get(f"/v1/predictions/{pid}", headers={"X-API-Key": "key-clin"})
         self.assertEqual(g2.status_code, 200)

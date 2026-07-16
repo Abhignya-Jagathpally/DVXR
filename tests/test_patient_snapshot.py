@@ -12,8 +12,9 @@ from dvxr.serve.snapshot import build_patient_snapshot  # noqa: E402
 from dvxr.storage import open_local_stores  # noqa: E402
 
 
-def _ev(eid, modality, ts, patient="P1", q=0.9):
-    return {"event_id": eid, "patient_id": patient, "modality": modality,
+def _ev(eid, modality, ts, patient="P1", q=0.9, tenant="default"):
+    # events carry explicit tenant + patient identity — the snapshot builder (Gate A) never infers it
+    return {"event_id": eid, "patient_id": patient, "tenant_id": tenant, "modality": modality,
             "observed_at_utc": ts, "quality_score": q}
 
 
