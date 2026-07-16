@@ -63,6 +63,76 @@ def per_subject_normalize(
     return out
 
 
+class SubjectBaselineNormalizer:
+    """Leak-safe per-subject normalization (spec §7): fit statistics on a subject's BASELINE
+    (past-only) window, then transform later windows with those frozen stats.
+
+    ``per_subject_normalize`` above computes each subject's mean/std from *all* their rows, which
+    uses future observations to normalize the present — a look-ahead leak when the later windows are
+    the evaluation set. This class separates fit (baseline period only) from transform, and records
+    the baseline cutoff, so a prediction at time t is normalized using only data at or before the
+    baseline cutoff. Unseen subjects fall back to the pooled baseline statistics.
+    """
+
+    def __init__(self) -> None:
+        self._stats: dict = {}                    # subject -> {col: (mean, std)}
+        self._pooled: dict = {}                   # col -> (mean, std)
+        self._cols: list[str] = []
+        self.baseline_cutoff = None
+
+    def fit(
+        self,
+        frame: pd.DataFrame,
+        feature_cols: Sequence[str],
+        subject_col: str = "subject_id",
+        time_col: str | None = None,
+        baseline_cutoff=None,
+    ) -> "SubjectBaselineNormalizer":
+        """Fit per-subject mean/std on the baseline slice ONLY.
+
+        If ``time_col`` and ``baseline_cutoff`` are given, only rows with ``time_col <= cutoff`` are
+        used (the causal baseline). Otherwise the whole frame is treated as the baseline — callers
+        that pass an already-past-only frame get the same guarantee.
+        """
+        self._cols = list(feature_cols)
+        base = frame
+        if time_col is not None and baseline_cutoff is not None:
+            base = frame[frame[time_col] <= baseline_cutoff]
+            self.baseline_cutoff = baseline_cutoff
+        if base.empty:
+            raise ValueError("baseline slice is empty — cannot fit a subject baseline")
+        for col in self._cols:
+            vals = base[col].astype(float)
+            self._pooled[col] = (float(vals.mean()), float(vals.std() or 0.0))
+            for sid, g in vals.groupby(base[subject_col]):
+                self._stats.setdefault(sid, {})[col] = (float(g.mean()), float(g.std() or 0.0))
+        return self
+
+    def transform(
+        self,
+        frame: pd.DataFrame,
+        subject_col: str = "subject_id",
+    ) -> pd.DataFrame:
+        """Apply frozen baseline stats. Unknown subjects use the pooled baseline; constant features
+        (std==0) map to 0 (never NaN)."""
+        if not self._cols:
+            raise ValueError("normalizer is not fitted")
+        out = frame.copy()
+        for col in self._cols:
+            vals = out[col].astype(float).to_numpy()
+            pooled_std = self._pooled[col][1]
+            means, scales = [], []
+            for sid in out[subject_col]:
+                m, s = self._stats.get(sid, {}).get(col, self._pooled[col])
+                # constant baseline (std==0) ⇒ fall back to the pooled std, then to 1.0, so a
+                # departure from a flat baseline stays visible instead of being zeroed out.
+                scale = s if s > 0 else (pooled_std if pooled_std > 0 else 1.0)
+                means.append(m)
+                scales.append(scale)
+            out[col] = (vals - np.asarray(means)) / np.asarray(scales)
+        return out
+
+
 class PersonalizedCalibrator:
     """Per-subject probability recalibration on top of a global model.
 

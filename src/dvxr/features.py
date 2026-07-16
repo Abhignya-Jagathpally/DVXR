@@ -210,9 +210,48 @@ def latest_stress_feature_row(events: pd.DataFrame, window_seconds: int = 30) ->
     return pd.DataFrame([row]).fillna(0.0)
 
 
+#: Suffix marking a companion present/absent mask column (spec §8: missing != zero).
+MISSING_MASK_SUFFIX = "__present"
+
+
 def feature_columns(frame: pd.DataFrame) -> list[str]:
     blocked = {"subject_id", "session_id", "window_start", "window_end", "timestamp_utc", "target", "target_glucose"}
-    return [col for col in frame.columns if col not in blocked and pd.api.types.is_numeric_dtype(frame[col])]
+    return [col for col in frame.columns
+            if col not in blocked and not col.endswith(MISSING_MASK_SUFFIX)
+            and pd.api.types.is_numeric_dtype(frame[col])]
+
+
+def missingness_columns(frame: pd.DataFrame) -> list[str]:
+    """The `<feature>__present` mask columns in a frame (1.0 = observed, 0.0 = missing)."""
+    return [c for c in frame.columns if c.endswith(MISSING_MASK_SUFFIX)]
+
+
+def add_missingness_masks(frame: pd.DataFrame, feature_cols: list[str] | None = None) -> pd.DataFrame:
+    """Attach a `<feature>__present` mask (1.0 observed / 0.0 missing) for each feature, so a MISSING
+    value is distinguishable from a genuine 0.0 (spec §8, §9 "missing-modality model").
+
+    The mask is computed from NaN-ness BEFORE any zero-fill, so it preserves the distinction that a
+    downstream `fillna(0.0)` would otherwise destroy. Returns a copy; feature values are left as-is
+    (a caller may then fill NaNs, knowing the mask records where they were)."""
+    cols = feature_cols if feature_cols is not None else feature_columns(frame)
+    out = frame.copy()
+    for col in cols:
+        out[f"{col}{MISSING_MASK_SUFFIX}"] = out[col].notna().astype(float)
+    return out
+
+
+def causal_cutoff_filter(events: pd.DataFrame, cutoff, time_col: str = "timestamp_utc") -> pd.DataFrame:
+    """Return only events at or before ``cutoff`` — the no-look-ahead guarantee (spec §7).
+
+    A prediction made at time t may only use data observed at or before t; future events must never
+    enter the feature window. ``cutoff`` is compared against ``time_col`` (coerced to UTC datetimes)."""
+    if time_col not in events.columns:
+        raise ValueError(f"causal_cutoff_filter: '{time_col}' not in events")
+    ts = pd.to_datetime(events[time_col], utc=True)
+    cut = pd.Timestamp(cutoff)
+    if cut.tzinfo is None:
+        cut = cut.tz_localize("UTC")
+    return events[ts <= cut].reset_index(drop=True)
 
 
 def _window_features(window: pd.DataFrame) -> dict[str, float]:

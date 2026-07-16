@@ -471,9 +471,22 @@ def _ensure_both_label_classes(
 # Public API
 # ---------------------------------------------------------------------------
 
+class ScientificValidityError(RuntimeError):
+    """Raised when a reportable run would require fabricating data to proceed.
+
+    Synthesizing subjects (duplicating rows under fake ids) or flipping labels to manufacture a
+    second class makes an evaluation scientifically invalid (spec §12). In the default scientific
+    mode `derive_task_labels` refuses rather than silently fabricating; the fabrication helpers are
+    reachable only via ``allow_synthetic=True``, for smoke/demo fixtures that never feed a reported
+    number.
+    """
+
+
 def derive_task_labels(
     windows_or_events: pd.DataFrame,
     task_name: str,
+    *,
+    allow_synthetic: bool = False,
 ) -> pd.DataFrame:
     """Derive task-specific labels for a windows or events DataFrame.
 
@@ -486,6 +499,11 @@ def derive_task_labels(
         Detection is by presence of 'modality' column.
     task_name:
         One of the keys in CLINICAL_TASKS.
+    allow_synthetic:
+        Default ``False`` (scientific/production mode): if the derived labels have fewer than four
+        subjects or only one class, raise :class:`ScientificValidityError` instead of fabricating.
+        ``True`` (smoke/demo only): duplicate subjects / flip labels to force a trainable fixture —
+        never for a reported number.
 
     Returns
     -------
@@ -506,10 +524,23 @@ def derive_task_labels(
     deriver = _LABEL_DERIVERS[task_name]
     labeled = deriver(windows, task)
 
-    # Guarantee robustness: enough subjects and both classes
-    labeled = _ensure_enough_subjects(labeled, min_subjects=4)
-    labeled = _ensure_both_label_classes(labeled, task.positive_label, task.negative_label)
+    if allow_synthetic:
+        # smoke/demo path only — fabricate a trainable fixture (never a reported number)
+        labeled = _ensure_enough_subjects(labeled, min_subjects=4)
+        labeled = _ensure_both_label_classes(labeled, task.positive_label, task.negative_label)
+        return labeled.reset_index(drop=True)
 
+    # scientific/production path — refuse to fabricate; report the honest shortfall
+    n_subjects = labeled["subject_id"].nunique() if "subject_id" in labeled.columns else 0
+    if n_subjects < 4:
+        raise ScientificValidityError(
+            f"{task_name}: only {n_subjects} subject(s) after labeling — a reportable run needs >=4. "
+            f"Refusing to synthesize subjects. Pass allow_synthetic=True only for a smoke fixture.")
+    classes = set(labeled["target"].dropna().unique()) if "target" in labeled.columns else set()
+    if len(classes) < 2:
+        raise ScientificValidityError(
+            f"{task_name}: labels collapsed to a single class {classes} — refusing to flip labels to "
+            f"manufacture a second class. Pass allow_synthetic=True only for a smoke fixture.")
     return labeled.reset_index(drop=True)
 
 

@@ -95,7 +95,9 @@ def main() -> None:
     results = []
     for task in tasks_table["name"]:
         try:
-            frame = derive_task_labels(events, task)
+            # smoke/demo run on synthetic fixtures — allow the fabrication helpers (never a
+            # reported number); scientific runs use the default allow_synthetic=False gate.
+            frame = derive_task_labels(events, task, allow_synthetic=True)
             trained = train_clinical_task(frame, task)
             m = trained.metrics
             results.append((task, m.get("accuracy"), m.get("auroc"), m.get("f1")))
