@@ -68,6 +68,17 @@ CREATE TABLE IF NOT EXISTS events (
     UNIQUE(tenant_id, event_id)
 );
 CREATE INDEX IF NOT EXISTS idx_events_scope ON events(tenant_id, patient_id, observed_at_utc);
+CREATE TABLE IF NOT EXISTS alerts (
+    tenant_id TEXT NOT NULL,
+    alert_id TEXT NOT NULL,
+    patient_id TEXT NOT NULL,
+    prediction_id TEXT,
+    state TEXT NOT NULL,
+    action_id TEXT,
+    requires_clinician_review INTEGER DEFAULT 0,
+    history TEXT NOT NULL,
+    PRIMARY KEY (tenant_id, alert_id)
+);
 """
 
 
@@ -289,16 +300,81 @@ class LocalEventStore:
         return [json.loads(r["payload"]) for r in rows]
 
 
+#: allowed alert states and the transition each op produces. ``escalate`` is never blocked (raising a
+#: concern must always be possible) and pins ``requires_clinician_review``.
+_ALERT_OPS = {"acknowledge": "acknowledged", "dismiss": "dismissed", "escalate": "escalated"}
+
+
+class LocalAlertStore:
+    """Alert lifecycle state, TENANT+PATIENT scoped. An alert is keyed by its prediction_id and is
+    created lazily (``open``) from a persisted prediction; ``transition`` records ack/dismiss/escalate
+    with an append-only history so every state change is auditable. Escalation pins
+    ``requires_clinician_review`` and can never be blocked."""
+
+    def __init__(self, conn: sqlite3.Connection):
+        self._c = conn
+
+    def _row(self, alert_id: str, tenant_id: str) -> Optional[Dict[str, Any]]:
+        r = self._c.execute(
+            "SELECT tenant_id, alert_id, patient_id, prediction_id, state, action_id, "
+            "requires_clinician_review, history FROM alerts WHERE tenant_id=? AND alert_id=?",
+            (str(tenant_id), str(alert_id))).fetchone()
+        if not r:
+            return None
+        return {"tenant_id": r["tenant_id"], "alert_id": r["alert_id"], "patient_id": r["patient_id"],
+                "prediction_id": r["prediction_id"], "state": r["state"], "action_id": r["action_id"],
+                "requires_clinician_review": bool(r["requires_clinician_review"]),
+                "history": json.loads(r["history"])}
+
+    def ensure(self, *, alert_id: str, tenant_id: str, patient_id: str, prediction_id: str,
+               action_id: str = "", requires_clinician_review: bool = False) -> Dict[str, Any]:
+        """Return the existing alert, or create a fresh ``open`` one from a prediction (idempotent)."""
+        existing = self._row(alert_id, tenant_id)
+        if existing is not None:
+            return existing
+        self._c.execute(
+            "INSERT OR IGNORE INTO alerts(tenant_id, alert_id, patient_id, prediction_id, state, "
+            "action_id, requires_clinician_review, history) VALUES (?,?,?,?,?,?,?,?)",
+            (str(tenant_id), str(alert_id), str(patient_id), str(prediction_id), "open",
+             str(action_id), 1 if requires_clinician_review else 0, json.dumps([])))
+        self._c.commit()
+        return self._row(alert_id, tenant_id)
+
+    def get(self, alert_id: str, *, tenant_id: str) -> Optional[Dict[str, Any]]:
+        return self._row(alert_id, tenant_id)
+
+    def transition(self, alert_id: str, *, tenant_id: str, op: str, actor_id: str,
+                   note: str = "") -> Optional[Dict[str, Any]]:
+        """Apply an ack/dismiss/escalate op, appending to history. Returns None if the alert is absent
+        (tenant-scoped). Raises ValueError on an unknown op."""
+        if op not in _ALERT_OPS:
+            raise ValueError(f"unknown alert op {op!r}; expected one of {sorted(_ALERT_OPS)}")
+        cur = self._row(alert_id, tenant_id)
+        if cur is None:
+            return None
+        to_state = _ALERT_OPS[op]
+        history = cur["history"] + [{"op": op, "from_state": cur["state"], "to_state": to_state,
+                                     "actor_id": actor_id, "note": note}]
+        rcr = cur["requires_clinician_review"] or (op == "escalate")
+        self._c.execute(
+            "UPDATE alerts SET state=?, requires_clinician_review=?, history=? "
+            "WHERE tenant_id=? AND alert_id=?",
+            (to_state, 1 if rcr else 0, json.dumps(history), str(tenant_id), str(alert_id)))
+        self._c.commit()
+        return self._row(alert_id, tenant_id)
+
+
 class LocalStores(tuple):
     """Backward-compatible: unpacks as the historical 4-tuple (predictions, audit, consent, models) but
     also exposes ``.events`` (and named fields) for callers that want the full stack."""
-    def __new__(cls, predictions, audit, consent, models, events):
+    def __new__(cls, predictions, audit, consent, models, events, alerts=None):
         self = super().__new__(cls, (predictions, audit, consent, models))
         self.predictions = predictions
         self.audit = audit
         self.consent = consent
         self.models = models
         self.events = events
+        self.alerts = alerts
         return self
 
 
@@ -310,4 +386,5 @@ def open_local_stores(path: str = ":memory:") -> "LocalStores":
     ``.events`` (a :class:`LocalEventStore` on the same connection) and named attributes."""
     conn = _connect(path)
     return LocalStores(LocalPredictionStore(conn), LocalAuditStore(conn),
-                       LocalConsentStore(conn), LocalModelRegistry(conn), LocalEventStore(conn))
+                       LocalConsentStore(conn), LocalModelRegistry(conn), LocalEventStore(conn),
+                       LocalAlertStore(conn))

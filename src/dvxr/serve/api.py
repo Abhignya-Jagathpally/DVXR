@@ -51,6 +51,7 @@ def create_app(screener_root: str | Path = _SCREENER_ROOT,
     _stores = open_local_stores(db_path)
     pred_store, audit_store, consent_store, model_registry = _stores
     event_store = _stores.events
+    alert_store = _stores.alerts
 
     def _get_screener(task: str):
         """Load a COMMITTED screener. Generate/serving never trains during a request (spec §2): a
@@ -202,11 +203,72 @@ def create_app(screener_root: str | Path = _SCREENER_ROOT,
         out["disclaimer"] = DISCLAIMER
         return JSONResponse(out)
 
+    def _alert_for(request, action):
+        """Resolve (principal, alert) for an alert op: authenticate, load the prediction the alert is
+        keyed on (TENANT-SCOPED → 404 hides other tenants), authorize the action against the patient, and
+        lazily materialize the alert. Returns (principal, alert_dict) or a JSONResponse error."""
+        from dvxr.serve.auth import AuthError, AuthorizationError, authorize
+        try:
+            principal = _principal(request)
+        except AuthError as e:
+            return JSONResponse({"error": str(e)}, status_code=401)
+        if alert_store is None:
+            return JSONResponse({"error": "alert store unavailable"}, status_code=503)
+        aid = request.path_params["alert_id"]                    # alert_id == the prediction_id
+        rec = pred_store.get(aid, tenant_id=principal.tenant_id)
+        if rec is None:
+            return JSONResponse({"error": f"unknown alert {aid!r}"}, status_code=404)
+        try:
+            authorize(principal, str(rec.get("patient_id")), action,
+                      record_tenant=rec.get("tenant_id"))
+        except AuthorizationError as e:
+            return JSONResponse({"error": str(e)}, status_code=403)
+        action_dec = (rec.get("action") or {})
+        alert = alert_store.ensure(
+            alert_id=aid, tenant_id=principal.tenant_id, patient_id=str(rec.get("patient_id")),
+            prediction_id=aid, action_id=action_dec.get("action_id", ""),
+            requires_clinician_review=bool(action_dec.get("requires_clinician_review", False)))
+        return principal, alert
+
+    async def get_alert(request):
+        res = _alert_for(request, "read_alert")
+        if isinstance(res, JSONResponse):
+            return res
+        _principal_obj, alert = res
+        return JSONResponse({"alert": alert, "disclaimer": DISCLAIMER})
+
+    def _alert_op(op, action):
+        async def handler(request):
+            res = _alert_for(request, action)
+            if isinstance(res, JSONResponse):
+                return res
+            principal, alert = res
+            body = {}
+            try:
+                body = await request.json()
+            except Exception:  # noqa: BLE001 — a body is optional for an alert op
+                body = {}
+            updated = alert_store.transition(alert["alert_id"], tenant_id=principal.tenant_id, op=op,
+                                             actor_id=principal.actor_id, note=str(body.get("note", "")))
+            audit_store.append({"tenant_id": principal.tenant_id, "request_id": alert["alert_id"],
+                                "event": f"alert.{op}", "actor_id": principal.actor_id,
+                                "prediction_id": alert["alert_id"], "state": updated["state"]})
+            return JSONResponse({"alert": updated, "disclaimer": DISCLAIMER})
+        return handler
+
+    acknowledge_alert = _alert_op("acknowledge", "acknowledge_alert")
+    dismiss_alert = _alert_op("dismiss", "dismiss_alert")
+    escalate_alert = _alert_op("escalate", "escalate_alert")
+
     # the Sentinel PRODUCT surface — only these routes are part of the product contract (Gate D §23)
     product_routes = [
         Route("/health", health),
         Route("/v1/risk-reports", risk_reports, methods=["POST"]),
         Route("/v1/predictions/{prediction_id}", get_risk_report),
+        Route("/v1/alerts/{alert_id}", get_alert),
+        Route("/v1/alerts/{alert_id}/acknowledge", acknowledge_alert, methods=["POST"]),
+        Route("/v1/alerts/{alert_id}/dismiss", dismiss_alert, methods=["POST"]),
+        Route("/v1/alerts/{alert_id}/escalate", escalate_alert, methods=["POST"]),
     ]
     if product_only:
         return Starlette(routes=product_routes)
@@ -220,6 +282,10 @@ def create_app(screener_root: str | Path = _SCREENER_ROOT,
         Route("/triage/{task}", triage),
         Route("/v1/risk-reports", risk_reports, methods=["POST"]),
         Route("/v1/predictions/{prediction_id}", get_risk_report),
+        Route("/v1/alerts/{alert_id}", get_alert),
+        Route("/v1/alerts/{alert_id}/acknowledge", acknowledge_alert, methods=["POST"]),
+        Route("/v1/alerts/{alert_id}/dismiss", dismiss_alert, methods=["POST"]),
+        Route("/v1/alerts/{alert_id}/escalate", escalate_alert, methods=["POST"]),
     ])
 
 

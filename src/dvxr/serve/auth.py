@@ -35,10 +35,15 @@ class Role(str, Enum):
 #: requested action against this matrix, so a role can never perform an operation outside its grant —
 #: patient SCOPE (which patients) is enforced separately by ``Principal.may_access``.
 ROLE_ACTIONS: Dict[Role, FrozenSet[str]] = {
-    Role.RESEARCHER: frozenset({"generate_risk_report", "read_prediction"}),
-    Role.CLINICIAN: frozenset({"generate_risk_report", "read_prediction"}),
-    Role.PARTICIPANT: frozenset({"read_prediction"}),          # participants view, do not generate
-    Role.ADMIN: frozenset({"generate_risk_report", "read_prediction"}),
+    # alert ops: everyone may read + escalate (raising a concern is never blocked); acknowledge is for
+    # researchers/clinicians/admins; dismiss is a clinical judgement (clinician/admin only).
+    Role.RESEARCHER: frozenset({"generate_risk_report", "read_prediction",
+                                "read_alert", "acknowledge_alert", "escalate_alert"}),
+    Role.CLINICIAN: frozenset({"generate_risk_report", "read_prediction",
+                               "read_alert", "acknowledge_alert", "dismiss_alert", "escalate_alert"}),
+    Role.PARTICIPANT: frozenset({"read_prediction", "read_alert", "escalate_alert"}),  # view + escalate
+    Role.ADMIN: frozenset({"generate_risk_report", "read_prediction",
+                           "read_alert", "acknowledge_alert", "dismiss_alert", "escalate_alert"}),
 }
 
 
