@@ -16,16 +16,16 @@ from __future__ import annotations
 
 from typing import Optional
 
-from dvxr.contracts import ActionDecision, GenerateRequest, RiskPrediction
-from dvxr.serve.vision import ABSTAIN_ACTION_ID, glucose_risk_report
+from dvxr.contracts import GenerateRequest, RiskPrediction
+from dvxr.llm.grounded import grounded_explanation
+from dvxr.safety.policy import select_action
+from dvxr.serve.vision import glucose_risk_report
 
 #: user role -> the consent purpose it exercises (spec §2 step 2).
 _ROLE_PURPOSE = {"researcher": "research", "clinician": "clinical", "participant": "participant"}
 
 MODEL_VERSION = "neuroglycemic-sentinel/research-stage"
 FEATURE_VERSION = "features-2.0.0"
-POLICY_ID = "DVXR-PILOT-ACTION-V1"
-POLICY_VERSION = "1.0"
 
 
 class ConsentError(PermissionError):
@@ -51,15 +51,11 @@ def _abstaining_prediction(req: GenerateRequest) -> RiskPrediction:
     ).with_prediction_id()
 
 
-def _action_for(prediction: RiskPrediction) -> ActionDecision:
-    """Protocol-controlled next action (spec §14). Abstention ⇒ INSUFFICIENT_DATA; a real prediction
-    path (PR7 policy engine) will map risk×confidence×quality to a versioned action id."""
-    if prediction.abstained:
-        return ActionDecision(action_id=ABSTAIN_ACTION_ID, policy_id=POLICY_ID,
-                              policy_version=POLICY_VERSION,
-                              reason_codes=["no_synchronized_cohort", "fusion_claim_not_permitted"])
-    return ActionDecision(action_id="CONTINUE_MONITORING", policy_id=POLICY_ID,
-                          policy_version=POLICY_VERSION, reason_codes=["research_stage"])
+def _action_for(prediction: RiskPrediction, role: str):
+    """Protocol-controlled next action from the versioned policy engine (spec §14)."""
+    return select_action(abstained=prediction.abstained, risk_category=prediction.risk_category,
+                         confidence=prediction.confidence, data_quality=prediction.data_quality,
+                         role=role)
 
 
 def generate_risk_report(
@@ -100,7 +96,9 @@ def generate_risk_report(
 
     # produce the prediction — NEVER trains; the research-stage glucose product abstains
     prediction = _abstaining_prediction(req)
-    action = _action_for(prediction)
+    action = _action_for(prediction, req.user_role)
+    explanation = grounded_explanation(prediction.to_dict(), evidence=None, action=action.to_dict(),
+                                       sources=[])
     pid = prediction_store.put(prediction.to_dict(), idempotency_key=req.idempotency_key)
     audit_store.append({"request_id": req.request_id, "event": "generate.completed",
                         "prediction_id": pid, "abstained": prediction.abstained,
@@ -111,6 +109,7 @@ def generate_risk_report(
         "status": "abstained" if prediction.abstained else "completed",
         "prediction": prediction.to_dict(),
         "action": action.to_dict(),
+        "explanation": explanation,
         "model_version": prediction.model_version,
         "feature_version": prediction.feature_version,
         "reused": False,
