@@ -28,7 +28,6 @@
       <button class="nav-link active" data-view="overview" type="button">Overview</button>
       <button class="nav-link" data-view="review" type="button">New review</button>
       <button class="nav-link" data-view="evidence" type="button">Evidence</button>
-      <button class="nav-link" data-view="record" type="button">Invention record</button>
     </nav>
 
     <div class="masthead-actions">
@@ -138,15 +137,6 @@
         </div>
       </section>
 
-      <section class="guardrail-section">
-        <div class="guardrail-mark" aria-hidden="true">S</div>
-        <div>
-          <p class="kicker">THE DEFINING SAFETY PROPERTY</p>
-          <h2>An abstention is a valid product result.</h2>
-          <p>When synchronized evidence, registered artifacts, consent, or signal quality do not satisfy the model contract, Sentinel issues no risk estimate. It explains why and identifies what must be resolved.</p>
-        </div>
-        <button class="text-button" data-go="evidence" type="button">Inspect the evidence contract <span>→</span></button>
-      </section>
     </section>
 
     <section class="view" data-view-panel="review" id="review-workspace">
@@ -162,7 +152,7 @@
             <label class="field">
               <span>Participant identifier</span>
               <input id="patientId" name="patient_id" value="PSEUDO-DEMO" autocomplete="off" spellcheck="false" required />
-              <small>Pseudonymous identifiers only</small>
+              <small>Pseudonymous identifiers only. In demo mode any label loads an illustrative report. A connected engine returns a traceable review only for a participant seeded with consent + CGM events — e.g. <code>CGM-DEMO-01</code> from <code>scripts/seed_demo_participant.py</code>.</small>
             </label>
 
             <label class="field">
@@ -365,56 +355,9 @@
           </div>
         </section>
 
-        <section class="failure-register">
-          <div class="section-heading"><p class="kicker">DESIGNED FAILURE STATES</p><h2>The system fails visibly.</h2></div>
-          <div class="failure-grid">
-            <article><b>Signal quality failure</b><p>Reject the affected window, disclose the modality, and reduce confidence or abstain.</p></article>
-            <article><b>Temporal misalignment</b><p>Stop fusion when clocks cannot be reconciled at the causal cutoff.</p></article>
-            <article><b>Artifact unavailable</b><p>Issue no model result until the approved artifact and calibration are registered.</p></article>
-            <article><b>Unsupported narrative</b><p>Block the response when a number, diagnosis, or action lacks a verified source.</p></article>
-            <article><b>Population shift</b><p>Flag out-of-distribution inputs and route the review for validation.</p></article>
-            <article><b>Authorization failure</b><p>Return no patient data and preserve an access audit event.</p></article>
-          </div>
-        </section>
       </div>
     </section>
 
-    <section class="view" data-view-panel="record">
-      <div class="record-shell">
-        <div class="record-hero">
-          <div>
-            <p class="kicker">INVENTION RECORD · RESEARCH PROTOTYPE</p>
-            <h1>A defensible product boundary, not a generic AI dashboard.</h1>
-            <p>This record describes the concrete system concept embodied by the interface. It does not assert a granted or pending patent and should be reviewed with institutional technology transfer and qualified counsel before public disclosure.</p>
-          </div>
-          <div class="record-seal" aria-hidden="true"><span>PRP</span><b>NGS</b><small>2026</small></div>
-        </div>
-
-        <div class="claim-grid">
-          <article class="claim-primary">
-            <p class="kicker">CORE SYSTEM CONCEPT</p>
-            <h2>Confidence-aware multimodal forecasting with explicit abstention and policy-constrained action.</h2>
-            <p>A system that synchronizes neural, autonomic, glycemic, and clinical evidence at a causal cutoff; calculates a calibrated near-term risk or abstains; produces source-bound explanation; and records a versioned next action.</p>
-          </article>
-          <article><span>01</span><h3>Quality-conditioned fusion</h3><p>Modality contribution depends on availability, freshness, signal quality, and patient-specific reliability.</p></article>
-          <article><span>02</span><h3>Abstention as output</h3><p>Failure to satisfy data, artifact, consent, or distribution gates produces an attributable non-prediction.</p></article>
-          <article><span>03</span><h3>Prediction–language separation</h3><p>The generated narrative receives an immutable prediction object and cannot alter the numerical result.</p></article>
-          <article><span>04</span><h3>Policy-bound action</h3><p>The next action is selected by an approved versioned policy and separately explained by the language layer.</p></article>
-          <article><span>05</span><h3>Longitudinal personalization</h3><p>Physiological interpretation is anchored to participant-specific baselines without crossing patient namespaces.</p></article>
-          <article><span>06</span><h3>End-to-end provenance</h3><p>Request, snapshot, feature, model, calibration, evidence, policy, and response identifiers remain linked.</p></article>
-        </div>
-
-        <section class="record-notes">
-          <div><p class="kicker">BEFORE DISCLOSURE</p><h2>Recommended protection workflow</h2></div>
-          <ol>
-            <li><span>1</span><p><b>Document conception.</b> Preserve dated diagrams, model contracts, commits, experiments, and contributor roles.</p></li>
-            <li><span>2</span><p><b>Run a prior-art review.</b> Search claims around multimodal glucose forecasting, stress-conditioned prediction, abstaining clinical AI, and policy-controlled decision support.</p></li>
-            <li><span>3</span><p><b>Define the inventive delta.</b> Distinguish the synchronized evidence contract and operational control loop from ordinary dashboards or generic RAG.</p></li>
-            <li><span>4</span><p><b>Engage your technology-transfer office.</b> Submit an invention disclosure before conference, repository, demo, or product publication when appropriate.</p></li>
-          </ol>
-        </section>
-      </div>
-    </section>
   </main>
 
   <footer class="site-footer">

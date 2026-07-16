@@ -383,6 +383,175 @@ nav .cta:hover{box-shadow:0 0 20px -6px var(--accent)}
 .thesis{border-left-color:var(--accent)}
 ::selection{background:var(--accent);color:#04110e}
 
+
+/* ============ RESEARCH SIMULATOR ============ */
+#experience .sim-head{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.sim-badge{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--metabolic);
+  border:1px solid color-mix(in oklab,var(--metabolic) 45%,transparent);background:color-mix(in oklab,var(--metabolic) 10%,transparent);
+  padding:7px 12px;border-radius:999px;display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+.sim-badge::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--metabolic);box-shadow:0 0 8px var(--metabolic)}
+.sim-modetabs{display:flex;gap:6px;flex-wrap:wrap;margin:26px 0 20px}
+.modetab{font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--gray);
+  background:var(--panel);border:1px solid var(--line);border-radius:3px;padding:11px 16px;cursor:pointer;transition:.2s}
+.modetab:hover{color:var(--white);border-color:var(--line-2)}
+.modetab[aria-selected="true"]{color:var(--accent);border-color:var(--accent);box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--accent) 30%,transparent)}
+
+/* console */
+.sim-console{display:grid;grid-template-columns:1.15fr .9fr .95fr;gap:14px;align-items:start}
+@media (max-width:1080px){.sim-console{grid-template-columns:1fr 1fr}.sim-center{order:3;grid-column:span 2}}
+@media (max-width:720px){.sim-console{grid-template-columns:1fr}.sim-center{grid-column:auto}}
+.sim-col{border:1px solid var(--line);border-radius:8px;background:linear-gradient(180deg,var(--panel),var(--ground-2));overflow:hidden}
+.sim-col-h{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);padding:14px 16px;border-bottom:1px solid var(--line)}
+
+/* input groups */
+.ig{border-bottom:1px solid var(--line)}
+.ig:last-child{border-bottom:0}
+.ig>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:13px 16px;font-weight:600;font-size:14px;user-select:none}
+.ig>summary::-webkit-details-marker{display:none}
+.ig-dot{width:8px;height:8px;border-radius:50%;background:var(--m);box-shadow:0 0 8px var(--m);flex:none}
+.ig-name{flex:1}
+.ig-state{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+.ig-state.full{color:var(--accent)}.ig-state.partial{color:var(--metabolic)}.ig-state.none{color:var(--faint)}
+.ig-caret{color:var(--faint);transition:transform .2s;font-size:11px}
+.ig[open] .ig-caret{transform:rotate(180deg)}
+.ig-body{padding:4px 16px 16px}
+.fld{padding:11px 0;border-top:1px solid var(--line-soft)}
+.fld:first-child{border-top:0}
+.fld.is-missing{opacity:.5}
+.fld-top{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.fld-l{font-size:13px;color:var(--white)}
+.fld-l i{font-family:var(--mono);font-style:normal;font-size:10.5px;color:var(--faint);letter-spacing:.03em}
+.miss{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);display:inline-flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap}
+.miss input{accent-color:var(--metabolic)}
+.fld-ctl{display:flex;align-items:center;gap:9px;margin-top:8px}
+.fld input[type=range]{flex:1;-webkit-appearance:none;appearance:none;height:3px;border-radius:3px;background:var(--line-2);cursor:pointer}
+.fld input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);border:2px solid var(--ground);cursor:pointer;box-shadow:0 0 8px -1px var(--accent)}
+.fld input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--accent);border:2px solid var(--ground);cursor:pointer}
+.fld input[type=range]:disabled{opacity:.4;cursor:not-allowed}
+.fld-num{width:74px;font-family:var(--mono);font-size:12px;background:var(--ground);color:var(--white);border:1px solid var(--line-2);border-radius:3px;padding:6px 8px;text-align:right}
+.fld-num:focus{border-color:var(--accent);outline:none}
+.fld-reset{background:none;border:1px solid var(--line);color:var(--faint);border-radius:3px;width:28px;height:28px;cursor:pointer;font-size:12px;transition:.2s;flex:none}
+.fld-reset:hover{color:var(--accent);border-color:var(--accent)}
+.fld-h{font-size:11px;color:var(--faint);margin-top:6px;line-height:1.4}
+
+/* center human */
+.sim-center{border:1px solid var(--line);border-radius:8px;background:radial-gradient(120% 90% at 50% 10%,#0e1220,var(--ground-2));display:flex;flex-direction:column;min-height:320px}
+#simHuman{flex:1;width:100%;display:block;min-height:300px}
+.sim-center-cap{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);text-align:center;padding:10px;border-top:1px solid var(--line)}
+
+/* readiness + selector + cta */
+.sim-right{display:flex;flex-direction:column;gap:14px}
+.sim-right .sim-col{padding-bottom:6px}
+.rrow{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-top:1px solid var(--line-soft);font-size:13px}
+.rrow:first-of-type{border-top:0}
+.rrow .rst{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;display:inline-flex;align-items:center;gap:7px}
+.rrow .rst::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--faint)}
+.rrow[data-level="available"] .rst{color:var(--accent)}.rrow[data-level="available"] .rst::before{background:var(--accent);box-shadow:0 0 7px var(--accent)}
+.rrow[data-level="partial"] .rst{color:var(--metabolic)}.rrow[data-level="partial"] .rst::before{background:var(--metabolic)}
+.rrow[data-level="none"] .rst{color:var(--faint)}
+.selector-wrap{padding:14px 16px}
+.selector-wrap label{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);display:block;margin-bottom:8px}
+#outcomeSelect{width:100%;font-family:var(--sans);font-size:14px;background:var(--ground);color:var(--white);border:1px solid var(--line-2);border-radius:4px;padding:11px 12px;cursor:pointer}
+#outcomeSelect:focus{border-color:var(--accent);outline:none}
+.gen-wrap{padding:0 16px 16px;display:flex;flex-direction:column;gap:10px}
+#genBtn{width:100%;justify-content:center;font-size:14px;padding:16px}
+.gen-sub{display:flex;justify-content:space-between;align-items:center}
+#resetAll{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);background:none;border:0;cursor:pointer}
+#resetAll:hover{color:var(--accent)}
+.gen-note{font-family:var(--mono);font-size:10px;color:var(--faint);letter-spacing:.03em}
+
+/* upload / sample panels */
+.sim-panel{margin-top:8px}
+.upload-drop{border:1px dashed var(--line-2);border-radius:8px;padding:34px 20px;text-align:center;background:var(--panel)}
+.upload-drop input[type=file]{display:block;margin:14px auto 0;color:var(--gray);font-family:var(--mono);font-size:12px}
+.upload-drop h4{margin:0 0 6px;font-size:16px}
+.upload-drop p{color:var(--gray);font-size:13px;margin:0}
+.upload-types{font-family:var(--mono);font-size:11px;color:var(--faint);margin-top:12px;letter-spacing:.05em}
+#uploadMeta{margin-top:14px;border:1px solid var(--line);border-radius:8px;background:var(--panel);padding:14px 16px}
+.um-row{display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--line-soft)}
+.um-row b{font-family:var(--mono);font-size:12px;color:var(--white)}
+.um-note{font-size:11px;color:var(--faint);margin-top:10px;line-height:1.5}
+.samplegrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media (max-width:760px){.samplegrid{grid-template-columns:1fr}}
+.samplecard{border:1px solid var(--line);border-radius:8px;background:var(--panel);padding:20px;cursor:pointer;transition:.2s;text-align:left}
+.samplecard:hover,.samplecard:focus-visible{border-color:var(--accent);transform:translateY(-3px)}
+.samplecard .sc-tag{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--metabolic);border:1px solid color-mix(in oklab,var(--metabolic) 40%,transparent);border-radius:999px;padding:3px 8px;display:inline-block;margin-bottom:12px}
+.samplecard h4{margin:0 0 6px;font-size:16px;line-height:1.15}
+.samplecard p{margin:0;font-size:12.5px;color:var(--gray)}
+
+/* progress */
+.sim-progress{border:1px solid var(--line);border-radius:8px;background:var(--panel);padding:28px;margin-top:20px}
+.sim-progress .sp-k{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin-bottom:16px}
+#simProgList{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+#simProgList li{display:flex;align-items:center;gap:12px;font-size:14px;color:var(--faint);transition:.3s}
+#simProgList li span{font-family:var(--mono);font-size:11px;width:26px}
+#simProgList li.active{color:var(--white)}
+#simProgList li.active span{color:var(--accent)}
+#simProgList li.done{color:var(--gray)}
+#simProgList li.done span{color:var(--accent)}
+#simProgList li.done span::after{content:" ✓"}
+
+/* results */
+.sim-results{margin-top:24px;border-top:1px solid var(--line);padding-top:30px}
+.res-flag{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--metabolic);
+  border:1px solid color-mix(in oklab,var(--metabolic) 40%,transparent);background:color-mix(in oklab,var(--metabolic) 8%,transparent);
+  border-radius:6px;padding:10px 14px;text-align:center;margin-bottom:24px}
+.res-primary{margin-bottom:24px}
+.res-kicker{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:18px}
+.res-dialwrap{display:flex;gap:34px;align-items:center;flex-wrap:wrap}
+.res-dial{--p:50;width:180px;height:180px;border-radius:50%;flex:none;
+  background:radial-gradient(closest-side,var(--ground) 70%,transparent 71%),conic-gradient(var(--accent) calc(var(--p)*1%),var(--line) 0);
+  display:grid;place-items:center;position:relative}
+.res-dial-in{text-align:center}
+.res-dial-in b{font-family:var(--display);font-size:48px;line-height:1;color:var(--white)}
+.res-dial-in b i{font-size:20px;font-style:normal;color:var(--gray)}
+.res-dial-in small{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin-top:6px;max-width:120px}
+.res-primary-meta{flex:1;min-width:260px}
+.res-band{font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;display:inline-block;padding:6px 12px;border-radius:3px;border:1px solid var(--accent);color:var(--accent);margin-bottom:14px}
+.res-band.high,.res-band.elevated{color:var(--metabolic);border-color:var(--metabolic)}
+.res-conf{display:flex;align-items:center;gap:12px;margin-bottom:14px;font-family:var(--mono);font-size:12px;color:var(--gray)}
+.res-conf .ctrack{flex:1;max-width:220px;height:4px;background:var(--line);border-radius:3px;overflow:hidden}
+.res-conf .ctrack>i{display:block;height:100%;background:var(--accent)}
+.res-say{font-size:15px;color:var(--gray);max-width:52ch;line-height:1.5}
+.res-abstain{max-width:60ch}
+.ab-chip{font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--metabolic);border:1px solid var(--metabolic);border-radius:3px;padding:7px 12px;display:inline-block;margin-bottom:14px}
+.res-abstain h3{margin:0 0 10px;font-size:22px}
+.res-abstain p{color:var(--gray);margin:0}
+
+.res-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:14px;margin-bottom:14px}
+@media (max-width:860px){.res-grid{grid-template-columns:1fr}}
+.res-card{border:1px solid var(--line);border-radius:8px;background:var(--panel);padding:20px}
+.res-h{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin-bottom:16px}
+#constCanvas{width:100%;height:300px;display:block}
+.const-note,.contrib-note{font-size:11px;color:var(--faint);margin-top:12px;line-height:1.5}
+.waterfall{display:flex;flex-direction:column;gap:8px}
+.wf-row{display:grid;grid-template-columns:1fr 90px 52px;align-items:center;gap:10px;font-size:12.5px}
+.wf-f{color:var(--white)}
+.wf-bar{position:relative;height:8px;background:var(--line);border-radius:2px}
+.wf-bar::before{content:"";position:absolute;left:50%;top:-2px;bottom:-2px;width:1px;background:var(--line-2)}
+.wf-bar i{position:absolute;top:0;height:100%;border-radius:2px}
+.wf-bar i.pos{background:var(--accent)}.wf-bar i.neg{background:var(--physio)}
+.wf-v{font-family:var(--mono);font-size:12px;text-align:right}
+.wf-v.pos{color:var(--accent)}.wf-v.neg{color:var(--physio)}
+.wf-empty{color:var(--faint);font-size:13px}
+.fc-card #fcCanvas{width:100%;height:200px;display:block}
+.fc-reads{display:flex;gap:24px;margin-top:14px}
+.fc-reads>div span{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);display:block}
+.fc-reads>div b{font-family:var(--display);font-size:26px;color:var(--white)}
+.fc-reads>div b i{font-family:var(--mono);font-size:11px;font-style:normal;color:var(--gray)}
+.fc-reads>div small{font-family:var(--mono);font-size:11px;color:var(--metabolic);display:block}
+
+.tcards{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:14px 0}
+@media (max-width:860px){.tcards{grid-template-columns:repeat(2,1fr)}}
+.tcard{border:1px solid var(--line);border-radius:6px;background:var(--panel);padding:14px;display:flex;flex-direction:column;gap:6px}
+.tc-name{font-size:12px;color:var(--gray)}
+.tc-p{font-family:var(--display);font-size:26px;color:var(--white);line-height:1}
+.tc-band{font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.tc-band.b-elevated,.tc-band.b-high{color:var(--metabolic)}
+.tc-ev{font-family:var(--mono);font-size:9px;letter-spacing:.04em;text-transform:uppercase;color:var(--faint);opacity:.65}
+.res-foot{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.res-foot .mono{font-family:var(--mono);font-size:10.5px;color:var(--faint);letter-spacing:.03em}
+.res-actions{margin-top:18px}
 </style>
 
 <div class="progress" id="progress"></div>
@@ -528,84 +697,95 @@ nav .cta:hover{box-shadow:0 0 20px -6px var(--accent)}
   </div>
 </section>
 
-<!-- ============ INTERACTIVE EXPERIENCE ============ -->
+<!-- ============ RESEARCH SIMULATOR ============ -->
 <section id="experience" class="pad-y">
   <div class="wrap">
-    <div class="kicker reveal"><span class="eyebrow">The interactive experience</span></div>
-    <h2 class="display chapter-h reveal">From raw signal<br>to research insight.</h2>
-    <div class="tabs reveal" role="tablist" aria-label="Interactive demonstrations">
-      <button class="tab" role="tab" aria-selected="true" data-demo="cgm">01 · Glucose trajectory</button>
-      <button class="tab" role="tab" aria-selected="false" data-demo="stress">02 · Stress intelligence</button>
-      <button class="tab" role="tab" aria-selected="false" data-demo="abstain">03 · Multimodal request</button>
+    <div class="sim-head">
+      <div>
+        <div class="kicker reveal"><span class="eyebrow">The central product experience</span></div>
+        <h2 class="display chapter-h reveal">Run a multimodal<br>research simulation.</h2>
+      </div>
+      <span class="sim-badge reveal">Synthetic demonstration</span>
+    </div>
+    <p class="reveal" style="color:var(--gray);max-width:60ch;margin:18px 0 0;font-size:15px">Enter research profile inputs across four modalities, then generate one profile. The model returns separate estimates for stress, anxiety, depression-related risk, cognitive workload, glucose instability, and a selected diabetes outcome — with the mental-health signals shown as <b style="color:var(--white)">contextual predictors associated with</b> the diabetes estimate, never as its cause.</p>
+
+    <div class="sim-modetabs reveal" id="simModeTabs" role="tablist" aria-label="Input mode">
+      <button class="modetab" role="tab" aria-selected="true" data-mode="manual">Manual values</button>
+      <button class="modetab" role="tab" aria-selected="false" data-mode="upload">Signal upload</button>
+      <button class="modetab" role="tab" aria-selected="false" data-mode="sample">Sample profile</button>
     </div>
 
-    <!-- demo 1: cgm -->
-    <div class="demo active" id="demo-cgm" role="tabpanel">
-      <div class="demobox">
-        <div class="demobar"><span>CGM trajectory · 30-minute horizon</span><span class="demoflag">Demonstration · synthetic sample</span></div>
-        <div class="demobody">
-          <div class="left"><canvas class="cgm-canvas" id="cgmCanvas" aria-label="Animated glucose forecast with expanding uncertainty interval"></canvas></div>
-          <div class="right">
-            <div class="readout"><div class="lab">Projected glucose · +30 min</div><div class="big tnum">126<span class="u"> mg/dL</span></div><div class="sub">Interval 114–139 mg/dL</div></div>
-            <div><div class="lab" style="font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)">Trajectory state</div><div style="margin-top:8px"><span class="state-chip stable">Stable · upward momentum</span></div></div>
-            <div class="interp"><b>Interpretation.</b> The current sequence indicates an upward glucose trend. Forecast uncertainty remains moderate because meal and activity context are unavailable. The language model narrates this evidence; it does not compute the value.</div>
-            <div class="mono" style="font-size:10px;color:var(--faint);letter-spacing:.03em;line-height:1.7">model cgm-conformal · horizon 30m · cutoff t₀ · interval split-conformal 90%<br>real-cohort reference: CGMacros 30-min MAE 10.27 mg/dL · coverage 0.877</div>
+    <!-- MANUAL -->
+    <div id="panel-manual" class="sim-panel reveal">
+      <div class="sim-console">
+        <div class="sim-col">
+          <div class="sim-col-h">Your signal profile</div>
+          <div id="simInputs"></div>
+        </div>
+        <div class="sim-center">
+          <canvas id="simHuman" aria-label="Illustration: neural, cardiovascular, electrodermal, and metabolic signal regions respond as values change"></canvas>
+          <div class="sim-center-cap">Neural · Cardiovascular · Electrodermal · Metabolic</div>
+        </div>
+        <div class="sim-right">
+          <div class="sim-col">
+            <div class="sim-col-h">Signal readiness</div>
+            <div id="simReadiness">
+              <div class="rrow" data-g="neural"><span>Neural</span><span class="rst"></span></div>
+              <div class="rrow" data-g="physiological"><span>Physiological</span><span class="rst"></span></div>
+              <div class="rrow" data-g="metabolic"><span>Metabolic</span><span class="rst"></span></div>
+              <div class="rrow" data-g="clinical"><span>Clinical</span><span class="rst"></span></div>
+              <div class="rrow" data-g="molecular"><span>Molecular</span><span class="rst"></span></div>
+            </div>
+          </div>
+          <div class="sim-col">
+            <div class="selector-wrap">
+              <label for="outcomeSelect">Selected outcome</label>
+              <select id="outcomeSelect">
+                <option value="diabetes_status">Diabetes-related status</option>
+                <option value="glucose_instability">Glucose instability</option>
+                <option value="diabetes_complication">Diabetes complication context</option>
+              </select>
+            </div>
+            <div class="gen-wrap">
+              <button class="btn solid" id="genBtn" type="button">Generate profile <span class="arw">→</span></button>
+              <div class="gen-sub">
+                <button id="resetAll" type="button">Reset all</button>
+                <span class="gen-note">Research prototype · not a diagnosis</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- demo 2: stress -->
-    <div class="demo" id="demo-stress" role="tabpanel">
-      <div class="demobox">
-        <div class="demobar"><span>Stress intelligence · missing-modality handling</span><span class="demoflag">Demonstration · sample signals</span></div>
-        <div class="demobody">
-          <div class="left">
-            <div class="miniwave">
-              <div class="m off"><div class="lab"><span>EEG spectrum</span><span>unavailable</span></div><canvas data-mini="eeg"></canvas></div>
-              <div class="m"><div class="lab"><span>Heart-rate variability</span><span>live</span></div><canvas data-mini="hrv"></canvas></div>
-            </div>
-            <div class="miniwave">
-              <div class="m"><div class="lab"><span>Electrodermal activity</span><span>live</span></div><canvas data-mini="eda"></canvas></div>
-              <div class="m"><div class="lab"><span>Respiration</span><span>live</span></div><canvas data-mini="resp"></canvas></div>
-            </div>
-            <div class="miniwave">
-              <div class="m"><div class="lab"><span>Motion</span><span>live</span></div><canvas data-mini="mot"></canvas></div>
-              <div class="m"><div class="lab"><span>Confidence</span><span>moderate</span></div><canvas data-mini="conf"></canvas></div>
-            </div>
-          </div>
-          <div class="right">
-            <div class="readout"><div class="lab">Physiological stress state</div><div style="margin-top:10px"><span class="state-chip elevated">Elevated</span></div></div>
-            <div class="interp"><b>Evidence.</b> The estimate is primarily supported by reduced HRV and increased electrodermal activity. <b>EEG information is unavailable</b> for this observation window, so no neural contribution is claimed — the analysis path adapts to the signals actually present.</div>
-            <div class="mono" style="font-size:10px;color:var(--faint);letter-spacing:.03em;line-height:1.7">path wearable-only · EEG=absent · attribution: HRV↓, EDA↑<br>real-cohort reference: wearable stress AUROC 0.955 (0.930–0.978)</div>
-          </div>
-        </div>
+    <!-- UPLOAD -->
+    <div id="panel-upload" class="sim-panel reveal" hidden>
+      <div class="upload-drop">
+        <h4>Upload a research signal file</h4>
+        <p>The connected app parses biosignals on the backend and returns an upload reference. This synthetic build reads the header to illustrate the flow.</p>
+        <input id="simFile" type="file" accept=".csv,.json,.edf,.bdf" aria-label="Upload a signal file" />
+        <div class="upload-types">EEG · CSV / EDF / BDF &nbsp;·&nbsp; CGM · CSV &nbsp;·&nbsp; Wearable · CSV / JSON &nbsp;·&nbsp; EHR fixture · CSV / JSON</div>
+      </div>
+      <div id="uploadMeta" hidden></div>
+    </div>
+
+    <!-- SAMPLE -->
+    <div id="panel-sample" class="sim-panel reveal" hidden>
+      <div class="samplegrid" id="simSample">
+        <button class="samplecard" data-sample="low" type="button"><span class="sc-tag">Synthetic demonstration profile</span><h4>Lower metabolic instability</h4><p>Calm autonomic state, stable glucose, well-rested.</p></button>
+        <button class="samplecard" data-sample="stress_stable" type="button"><span class="sc-tag">Synthetic demonstration profile</span><h4>Elevated stress · stable glucose</h4><p>Reduced HRV and raised EDA with glucose still in range.</p></button>
+        <button class="samplecard" data-sample="stress_unstable" type="button"><span class="sc-tag">Synthetic demonstration profile</span><h4>Elevated stress · glucose instability</h4><p>High arousal alongside rising, variable glucose.</p></button>
       </div>
     </div>
 
-    <!-- demo 3: abstain -->
-    <div class="demo" id="demo-abstain" role="tabpanel">
-      <div class="demobox">
-        <div class="demobar"><span>Fused neural–physiological–metabolic request</span><span class="demoflag">Demonstration · honest abstention</span></div>
-        <div class="demobody">
-          <div class="left" style="display:flex;flex-direction:column;justify-content:center;gap:18px">
-            <div><span class="state-chip abstain">Insufficient synchronized evidence</span></div>
-            <p style="font-size:15px;color:var(--gray);max-width:46ch;margin:0">A fused neural–physiological–metabolic estimate was <b style="color:var(--white)">not generated</b> because the required same-subject EEG, wearable, and CGM observations were not available within the selected time window.</p>
-            <p class="mono" style="font-size:11px;color:var(--faint);letter-spacing:.03em;margin:0;line-height:1.7">status: abstained · risk: null (no fabricated probability)<br>reason_codes: [ no_synchronized_cohort, fusion_claim_not_permitted ]</p>
-          </div>
-          <div class="right">
-            <div class="lab" style="font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)">Modality availability</div>
-            <div class="avail">
-              <div class="row on"><span>CGM</span><span class="st">available</span></div>
-              <div class="row on"><span>Heart rate</span><span class="st">available</span></div>
-              <div class="row off"><span>EEG</span><span class="st">missing</span></div>
-              <div class="row off"><span>Clinical context</span><span class="st">missing</span></div>
-            </div>
-            <div class="interp" style="margin-top:2px"><b>Result — single-modality analysis only.</b> Responsible abstention is a feature, not a failure: the system will not invent a fused result it cannot support.</div>
-          </div>
-        </div>
-      </div>
+    <!-- PROGRESS -->
+    <div class="sim-progress" id="simProgress" hidden>
+      <div class="sp-k">Assembling the research profile</div>
+      <ol id="simProgList"></ol>
     </div>
+
+    <!-- RESULTS -->
+    <div class="sim-results" id="simResults" hidden></div>
   </div>
 </section>
 
@@ -975,5 +1155,521 @@ nav .cta:hover{box-shadow:0 0 20px -6px var(--accent)}
     var io=new IntersectionObserver(function(es){if(es[0].isIntersecting){t0=0;requestAnimationFrame(draw);}});io.observe(cv);
     if(RM)requestAnimationFrame(draw);
   })();
+})();
+</script>
+<script>
+/* ============================================================
+   SIGNAL — Multimodal Research Simulator (SYNTHETIC engine)
+   Transparent, deterministic in-page model. Numbers are
+   illustrative demonstration output — never real clinical results.
+   ============================================================ */
+(function(){
+  "use strict";
+  var RM = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var DPR = Math.min(window.devicePixelRatio||1, 2);
+  function cv(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim();}
+  var ACC="#2EE6C6",NEU="#B07CFF",PHY="#FF6584",MET="#FFB44C",CLI="#38C6FF",MOL="#4BE38F",WHT="#F3F5FA",GRY="#9aa3b8";
+  function hexA(h,a){h=h.replace("#","");if(h.length===3)h=h.split("").map(function(x){return x+x}).join("");var n=parseInt(h,16);return"rgba("+((n>>16)&255)+","+((n>>8)&255)+","+(n&255)+","+a+")";}
+  function sig(z){return 1/(1+Math.exp(-z));}
+  function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+  var $=function(s,r){return (r||document).querySelector(s);};
+  var $$=function(s,r){return [].slice.call((r||document).querySelectorAll(s));};
+
+  /* ---------- field spec ---------- */
+  var FIELDS={
+    metabolic:{color:MET,label:"Metabolic",fields:[
+      {k:"current_glucose_mg_dl",l:"Current glucose",u:"mg/dL",min:40,max:400,step:1,d:148,h:"Most recent CGM reading"},
+      {k:"mean_glucose_mg_dl",l:"Mean glucose",u:"mg/dL",min:40,max:300,step:1,d:136,h:"Average over the window"},
+      {k:"glucose_std_mg_dl",l:"Glucose SD",u:"mg/dL",min:0,max:100,step:1,d:31,h:"Dispersion of glucose"},
+      {k:"glucose_cv_percent",l:"Glucose CV",u:"%",min:0,max:60,step:0.1,d:22.8,h:"Coefficient of variation"},
+      {k:"glucose_slope_mg_dl_min",l:"Glucose trend",u:"mg/dL/min",min:-5,max:5,step:0.1,d:1.4,h:"Rate of change"},
+      {k:"time_above_180_percent",l:"Time above 180",u:"%",min:0,max:100,step:1,d:17,h:"Time in hyperglycemia"},
+      {k:"time_below_70_percent",l:"Time below 70",u:"%",min:0,max:50,step:1,d:2,h:"Time in hypoglycemia"},
+      {k:"hba1c_percent",l:"HbA1c",u:"%",min:4,max:14,step:0.1,d:6.2,h:"Glycated hemoglobin"},
+      {k:"fasting_glucose_mg_dl",l:"Fasting glucose",u:"mg/dL",min:50,max:300,step:1,d:118,h:"Fasting plasma glucose"},
+      {k:"bmi",l:"BMI",u:"kg/m²",min:15,max:50,step:0.1,d:28.4,h:"Body-mass index"}
+    ]},
+    physiological:{color:PHY,label:"Physiological",fields:[
+      {k:"heart_rate_bpm",l:"Resting heart rate",u:"bpm",min:40,max:180,step:1,d:83,h:"Beats per minute"},
+      {k:"hrv_rmssd_ms",l:"HRV RMSSD",u:"ms",min:5,max:150,step:1,d:31,h:"Parasympathetic tone (higher = calmer)"},
+      {k:"hrv_sdnn_ms",l:"HRV SDNN",u:"ms",min:5,max:200,step:1,d:42,h:"Overall variability"},
+      {k:"eda_microsiemens",l:"Electrodermal activity",u:"µS",min:0,max:30,step:0.1,d:4.8,h:"Sympathetic arousal"},
+      {k:"respiration_rate_bpm",l:"Respiration rate",u:"breaths/min",min:6,max:40,step:1,d:18,h:"Breathing rate"},
+      {k:"skin_temperature_c",l:"Skin temperature",u:"°C",min:28,max:40,step:0.1,d:33.1,h:"Peripheral temperature"},
+      {k:"activity_index",l:"Activity level",u:"",min:0,max:1,step:0.01,d:0.35,h:"0 rest → 1 active"},
+      {k:"sleep_hours",l:"Sleep duration",u:"h",min:0,max:12,step:0.1,d:6.1,h:"Last night's sleep"}
+    ]},
+    neural:{color:NEU,label:"Neural",fields:[
+      {k:"delta_relative_power",l:"Delta power",u:"rel",min:0,max:1,step:0.01,d:0.21,h:"Relative δ band"},
+      {k:"theta_relative_power",l:"Theta power",u:"rel",min:0,max:1,step:0.01,d:0.24,h:"Relative θ band"},
+      {k:"alpha_relative_power",l:"Alpha power",u:"rel",min:0,max:1,step:0.01,d:0.29,h:"Relative α band"},
+      {k:"beta_relative_power",l:"Beta power",u:"rel",min:0,max:1,step:0.01,d:0.26,h:"Relative β band"},
+      {k:"beta_alpha_ratio",l:"Beta / alpha ratio",u:"",min:0,max:3,step:0.01,d:0.9,h:"Cortical arousal proxy"},
+      {k:"signal_quality",l:"Signal quality",u:"",min:0,max:1,step:0.01,d:0.88,h:"EEG quality (gates confidence)"}
+    ]},
+    clinical:{color:CLI,label:"Clinical",fields:[
+      {k:"age",l:"Age",u:"years",min:18,max:90,step:1,d:39,h:"Participant age"},
+      {k:"medication_count",l:"Medication count",u:"",min:0,max:15,step:1,d:1,h:"Number of active medications"},
+      {k:"known_diabetes",l:"Known diabetes context",u:"0/1",min:0,max:1,step:1,d:0,h:"Prior diabetes indicator",toggle:true}
+    ]}
+  };
+  var GROUP_KEYS=["metabolic","physiological","neural","clinical"];
+  /* which groups a target consumes (EEG only moves neural-accepting targets) */
+  var ACCEPTS={
+    stress:["physiological"], anxiety:["physiological","neural"], depression:["neural"],
+    cognitive_workload:["neural"], glucose_instability:["metabolic"]
+  };
+  var EVIDENCE={
+    stress:"component-model", anxiety:"experimental", depression:"component-model",
+    cognitive_workload:"component-model", glucose_instability:"metabolic-model",
+    diabetes_status:"experimental", diabetes_complication:"experimental"
+  };
+  var MODEL_VERSION={stress:"stress-sim-v1",anxiety:"anxiety-sim-v1",depression:"depression-sim-v1",
+    cognitive_workload:"workload-sim-v1",glucose_instability:"glucose-instability-sim-v1",
+    diabetes_status:"diabetes-context-sim-v1",glucose_instability_outcome:"glucose-instability-sim-v1",
+    diabetes_complication:"complication-context-sim-v1"};
+
+  /* ---------- state ---------- */
+  var state={}; GROUP_KEYS.forEach(function(g){state[g]={};FIELDS[g].fields.forEach(function(f){state[g][f.k]={value:f.d,present:true};});});
+  var selectedOutcome="diabetes_status";
+  var mode="manual";
+
+  function val(g,k){var s=state[g]&&state[g][k];return (s&&s.present)?s.value:null;}
+  function groupPresence(g){var fs=FIELDS[g].fields,p=0;fs.forEach(function(f){if(state[g][f.k].present)p++;});
+    if(p===0)return"none"; if(p===fs.length)return"full"; return"partial";}
+
+  /* ---------- transparent model ---------- */
+  function z(v,center,scale){return v===null?0:(v-center)/scale;}
+  // confidence from completeness of accepted groups (+ signal quality for neural targets)
+  function conf(target){
+    var groups=ACCEPTS[target]||[]; if(!groups.length)return 0.7;
+    var c=0,n=0; groups.forEach(function(g){FIELDS[g].fields.forEach(function(f){n++;if(state[g][f.k].present)c++;});});
+    var base=0.55+0.35*(n?c/n:0);
+    if(groups.indexOf("neural")>=0){var q=val("neural","signal_quality"); if(q!==null)base*=(0.6+0.4*q);}
+    return clamp(base,0.35,0.95);
+  }
+  function band(p){return p<0.25?"lower":p<0.5?"moderate":p<0.75?"elevated":"high";}
+
+  function targetProb(t){
+    var g=state;
+    if(t==="stress"){
+      var s=0.15+ 1.15*z(val("physiological","hrv_rmssd_ms"),40,-25) // low HRV -> high
+        + 0.9*z(val("physiological","eda_microsiemens"),3,4)
+        + 0.6*z(val("physiological","heart_rate_bpm"),70,20)
+        + 0.4*z(val("physiological","respiration_rate_bpm"),16,6)
+        + 0.3*z(val("physiological","sleep_hours"),7,-2);
+      return sig(s);
+    }
+    if(t==="anxiety"){
+      var s=0.0+ 0.7*z(val("physiological","hrv_rmssd_ms"),40,-25)
+        + 0.6*z(val("physiological","eda_microsiemens"),3,4)
+        + 0.7*z(val("neural","beta_alpha_ratio"),0.9,0.6)
+        + 0.3*z(val("physiological","respiration_rate_bpm"),16,6);
+      return sig(s);
+    }
+    if(t==="depression"){
+      var s=-0.1+ 0.6*z(val("neural","alpha_relative_power"),0.28,0.1)
+        + 0.4*z(val("neural","theta_relative_power"),0.22,0.08)
+        - 0.3*z(val("neural","beta_alpha_ratio"),0.9,0.6);
+      return sig(s);
+    }
+    if(t==="cognitive_workload"){
+      var s=-0.1+ 1.0*z(val("neural","beta_alpha_ratio"),0.9,0.6)
+        + 0.5*z(val("neural","theta_relative_power"),0.22,0.08)
+        + 0.3*z(val("neural","beta_relative_power"),0.24,0.1);
+      return sig(s);
+    }
+    if(t==="glucose_instability"){
+      var s=-0.2+ 1.1*z(val("metabolic","glucose_cv_percent"),18,8)
+        + 0.6*z(val("metabolic","glucose_std_mg_dl"),25,12)
+        + 0.7*z(val("metabolic","time_above_180_percent"),10,12)
+        + 0.4*Math.abs(z(val("metabolic","glucose_slope_mg_dl_min"),0,2));
+      return sig(s);
+    }
+    return 0.5;
+  }
+
+  // Diabetes meta model. Mental-health probs enter as CONTEXT (small weights), never causes.
+  function diabetesModel(mhProbs){
+    var terms=[]; // {factor, contribution, direction, method}
+    function push(factor,contribution){ if(contribution===0&&factor.indexOf("context")<0)return;
+      terms.push({factor:factor,signed_contribution:Math.round(contribution*100)/100,
+        direction:contribution>=0?"increases_estimate":"decreases_estimate",method:"linear"});}
+    var bias=-0.4, sum=bias;
+    var metabPresent = groupPresence("metabolic")!=="none";
+    // direct predictors
+    var pairs=[
+      ["HbA1c", 1.30*z(val("metabolic","hba1c_percent"),5.7,0.8)],
+      ["Glucose instability", 0.55*(mhProbs.glucose_instability-0.4)*2],
+      ["BMI", 0.55*z(val("metabolic","bmi"),25,5)],
+      ["Fasting glucose", 0.60*z(val("metabolic","fasting_glucose_mg_dl"),100,25)],
+      ["Mean glucose", 0.45*z(val("metabolic","mean_glucose_mg_dl"),110,25)],
+      ["Time above 180", 0.40*z(val("metabolic","time_above_180_percent"),10,12)],
+      ["Age", 0.30*z(val("clinical","age"),45,15)],
+      // mental-health CONTEXT (small, framed as associated predictors, never causes)
+      ["Stress context", 0.24*(mhProbs.stress-0.4)],
+      ["Anxiety context", 0.12*(mhProbs.anxiety-0.4)],
+      ["Depression context", 0.06*(mhProbs.depression-0.4)],
+      ["Workload context", 0.05*(mhProbs.cognitive_workload-0.4)],
+      ["Activity", -0.20*z(val("physiological","activity_index"),0.4,0.3)]
+    ];
+    var kd=val("clinical","known_diabetes");
+    if(kd!==null&&kd>=1) pairs.push(["Known diabetes context",0.9]);
+    pairs.forEach(function(p){ if(isFinite(p[1])){sum+=p[1]; push(p[0],p[1]);} });
+    terms.sort(function(a,b){return Math.abs(b.signed_contribution)-Math.abs(a.signed_contribution);});
+    return {p:sig(sum), terms:terms, metabPresent:metabPresent};
+  }
+
+  function forecastFrom(){
+    var cur=val("metabolic","current_glucose_mg_dl"), slope=val("metabolic","glucose_slope_mg_dl_min"),
+        sd=val("metabolic","glucose_std_mg_dl");
+    if(cur===null)return null;
+    slope=slope===null?0:slope; sd=sd===null?20:sd;
+    function pt(h){var p=clamp(cur+slope*h,40,400); var w=sd*0.5+h*0.25*(1+Math.abs(slope));
+      return {point_mg_dl:Math.round(p),lower_mg_dl:Math.round(clamp(p-w,40,400)),upper_mg_dl:Math.round(clamp(p+w,40,400))};}
+    return {history_last:Math.round(cur), "30":pt(30), "60":pt(60)};
+  }
+
+  /* ---------- run one prediction ---------- */
+  function runModel(){
+    var mh={stress:targetProb("stress"),anxiety:targetProb("anxiety"),depression:targetProb("depression"),
+      cognitive_workload:targetProb("cognitive_workload"),glucose_instability:targetProb("glucose_instability")};
+    var targets={};
+    ["stress","anxiety","depression","cognitive_workload","glucose_instability"].forEach(function(t){
+      targets[t]={probability:mh[t],risk_band:band(mh[t]),confidence:conf(t),
+        model_version:MODEL_VERSION[t],evidence_status:EVIDENCE[t]};
+    });
+    var out={selected_outcome:selectedOutcome, target_predictions:targets, mh:mh,
+      input_quality:inputQuality(), forecast:forecastFrom(),
+      disclaimer:"Research simulation only. This output is not a medical diagnosis.",
+      synthetic:true, prediction_id:"sim_"+Math.abs(hashState()).toString(36)};
+
+    if(selectedOutcome==="glucose_instability"){
+      out.selected={name:"glucose_instability",probability:mh.glucose_instability,
+        risk_band:"research-"+band(mh.glucose_instability),confidence:conf("glucose_instability"),
+        model_version:MODEL_VERSION.glucose_instability,evidence_status:"metabolic-model",validated_for_clinical_use:false};
+      out.contributions=metabContribs();
+      if(groupPresence("metabolic")==="none"){out.abstained=true;out.abstain_reason="metabolic_unavailable";}
+    } else {
+      // diabetes_status or diabetes_complication -> meta model
+      var dm=diabetesModel(mh);
+      if(!dm.metabPresent){
+        out.abstained=true; out.abstain_reason="metabolic_unavailable";
+        out.selected={name:selectedOutcome,probability:null,evidence_status:"abstained",validated_for_clinical_use:false};
+      } else {
+        out.selected={name:selectedOutcome,probability:dm.p,risk_band:"research-"+band(dm.p),
+          confidence:conf("glucose_instability")*0.9+0.05,model_version:MODEL_VERSION[selectedOutcome],
+          evidence_status:EVIDENCE[selectedOutcome],validated_for_clinical_use:false};
+        out.contributions=dm.terms;
+      }
+    }
+    // node contributions to the selected outcome (line thickness) — from the model terms, not prob
+    out.node_contrib={};
+    var findc=function(name){var t=(out.contributions||[]).find(function(x){return x.factor===name;});return t?Math.abs(t.signed_contribution):0;};
+    out.node_contrib.stress=findc("Stress context");
+    out.node_contrib.anxiety=findc("Anxiety context");
+    out.node_contrib.depression=findc("Depression context");
+    out.node_contrib.cognitive_workload=findc("Workload context");
+    out.node_contrib.glucose_instability=findc("Glucose instability")|| (selectedOutcome==="glucose_instability"?0.3:0);
+    return out;
+  }
+  function metabContribs(){
+    var t=[];function p(f,c){if(isFinite(c))t.push({factor:f,signed_contribution:Math.round(c*100)/100,direction:c>=0?"increases_estimate":"decreases_estimate",method:"linear"});}
+    p("Glucose CV",1.1*z(val("metabolic","glucose_cv_percent"),18,8));
+    p("Glucose SD",0.6*z(val("metabolic","glucose_std_mg_dl"),25,12));
+    p("Time above 180",0.7*z(val("metabolic","time_above_180_percent"),10,12));
+    p("Glucose trend",0.4*Math.abs(z(val("metabolic","glucose_slope_mg_dl_min"),0,2)));
+    t.sort(function(a,b){return Math.abs(b.signed_contribution)-Math.abs(a.signed_contribution);});
+    return t;
+  }
+  function inputQuality(){
+    var c=0,n=0;GROUP_KEYS.forEach(function(g){FIELDS[g].fields.forEach(function(f){n++;if(state[g][f.k].present)c++;});});
+    var score=n?c/n:0;var missing=[];GROUP_KEYS.forEach(function(g){if(groupPresence(g)==="none")missing.push(g);});
+    return {overall:score>0.75?"acceptable":score>0.4?"partial":"limited",score:Math.round(score*100)/100,missing_modalities:missing.concat(["molecular"])};
+  }
+  function hashState(){var s=JSON.stringify(state)+selectedOutcome;var h=0;for(var i=0;i<s.length;i++){h=(h*31+s.charCodeAt(i))|0;}return h;}
+
+  /* ================= UI ================= */
+  function buildInputs(){
+    var host=$("#simInputs"); if(!host)return; host.innerHTML="";
+    GROUP_KEYS.forEach(function(g,gi){
+      var spec=FIELDS[g];
+      var det=document.createElement("details"); det.className="ig"; det.style.setProperty("--m",spec.color); if(gi<2)det.open=true;
+      var sum=document.createElement("summary");
+      sum.innerHTML='<span class="ig-dot"></span><span class="ig-name">'+spec.label+'</span><span class="ig-state" data-state="'+g+'"></span><span class="ig-caret">▾</span>';
+      det.appendChild(sum);
+      var body=document.createElement("div"); body.className="ig-body";
+      spec.fields.forEach(function(f){
+        var row=document.createElement("div"); row.className="fld"; row.dataset.group=g; row.dataset.key=f.k;
+        var idb=g+"_"+f.k;
+        row.innerHTML=
+          '<div class="fld-top"><label class="fld-l" for="'+idb+'">'+f.l+(f.u?' <i>'+f.u+'</i>':'')+'</label>'+
+          '<label class="miss"><input type="checkbox" class="miss-cb" '+(state[g][f.k].present?'':'checked')+' aria-label="Mark '+f.l+' not provided"> n/a</label></div>'+
+          '<div class="fld-ctl">'+
+            '<input type="range" id="'+idb+'" min="'+f.min+'" max="'+f.max+'" step="'+f.step+'" value="'+state[g][f.k].value+'" aria-describedby="'+idb+'_h">'+
+            '<input type="number" class="fld-num" min="'+f.min+'" max="'+f.max+'" step="'+f.step+'" value="'+state[g][f.k].value+'" aria-label="'+f.l+' value">'+
+            '<button class="fld-reset" type="button" title="Reset '+f.l+'" aria-label="Reset '+f.l+'">⟲</button>'+
+          '</div>'+
+          '<div class="fld-h" id="'+idb+'_h">'+f.h+'</div>';
+        body.appendChild(row);
+        var range=row.querySelector('input[type=range]'),num=row.querySelector('.fld-num'),miss=row.querySelector('.miss-cb'),rst=row.querySelector('.fld-reset');
+        function set(v,fromNum){v=clamp(parseFloat(v),f.min,f.max);if(isNaN(v))v=f.d;state[g][f.k].value=v;range.value=v;num.value=v;live();}
+        range.addEventListener('input',function(){set(range.value);});
+        num.addEventListener('input',function(){set(num.value,true);});
+        num.addEventListener('blur',function(){num.value=state[g][f.k].value;});
+        miss.addEventListener('change',function(){state[g][f.k].present=!miss.checked;row.classList.toggle('is-missing',miss.checked);range.disabled=miss.checked;num.disabled=miss.checked;live();});
+        rst.addEventListener('click',function(){state[g][f.k].present=true;miss.checked=false;row.classList.remove('is-missing');range.disabled=false;num.disabled=false;set(f.d);});
+      });
+      det.appendChild(body); host.appendChild(det);
+    });
+  }
+
+  function live(){ updateReadiness(); if(centerDraw)centerDraw.dirty=true; }
+
+  function updateReadiness(){
+    $$(".ig-state").forEach(function(el){var g=el.getAttribute("data-state");var p=groupPresence(g);
+      el.textContent=p==="full"?"Complete":p==="partial"?"Partial":"Not set";el.className="ig-state "+p;});
+    var map={neural:"neural",physiological:"physiological",metabolic:"metabolic",clinical:"clinical"};
+    $$("#simReadiness .rrow[data-g]").forEach(function(row){
+      var g=row.getAttribute("data-g");
+      if(g==="molecular"){row.querySelector(".rst").textContent="Not provided";row.dataset.level="none";return;}
+      var p=groupPresence(g); var lvl=p==="full"?"available":p==="partial"?"partial":"none";
+      row.querySelector(".rst").textContent=lvl==="available"?"Available":lvl==="partial"?"Partial":"Not provided";
+      row.dataset.level=lvl;
+    });
+  }
+
+  /* center human viz */
+  var centerDraw=null;
+  function initCenter(){
+    var canvas=$("#simHuman"); if(!canvas)return;
+    var ctx=canvas.getContext("2d"),W=0,H=0;
+    function fit(){var r=canvas.getBoundingClientRect();W=r.width;H=r.height;canvas.width=Math.round(W*DPR);canvas.height=Math.round(H*DPR);ctx.setTransform(DPR,0,0,DPR,0,0);}
+    fit();window.addEventListener("resize",function(){fit();centerDraw.dirty=true;});
+    centerDraw={dirty:true};
+    function norm(g,fn){return fn();}
+    function frame(ts){
+      var t=(ts||0)/1000;
+      // intensities from current state
+      var neu=clamp((val("neural","beta_alpha_ratio")||0.9)/2,0,1);
+      var phy=clamp(((90-(val("physiological","hrv_rmssd_ms")||40))/70),0,1);
+      var eda=clamp((val("physiological","eda_microsiemens")||3)/12,0,1);
+      var met=clamp((val("metabolic","glucose_cv_percent")||18)/40,0,1);
+      ctx.clearRect(0,0,W,H);
+      var cx=W*0.5, top=H*0.08, hw=Math.min(W*0.16,74), hh=hw*1.15;
+      // silhouette
+      function sil(){ctx.beginPath();ctx.moveTo(cx-hw*1.7,H);
+        ctx.bezierCurveTo(cx-hw*1.5,H*0.55,cx-hw*1.05,top+hh*1.2,cx-hw*0.7,top+hh);
+        ctx.bezierCurveTo(cx-hw*1.0,top+hh*0.5,cx-hw,top,cx,top);
+        ctx.bezierCurveTo(cx+hw,top,cx+hw*1.0,top+hh*0.5,cx+hw*0.7,top+hh);
+        ctx.bezierCurveTo(cx+hw*1.05,top+hh*1.2,cx+hw*1.5,H*0.55,cx+hw*1.7,H);ctx.closePath();}
+      sil();ctx.save();ctx.clip();var gr=ctx.createLinearGradient(0,0,0,H);gr.addColorStop(0,"#0e1220");gr.addColorStop(1,"#0a0c14");ctx.fillStyle=gr;ctx.fillRect(0,0,W,H);ctx.restore();
+      sil();ctx.strokeStyle=hexA(ACC,0.18);ctx.lineWidth=1;ctx.stroke();
+      // regions
+      function glow(x,y,r,color,inten){var pulse=RM?1:(0.85+0.15*Math.sin(t*2));var rr=r*(0.7+inten*0.9)*pulse;
+        var g2=ctx.createRadialGradient(x,y,1,x,y,rr);g2.addColorStop(0,hexA(color,0.5+inten*0.4));g2.addColorStop(1,hexA(color,0));ctx.fillStyle=g2;ctx.beginPath();ctx.arc(x,y,rr,0,7);ctx.fill();
+        ctx.fillStyle=hexA(color,0.9);ctx.beginPath();ctx.arc(x,y,2.4,0,7);ctx.fill();}
+      var headY=top+hh*0.5, chestY=top+hh*1.7, handY=top+hh*2.0, abY=top+hh*2.6;
+      glow(cx,headY,42,NEU,neu);
+      glow(cx,chestY,40,PHY,phy);
+      glow(cx-hw*1.35,handY,26,CLI,eda);
+      glow(cx,abY,44,MET,met);
+      if(!RM)requestAnimationFrame(frame); else centerDraw.dirty=false;
+    }
+    if(RM){var loop=function(){if(centerDraw.dirty){centerDraw.dirty=false;frame(0);}requestAnimationFrame(loop);};requestAnimationFrame(loop);}
+    else requestAnimationFrame(frame);
+  }
+
+  /* ---------- modes ---------- */
+  var SAMPLES={
+    low:{label:"Lower metabolic instability",set:{metabolic:{current_glucose_mg_dl:104,mean_glucose_mg_dl:101,glucose_std_mg_dl:14,glucose_cv_percent:13.9,glucose_slope_mg_dl_min:0.2,time_above_180_percent:2,time_below_70_percent:1,hba1c_percent:5.3,fasting_glucose_mg_dl:92,bmi:23.1},physiological:{hrv_rmssd_ms:58,eda_microsiemens:2.1,heart_rate_bpm:64,respiration_rate_bpm:14,sleep_hours:7.8,activity_index:0.5},neural:{beta_alpha_ratio:0.7,alpha_relative_power:0.31,theta_relative_power:0.2,signal_quality:0.9}}},
+    stress_stable:{label:"Elevated stress · stable glucose",set:{metabolic:{current_glucose_mg_dl:112,mean_glucose_mg_dl:108,glucose_std_mg_dl:16,glucose_cv_percent:14.8,glucose_slope_mg_dl_min:0.3,time_above_180_percent:3,time_below_70_percent:1,hba1c_percent:5.5,fasting_glucose_mg_dl:98,bmi:24.6},physiological:{hrv_rmssd_ms:24,eda_microsiemens:7.9,heart_rate_bpm:92,respiration_rate_bpm:21,sleep_hours:5.4,activity_index:0.3},neural:{beta_alpha_ratio:1.5,alpha_relative_power:0.22,theta_relative_power:0.27,signal_quality:0.85}}},
+    stress_unstable:{label:"Elevated stress · glucose instability",set:{metabolic:{current_glucose_mg_dl:168,mean_glucose_mg_dl:151,glucose_std_mg_dl:44,glucose_cv_percent:29.1,glucose_slope_mg_dl_min:1.9,time_above_180_percent:31,time_below_70_percent:3,hba1c_percent:6.8,fasting_glucose_mg_dl:129,bmi:30.7},physiological:{hrv_rmssd_ms:21,eda_microsiemens:8.6,heart_rate_bpm:95,respiration_rate_bpm:22,sleep_hours:5.1,activity_index:0.28},neural:{beta_alpha_ratio:1.6,alpha_relative_power:0.2,theta_relative_power:0.28,signal_quality:0.83}}}
+  };
+  function applySample(key){var s=SAMPLES[key];if(!s)return;
+    GROUP_KEYS.forEach(function(g){FIELDS[g].fields.forEach(function(f){var v=s.set[g]&&s.set[g][f.k];
+      if(v!==undefined){state[g][f.k]={value:v,present:true};} });});
+    buildInputs();live();}
+
+  function setMode(m){mode=m;
+    $$("#simModeTabs .modetab").forEach(function(b){b.setAttribute("aria-selected",b.dataset.mode===m);});
+    $("#panel-manual").hidden=(m!=="manual");
+    $("#panel-upload").hidden=(m!=="upload");
+    $("#panel-sample").hidden=(m!=="sample");
+  }
+
+  /* ---------- generate + results ---------- */
+  function generate(){
+    var res=runModel();
+    var stage=$("#simResults"); var prog=$("#simProgress");
+    prog.hidden=false; stage.hidden=true; stage.innerHTML="";
+    var steps=["Validating research inputs","Constructing per-modality features","Scoring task-specific models","Composing the diabetes context model","Deriving model contributions"];
+    var pl=$("#simProgList"); pl.innerHTML=steps.map(function(s,i){return '<li'+(i===0?' class="active"':'')+'><span>0'+(i+1)+'</span>'+s+'</li>';}).join("");
+    var i=0; var iv=setInterval(function(){i++;var lis=pl.querySelectorAll("li");lis.forEach(function(li,j){li.className=j<i?"done":j===i?"active":"";});
+      if(i>=steps.length){clearInterval(iv);prog.hidden=true;renderResults(res);stage.hidden=false;stage.scrollIntoView({behavior:RM?"auto":"smooth",block:"start"});}
+    }, RM?0:360);
+    if(RM){clearInterval(iv);prog.hidden=true;renderResults(res);stage.hidden=false;}
+  }
+
+  var TNAMES={stress:"Stress",anxiety:"Anxiety",depression:"Depression",cognitive_workload:"Cognitive load",glucose_instability:"Glucose instability"};
+  function pct(x){return Math.round(x*100);}
+  function renderResults(r){
+    var stage=$("#simResults");
+    var sel=r.selected, abst=r.abstained;
+    var outLabel=({diabetes_status:"Diabetes-related status",glucose_instability:"Glucose instability",diabetes_complication:"Complication-risk research estimate"})[r.selected_outcome];
+    var html='';
+    html+='<div class="res-flag">Synthetic demonstration · model output, not real clinical results</div>';
+    // primary
+    html+='<div class="res-primary">';
+    html+='<div class="res-kicker">Multimodal research profile</div>';
+    if(abst){
+      html+='<div class="res-abstain"><span class="ab-chip">Insufficient evidence</span>'+
+        '<h3>'+outLabel+' estimate was not generated.</h3>'+
+        '<p>An approved same-subject multimodal model artifact was unavailable for this request, so no fused probability was produced.</p></div>';
+    } else {
+      html+='<div class="res-dialwrap"><div class="res-dial" style="--p:'+pct(sel.probability)+'"><div class="res-dial-in"><b>'+pct(sel.probability)+'<i>%</i></b><small>'+outLabel+'</small></div></div>'+
+        '<div class="res-primary-meta"><div class="res-band res-'+(sel.risk_band||'').replace('research-','')+'">'+(sel.risk_band||'').replace('research-','research · ')+'</div>'+
+        '<div class="res-conf"><span>Confidence</span><div class="ctrack"><i style="width:'+pct(sel.confidence)+'%"></i></div><b>'+pct(sel.confidence)+'%</b></div>'+
+        '<p class="res-say">The entered profile produced a '+(sel.probability>0.5?'raised':'lower')+' '+outLabel.toLowerCase()+' research estimate. This is not a diagnosis.</p></div></div>';
+    }
+    html+='</div>';
+    // constellation
+    html+='<div class="res-grid">';
+    html+='<div class="res-card const-card"><div class="res-h">Associated research signals</div>'+
+      '<canvas id="constCanvas" aria-label="Target constellation: node size is probability, opacity is confidence, line thickness is model contribution"></canvas>'+
+      '<div class="const-note">Node size = probability · opacity = confidence · link = model contribution to the estimate</div></div>';
+    // waterfall
+    html+='<div class="res-card"><div class="res-h">What moved the estimate</div><div class="waterfall" id="waterfall"></div>'+
+      '<p class="contrib-note">Contribution shows how a variable influenced this model estimate — it does not establish that the variable caused the outcome.</p></div>';
+    html+='</div>';
+    // forecast
+    if(r.forecast){
+      html+='<div class="res-card fc-card"><div class="res-h">Near-term glucose outlook</div>'+
+        '<canvas id="fcCanvas" aria-label="Glucose forecast with 30 and 60 minute points and uncertainty interval"></canvas>'+
+        '<div class="fc-reads">'+
+        '<div><span>+30 min</span><b>'+r.forecast["30"].point_mg_dl+' <i>mg/dL</i></b><small>'+r.forecast["30"].lower_mg_dl+'–'+r.forecast["30"].upper_mg_dl+'</small></div>'+
+        '<div><span>+60 min</span><b>'+r.forecast["60"].point_mg_dl+' <i>mg/dL</i></b><small>'+r.forecast["60"].lower_mg_dl+'–'+r.forecast["60"].upper_mg_dl+'</small></div>'+
+        '</div></div>';
+    }
+    // target cards row (small, evidence subtle)
+    html+='<div class="tcards">';
+    ["stress","anxiety","depression","cognitive_workload","glucose_instability"].forEach(function(t){
+      var tp=r.target_predictions[t];
+      html+='<div class="tcard"><span class="tc-name">'+TNAMES[t]+'</span>'+
+        '<b class="tc-p">'+pct(tp.probability)+'%</b>'+
+        '<span class="tc-band b-'+tp.risk_band+'">'+tp.risk_band+'</span>'+
+        '<span class="tc-ev" title="evidence status">'+tp.evidence_status+'</span></div>';
+    });
+    html+='</div>';
+    html+='<div class="res-foot"><span class="mono">'+ (sel&&sel.model_version||'research-sim')+' · '+r.prediction_id+'</span>'+
+      '<span class="mono">'+r.disclaimer+'</span></div>';
+    html+='<div class="res-actions"><button class="btn ghost" id="resBack" type="button">← Adjust inputs</button></div>';
+    stage.innerHTML=html;
+
+    drawConstellation(r);
+    drawWaterfall(r);
+    if(r.forecast)drawForecast(r.forecast);
+    var back=$("#resBack"); if(back)back.addEventListener("click",function(){stage.hidden=true;$("#experience").scrollIntoView({behavior:RM?"auto":"smooth"});});
+  }
+
+  function drawWaterfall(r){
+    var host=$("#waterfall"); if(!host)return; var c=r.contributions||[];
+    if(!c.length){host.innerHTML='<div class="wf-empty">No contribution provided for this outcome.</div>';return;}
+    var max=Math.max.apply(null,c.map(function(x){return Math.abs(x.signed_contribution);}))||1;
+    host.innerHTML=c.slice(0,8).map(function(x){var w=Math.abs(x.signed_contribution)/max*50;var posv=x.signed_contribution>=0;
+      return '<div class="wf-row"><span class="wf-f">'+x.factor+'</span>'+
+        '<div class="wf-bar"><i class="'+(posv?'pos':'neg')+'" style="width:'+w+'%;'+(posv?'left:50%':'right:50%')+'"></i></div>'+
+        '<b class="wf-v '+(posv?'pos':'neg')+'">'+(posv?'+':'')+x.signed_contribution.toFixed(2)+'</b></div>';
+    }).join("");
+  }
+
+  function drawConstellation(r){
+    var canvas=$("#constCanvas"); if(!canvas)return; var ctx=canvas.getContext("2d");
+    var W,H;function fit(){var rc=canvas.getBoundingClientRect();W=rc.width;H=rc.height;canvas.width=Math.round(W*DPR);canvas.height=Math.round(H*DPR);ctx.setTransform(DPR,0,0,DPR,0,0);}fit();
+    var order=["stress","anxiety","depression","cognitive_workload","glucose_instability"];
+    var cols={stress:PHY,anxiety:"#FF8FA8",depression:NEU,cognitive_workload:CLI,glucose_instability:MET};
+    var t0=0;
+    function frame(ts){if(!t0)t0=ts;var t=(ts-t0)/1000;ctx.clearRect(0,0,W,H);
+      var cx=W*0.5,cy=H*0.52,R=Math.min(W,H)*0.33;
+      // links + center
+      order.forEach(function(k,i){var a=-Math.PI/2+i/order.length*Math.PI*2 + (RM?0:t*0.15);
+        var x=cx+Math.cos(a)*R,y=cy+Math.sin(a)*R;
+        var contrib=(r.node_contrib&&r.node_contrib[k])||0; var lw=clamp(contrib*14,0.5,7);
+        ctx.strokeStyle=hexA(cols[k],0.35);ctx.lineWidth=lw;ctx.setLineDash([3,4]);ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(x,y);ctx.stroke();ctx.setLineDash([]);
+      });
+      // center diabetes node
+      var sel=r.selected&&r.selected.probability; if(sel!=null){
+        ctx.fillStyle=hexA(ACC,0.16);ctx.beginPath();ctx.arc(cx,cy,26,0,7);ctx.fill();
+        ctx.fillStyle=ACC;ctx.font="600 13px "+cv("--mono");ctx.textAlign="center";ctx.fillText(pct(sel)+"%",cx,cy+4);
+      }
+      order.forEach(function(k,i){var a=-Math.PI/2+i/order.length*Math.PI*2+(RM?0:t*0.15);
+        var x=cx+Math.cos(a)*R,y=cy+Math.sin(a)*R;var tp=r.target_predictions[k];
+        var rad=6+tp.probability*20; var op=0.35+tp.confidence*0.6;
+        var g=ctx.createRadialGradient(x,y,1,x,y,rad*1.6);g.addColorStop(0,hexA(cols[k],op));g.addColorStop(1,hexA(cols[k],0));ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,rad*1.6,0,7);ctx.fill();
+        ctx.fillStyle=hexA(cols[k],op);ctx.beginPath();ctx.arc(x,y,rad,0,7);ctx.fill();
+        ctx.fillStyle=WHT;ctx.font="10px "+cv("--mono");ctx.textAlign="center";
+        var lx=cx+Math.cos(a)*(R+rad+14),ly=cy+Math.sin(a)*(R+rad+14);
+        ctx.fillText(TNAMES[k],lx,ly);
+      });
+      if(!RM)requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame); window.addEventListener("resize",function(){fit();});
+  }
+
+  function drawForecast(fc){
+    var canvas=$("#fcCanvas"); if(!canvas)return; var ctx=canvas.getContext("2d");
+    var W,H;function fit(){var rc=canvas.getBoundingClientRect();W=rc.width;H=rc.height;canvas.width=Math.round(W*DPR);canvas.height=Math.round(H*DPR);ctx.setTransform(DPR,0,0,DPR,0,0);}fit();
+    function ymap(v){var lo=60,hi=260;return H-18-(clamp(v,lo,hi)-lo)/(hi-lo)*(H-34);}
+    ctx.clearRect(0,0,W,H);
+    ctx.strokeStyle=hexA(WHT,0.06);[80,120,160,200].forEach(function(g){var y=ymap(g);ctx.beginPath();ctx.moveTo(28,y);ctx.lineTo(W,y);ctx.stroke();ctx.fillStyle=hexA(WHT,0.3);ctx.font="9px "+cv("--mono");ctx.fillText(g,4,y+3);});
+    var x0=34,xn=W-8,xnow=x0+(xn-x0)*0.34;
+    // history (flat-ish to now)
+    ctx.beginPath();for(var i=0;i<=20;i++){var x=x0+(xnow-x0)*i/20;var v=fc.history_last+Math.sin(i*0.6)*4;var y=ymap(v);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);}ctx.strokeStyle=hexA(WHT,0.7);ctx.lineWidth=1.8;ctx.stroke();
+    // band
+    var p30=fc["30"],p60=fc["60"];var xn30=xnow+(xn-xnow)*0.5,xn60=xn;
+    ctx.beginPath();ctx.moveTo(xnow,ymap(fc.history_last));ctx.lineTo(xn30,ymap(p30.upper_mg_dl));ctx.lineTo(xn60,ymap(p60.upper_mg_dl));ctx.lineTo(xn60,ymap(p60.lower_mg_dl));ctx.lineTo(xn30,ymap(p30.lower_mg_dl));ctx.closePath();ctx.fillStyle=hexA(MET,0.14);ctx.fill();
+    ctx.beginPath();ctx.moveTo(xnow,ymap(fc.history_last));ctx.lineTo(xn30,ymap(p30.point_mg_dl));ctx.lineTo(xn60,ymap(p60.point_mg_dl));ctx.setLineDash([5,5]);ctx.strokeStyle=hexA(MET,0.95);ctx.lineWidth=1.9;ctx.stroke();ctx.setLineDash([]);
+    ctx.strokeStyle=hexA(MET,0.3);ctx.beginPath();ctx.moveTo(xnow,0);ctx.lineTo(xnow,H);ctx.stroke();
+    [[xn30,p30],[xn60,p60]].forEach(function(pp){ctx.fillStyle=MET;ctx.beginPath();ctx.arc(pp[0],ymap(pp[1].point_mg_dl),4,0,7);ctx.fill();});
+    ctx.fillStyle=hexA(WHT,0.4);ctx.font="9px "+cv("--mono");ctx.fillText("now",xnow-8,H-4);ctx.fillText("+30",xn30-8,H-4);ctx.fillText("+60",xn60-16,H-4);
+  }
+
+  /* ---------- upload (client-side parse preview only) ---------- */
+  function initUpload(){
+    var inp=$("#simFile"); if(!inp)return;
+    inp.addEventListener("change",function(){var f=inp.files&&inp.files[0];if(!f)return;
+      var meta=$("#uploadMeta");var ext=(f.name.split(".").pop()||"").toLowerCase();
+      var kind=({csv:"tabular / CSV",json:"JSON",edf:"EEG · EDF",bdf:"EEG · BDF"})[ext]||ext.toUpperCase();
+      var reader=new FileReader();reader.onload=function(){var txt=String(reader.result||"");var lines=txt.split(/\r?\n/).filter(Boolean);
+        var cols=(lines[0]||"").split(/[,\t;]/).length;
+        meta.hidden=false;
+        meta.innerHTML='<div class="um-row"><span>File</span><b>'+f.name+'</b></div>'+
+          '<div class="um-row"><span>Detected type</span><b>'+kind+'</b></div>'+
+          '<div class="um-row"><span>Rows / samples</span><b>'+(lines.length>1?(lines.length-1):"—")+'</b></div>'+
+          '<div class="um-row"><span>Columns / channels</span><b>'+(cols||"—")+'</b></div>'+
+          '<div class="um-row"><span>Size</span><b>'+(f.size/1024).toFixed(1)+' KB</b></div>'+
+          '<div class="um-note">Preview only. Large biosignal files are parsed by the backend in the connected app; this synthetic build reads headers to illustrate the flow.</div>';
+      };reader.readAsText(f.slice(0,64*1024));
+    });
+  }
+
+  /* ---------- wire up ---------- */
+  function initSim(){
+    if(!$("#simInputs"))return;
+    buildInputs(); initCenter(); initUpload();
+    $$("#simModeTabs .modetab").forEach(function(b){b.addEventListener("click",function(){setMode(b.dataset.mode);});});
+    $$("#simSample .samplecard").forEach(function(cardEl){cardEl.addEventListener("click",function(){applySample(cardEl.dataset.sample);setMode("manual");});
+      cardEl.addEventListener("keydown",function(e){if(e.key==="Enter"||e.key===" "){e.preventDefault();cardEl.click();}});});
+    var os=$("#outcomeSelect"); if(os)os.addEventListener("change",function(){selectedOutcome=os.value;live();});
+    var gen=$("#genBtn"); if(gen)gen.addEventListener("click",generate);
+    var rst=$("#resetAll"); if(rst)rst.addEventListener("click",function(){GROUP_KEYS.forEach(function(g){FIELDS[g].fields.forEach(function(f){state[g][f.k]={value:f.d,present:true};});});buildInputs();live();});
+    setMode("manual"); live();
+  }
+  if(document.readyState!=="loading")initSim(); else document.addEventListener("DOMContentLoaded",initSim);
+  // test hook (harmless): exposes the real model for automated verification
+  try{ window.__SIM_TEST={ runModel:runModel, state:state, FIELDS:FIELDS,
+    setVal:function(g,k,v){state[g][k]={value:v,present:true};},
+    setMissing:function(g){FIELDS[g].fields.forEach(function(f){state[g][f.k].present=false;});},
+    setOutcome:function(o){selectedOutcome=o;} }; }catch(e){}
 })();
 </script>

@@ -137,6 +137,27 @@ def create_app(screener_root: str | Path = _SCREENER_ROOT,
         return JSONResponse({"task": task, "n": int(len(df)),
                              "ranking": df.to_dict(orient="records"), "disclaimer": DISCLAIMER})
 
+    async def research_predict(request):
+        """POST /v1/research/predict — score arbitrary user-entered metabolic/physiological/neural/
+        clinical features into per-target research estimates + a selected diabetes outcome, signed
+        contributions, a glucose forecast, and honest abstention. NEVER trains at request time: it loads
+        the committed lightweight tabular artifacts (or a labelled simulation fallback). Research-grade
+        decision-support only — never a diagnosis."""
+        from dvxr.serve.research_predict import ValidationError, run_research_prediction
+        try:
+            body = await request.json()
+        except Exception:  # noqa: BLE001 — a malformed body is a client error
+            return JSONResponse({"error": "request body must be valid JSON", "disclaimer": DISCLAIMER},
+                                status_code=400)
+        try:
+            out = run_research_prediction(body, screener_root=str(root))
+        except ValidationError as e:
+            return JSONResponse({"error": str(e), "disclaimer": DISCLAIMER}, status_code=400)
+        except Exception:  # noqa: BLE001 — never leak internals; abstain-shaped safe error
+            return JSONResponse({"error": "internal error scoring the research prediction",
+                                 "disclaimer": DISCLAIMER}, status_code=500)
+        return JSONResponse(out)
+
     def _principal(request):
         from dvxr.serve.auth import authenticate
         return authenticate(request.headers.get("X-API-Key"), principals, unsafe_dev=unsafe_dev)
@@ -264,6 +285,7 @@ def create_app(screener_root: str | Path = _SCREENER_ROOT,
     # the Sentinel PRODUCT surface — only these routes are part of the product contract (Gate D §23)
     product_routes = [
         Route("/health", health),
+        Route("/v1/research/predict", research_predict, methods=["POST"]),
         Route("/v1/risk-reports", risk_reports, methods=["POST"]),
         Route("/v1/predictions/{prediction_id}", get_risk_report),
         Route("/v1/alerts/{alert_id}", get_alert),
@@ -281,6 +303,7 @@ def create_app(screener_root: str | Path = _SCREENER_ROOT,
         Route("/evidence/{task}", evidence_task),
         Route("/screen/subject", screen_subject, methods=["POST"]),
         Route("/triage/{task}", triage),
+        Route("/v1/research/predict", research_predict, methods=["POST"]),
         Route("/v1/risk-reports", risk_reports, methods=["POST"]),
         Route("/v1/predictions/{prediction_id}", get_risk_report),
         Route("/v1/alerts/{alert_id}", get_alert),

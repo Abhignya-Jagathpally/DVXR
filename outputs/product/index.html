@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DVXR Screen — evidence demo</title>
+<style>
+ :root { --bg:#0f1220; --card:#1a1f36; --ink:#e8eaf3; --muted:#9aa3c0; --line:#2a3152; }
+ * { box-sizing:border-box; }
+ body { margin:0; font:15px/1.5 -apple-system,Segoe UI,Roboto,sans-serif; background:var(--bg);
+        color:var(--ink); }
+ header.top { padding:28px 24px 18px; border-bottom:1px solid var(--line);
+        background:linear-gradient(180deg,#151a30,#0f1220); }
+ header.top h1 { margin:0 0 4px; font-size:26px; letter-spacing:.3px; }
+ header.top .sub { color:var(--muted); font-size:14px; max-width:70ch; }
+ header.top .pill { display:inline-block; margin-top:10px; padding:3px 10px; border-radius:20px;
+        background:#20264a; color:#a9b6ff; font-size:12px; border:1px solid var(--line); }
+ main { max-width:1000px; margin:0 auto; padding:20px 16px 60px; }
+ .panel { background:var(--card); border:1px solid var(--line); border-radius:14px;
+        padding:18px 20px; margin:18px 0; }
+ .panel-head { display:flex; justify-content:space-between; align-items:baseline; gap:16px;
+        flex-wrap:wrap; }
+ .panel h2 { margin:0; font-size:19px; } .icon { margin-right:6px; }
+ .metric { display:flex; gap:10px; align-items:baseline; flex-wrap:wrap; }
+ .auroc { font-weight:700; color:#7ee0a1; font-size:16px; }
+ .ci { color:var(--muted); font-size:13px; } .proto { color:var(--muted); font-size:12px; }
+ .blurb { color:var(--muted); margin:8px 0 14px; }
+ .cards { display:flex; gap:16px; flex-wrap:wrap; }
+ .card { flex:1 1 220px; background:#141830; border:1px solid var(--line); border-radius:12px;
+        padding:12px 14px; min-width:220px; }
+ .card-head { display:flex; justify-content:space-between; font-size:12px; color:var(--muted); }
+ .truth { padding:1px 7px; border-radius:10px; }
+ .truth-1 { background:#3a1d24; color:#ff9db0; } .truth-0 { background:#173226; color:#8fe6b6; }
+ .gauge { text-align:center; margin:4px 0; }
+ .ivl { text-align:center; font-size:12px; color:var(--muted); margin-bottom:8px; }
+ ul.drivers { list-style:none; padding:0; margin:6px 0 0; font-size:12.5px; }
+ ul.drivers li { display:flex; align-items:center; gap:8px; padding:2px 0;
+        border-top:1px dashed var(--line); }
+ .dir.raises { color:#ff7b7b; } .dir.lowers { color:#68d391; }
+ ul.drivers code { color:#cdd6ff; } .contrib { margin-left:auto; color:var(--muted); }
+ .evidence { margin-top:14px; font-size:13px; color:var(--muted); border-top:1px solid var(--line);
+        padding-top:12px; }
+ .evidence strong { color:var(--ink); }
+ details { margin-top:8px; } summary { cursor:pointer; color:#a9b6ff; }
+ ul.lit { font-size:12.5px; } .caveat { font-style:italic; color:#c7a86b; }
+ .skipped { opacity:.75; }
+ footer { text-align:center; color:var(--muted); font-size:12px; padding:24px; }
+</style></head>
+<body>
+<header class="top">
+  <h1>🩺 DVXR Screen</h1>
+  <div class="sub">Research-grade multimodal clinical-risk <strong>screening</strong> — every score
+   below is produced live by the model that <em>wins</em> the benchmark for that task, on a real
+   held-out subject, with the same subject-held-out AUROC the benchmark reports. Not a diagnosis.</div>
+  <span class="pill">offline · CPU · deterministic · numbers trace to the committed scoreboard</span>
+</header>
+<main>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2><span class="icon">🧠</span> Depression screen from resting EEG</h2>
+      <div class="metric">
+        <span class="auroc">AUROC 0.9608</span>
+        <span class="ci">CI [0.9417, 0.9756]</span>
+        <span class="proto">3x5 subject-held-out CV</span>
+      </div>
+    </div>
+    <p class="blurb">The headline: a short resting-EEG recording, embedded by the real LaBraM EEG foundation model, screens major-depressive-disorder vs. healthy.</p>
+    <div class="cards">
+    <div class="card">
+      <div class="card-head">
+        <span class="subj">subject MDD_S9</span>
+        <span class="truth truth-1">cohort label: case</span>
+      </div>
+      <div class="gauge"><svg viewBox="0 12 200 100" width="220" height="118" role="img" aria-label="risk 0.94 high"><path d="M 22.0 100.0 A 78 78 0 0 1 44.8 44.8" fill="none" stroke="#1a9850" stroke-width="16" stroke-linecap="round"/><path d="M 44.8 44.8 A 78 78 0 0 1 100.0 22.0" fill="none" stroke="#f4a836" stroke-width="16" stroke-linecap="round"/><path d="M 100.0 22.0 A 78 78 0 0 1 155.2 44.8" fill="none" stroke="#f46d43" stroke-width="16" stroke-linecap="round"/><path d="M 155.2 44.8 A 78 78 0 0 1 178.0 100.0" fill="none" stroke="#d73027" stroke-width="16" stroke-linecap="round"/><path d="M 83.6 23.8 A 78 78 0 1 1 178.0 100.0" fill="none" stroke="rgba(20,20,30,.55)" stroke-width="5" stroke-linecap="round"/><line x1="100" y1="100" x2="161.0" y2="89.1" stroke="#111" stroke-width="3"/><circle cx="100" cy="100" r="5" fill="#111"/><text x="100" y="86" text-anchor="middle" font-size="30" font-weight="700" fill="#d73027">0.94</text><text x="100" y="104" text-anchor="middle" font-size="12" fill="#555" letter-spacing="1">HIGH</text></svg></div>
+      <div class="ivl">90% conformal interval [0.43, 1.00]
+        · 14 windows</div>
+      <ul class="drivers"><li><span class="dir lowers">▼</span><code>latent[110]</code><span class="contrib">-1.51</span></li><li><span class="dir raises">▲</span><code>latent[112]</code><span class="contrib">+1.45</span></li><li><span class="dir raises">▲</span><code>latent[194]</code><span class="contrib">+1.38</span></li><li><span class="dir lowers">▼</span><code>latent[32]</code><span class="contrib">-1.18</span></li></ul>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <span class="subj">subject H_S9</span>
+        <span class="truth truth-0">cohort label: control</span>
+      </div>
+      <div class="gauge"><svg viewBox="0 12 200 100" width="220" height="118" role="img" aria-label="risk 0.08 low"><path d="M 22.0 100.0 A 78 78 0 0 1 44.8 44.8" fill="none" stroke="#1a9850" stroke-width="16" stroke-linecap="round"/><path d="M 44.8 44.8 A 78 78 0 0 1 100.0 22.0" fill="none" stroke="#f4a836" stroke-width="16" stroke-linecap="round"/><path d="M 100.0 22.0 A 78 78 0 0 1 155.2 44.8" fill="none" stroke="#f46d43" stroke-width="16" stroke-linecap="round"/><path d="M 155.2 44.8 A 78 78 0 0 1 178.0 100.0" fill="none" stroke="#d73027" stroke-width="16" stroke-linecap="round"/><path d="M 22.0 100.0 A 78 78 0 1 1 121.3 25.0" fill="none" stroke="rgba(20,20,30,.55)" stroke-width="5" stroke-linecap="round"/><line x1="100" y1="100" x2="39.8" y2="85.3" stroke="#111" stroke-width="3"/><circle cx="100" cy="100" r="5" fill="#111"/><text x="100" y="86" text-anchor="middle" font-size="30" font-weight="700" fill="#1a9850">0.08</text><text x="100" y="104" text-anchor="middle" font-size="12" fill="#555" letter-spacing="1">LOW</text></svg></div>
+      <div class="ivl">90% conformal interval [0.00, 0.59]
+        · 14 windows</div>
+      <ul class="drivers"><li><span class="dir raises">▲</span><code>latent[110]</code><span class="contrib">+1.70</span></li><li><span class="dir lowers">▼</span><code>latent[168]</code><span class="contrib">-1.43</span></li><li><span class="dir lowers">▼</span><code>latent[81]</code><span class="contrib">-1.39</span></li><li><span class="dir raises">▲</span><code>latent[19]</code><span class="contrib">+1.08</span></li></ul>
+    </div></div>
+    <div class="evidence">
+      <div><strong>Model:</strong> real LaBraM EEG foundation model (frozen, vendored forward)</div>
+      <div><strong>Cohort:</strong> 58 subjects · 812 windows ·
+           ECE 0.0299</div>
+      <details><summary>Literature &amp; caveat</summary>
+        <ul class="lit"><li>LaBraM — Jiang et al., ICLR 2024, arXiv:2405.18765 (EEG foundation model; real weights braindecode/labram-pretrained)</li><li>Mumtaz et al., 2016 — MDD-vs-healthy resting-EEG cohort (labels)</li></ul>
+        <p class="caveat">Research-grade screening, not a diagnosis. Held-out AUROC is a subject-disjoint estimate on a research cohort (dataset-specific; EEG sampled at 64 Hz, below LaBraM&#x27;s 200 Hz training).</p>
+      </details>
+    </div>
+  </section>
+  <section class="panel">
+    <div class="panel-head">
+      <h2><span class="icon">🧩</span> Cognitive-workload screen from EEG</h2>
+      <div class="metric">
+        <span class="auroc">AUROC 0.6627</span>
+        <span class="ci">CI [0.6164, 0.7129]</span>
+        <span class="proto">3x5 subject-held-out CV</span>
+      </div>
+    </div>
+    <p class="blurb">Rest vs. mental-arithmetic load from EEG (LaBraM). A supporting EEG capability.</p>
+    <div class="cards">
+    <div class="card">
+      <div class="card-head">
+        <span class="subj">subject Subject19</span>
+        <span class="truth truth-0">cohort label: control</span>
+      </div>
+      <div class="gauge"><svg viewBox="0 12 200 100" width="220" height="118" role="img" aria-label="risk 0.48 watch"><path d="M 22.0 100.0 A 78 78 0 0 1 44.8 44.8" fill="none" stroke="#1a9850" stroke-width="16" stroke-linecap="round"/><path d="M 44.8 44.8 A 78 78 0 0 1 100.0 22.0" fill="none" stroke="#f4a836" stroke-width="16" stroke-linecap="round"/><path d="M 100.0 22.0 A 78 78 0 0 1 155.2 44.8" fill="none" stroke="#f46d43" stroke-width="16" stroke-linecap="round"/><path d="M 155.2 44.8 A 78 78 0 0 1 178.0 100.0" fill="none" stroke="#d73027" stroke-width="16" stroke-linecap="round"/><path d="M 22.0 100.0 A 78 78 0 1 1 178.0 100.0" fill="none" stroke="rgba(20,20,30,.55)" stroke-width="5" stroke-linecap="round"/><line x1="100" y1="100" x2="96.1" y2="38.1" stroke="#111" stroke-width="3"/><circle cx="100" cy="100" r="5" fill="#111"/><text x="100" y="86" text-anchor="middle" font-size="30" font-weight="700" fill="#f4a836">0.48</text><text x="100" y="104" text-anchor="middle" font-size="12" fill="#555" letter-spacing="1">WATCH</text></svg></div>
+      <div class="ivl">90% conformal interval [0.00, 1.00]
+        · 28 windows</div>
+      <ul class="drivers"><li><span class="dir lowers">▼</span><code>latent[114]</code><span class="contrib">-0.52</span></li><li><span class="dir lowers">▼</span><code>latent[148]</code><span class="contrib">-0.42</span></li><li><span class="dir raises">▲</span><code>latent[71]</code><span class="contrib">+0.33</span></li><li><span class="dir lowers">▼</span><code>latent[57]</code><span class="contrib">-0.32</span></li></ul>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <span class="subj">subject Subject18</span>
+        <span class="truth truth-0">cohort label: control</span>
+      </div>
+      <div class="gauge"><svg viewBox="0 12 200 100" width="220" height="118" role="img" aria-label="risk 0.48 watch"><path d="M 22.0 100.0 A 78 78 0 0 1 44.8 44.8" fill="none" stroke="#1a9850" stroke-width="16" stroke-linecap="round"/><path d="M 44.8 44.8 A 78 78 0 0 1 100.0 22.0" fill="none" stroke="#f4a836" stroke-width="16" stroke-linecap="round"/><path d="M 100.0 22.0 A 78 78 0 0 1 155.2 44.8" fill="none" stroke="#f46d43" stroke-width="16" stroke-linecap="round"/><path d="M 155.2 44.8 A 78 78 0 0 1 178.0 100.0" fill="none" stroke="#d73027" stroke-width="16" stroke-linecap="round"/><path d="M 22.0 100.0 A 78 78 0 1 1 178.0 100.0" fill="none" stroke="rgba(20,20,30,.55)" stroke-width="5" stroke-linecap="round"/><line x1="100" y1="100" x2="96.6" y2="38.1" stroke="#111" stroke-width="3"/><circle cx="100" cy="100" r="5" fill="#111"/><text x="100" y="86" text-anchor="middle" font-size="30" font-weight="700" fill="#f4a836">0.48</text><text x="100" y="104" text-anchor="middle" font-size="12" fill="#555" letter-spacing="1">WATCH</text></svg></div>
+      <div class="ivl">90% conformal interval [0.00, 1.00]
+        · 28 windows</div>
+      <ul class="drivers"><li><span class="dir lowers">▼</span><code>latent[180]</code><span class="contrib">-0.38</span></li><li><span class="dir raises">▲</span><code>latent[192]</code><span class="contrib">+0.37</span></li><li><span class="dir lowers">▼</span><code>latent[141]</code><span class="contrib">-0.31</span></li><li><span class="dir raises">▲</span><code>latent[148]</code><span class="contrib">+0.27</span></li></ul>
+    </div></div>
+    <div class="evidence">
+      <div><strong>Model:</strong> real LaBraM EEG foundation model (frozen, vendored forward)</div>
+      <div><strong>Cohort:</strong> 20 subjects · 560 windows ·
+           ECE 0.0247</div>
+      <details><summary>Literature &amp; caveat</summary>
+        <ul class="lit"><li>LaBraM — Jiang et al., ICLR 2024, arXiv:2405.18765 (EEG foundation model; real weights braindecode/labram-pretrained)</li><li>Mumtaz et al., 2016 — MDD-vs-healthy resting-EEG cohort (labels)</li></ul>
+        <p class="caveat">Research-grade screening, not a diagnosis. Held-out AUROC is a subject-disjoint estimate on a research cohort (dataset-specific; EEG sampled at 64 Hz, below LaBraM&#x27;s 200 Hz training).</p>
+      </details>
+    </div>
+  </section>
+  <section class="panel">
+    <div class="panel-head">
+      <h2><span class="icon">⌚</span> Acute-stress screen from wearables</h2>
+      <div class="metric">
+        <span class="auroc">AUROC 0.9485</span>
+        <span class="ci">CI [0.9296, 0.9678]</span>
+        <span class="proto">3x5 subject-held-out CV</span>
+      </div>
+    </div>
+    <p class="blurb">Wrist/chest physiology (band-power) screens acute stress — the multimodal, no-EEG path.</p>
+    <div class="cards">
+    <div class="card">
+      <div class="card-head">
+        <span class="subj">subject S9</span>
+        <span class="truth truth-0">cohort label: control</span>
+      </div>
+      <div class="gauge"><svg viewBox="0 12 200 100" width="220" height="118" role="img" aria-label="risk 0.18 low"><path d="M 22.0 100.0 A 78 78 0 0 1 44.8 44.8" fill="none" stroke="#1a9850" stroke-width="16" stroke-linecap="round"/><path d="M 44.8 44.8 A 78 78 0 0 1 100.0 22.0" fill="none" stroke="#f4a836" stroke-width="16" stroke-linecap="round"/><path d="M 100.0 22.0 A 78 78 0 0 1 155.2 44.8" fill="none" stroke="#f46d43" stroke-width="16" stroke-linecap="round"/><path d="M 155.2 44.8 A 78 78 0 0 1 178.0 100.0" fill="none" stroke="#d73027" stroke-width="16" stroke-linecap="round"/><path d="M 22.0 100.0 A 78 78 0 1 1 162.3 53.0" fill="none" stroke="rgba(20,20,30,.55)" stroke-width="5" stroke-linecap="round"/><line x1="100" y1="100" x2="47.7" y2="66.6" stroke="#111" stroke-width="3"/><circle cx="100" cy="100" r="5" fill="#111"/><text x="100" y="86" text-anchor="middle" font-size="30" font-weight="700" fill="#1a9850">0.18</text><text x="100" y="104" text-anchor="middle" font-size="12" fill="#555" letter-spacing="1">LOW</text></svg></div>
+      <div class="ivl">90% conformal interval [0.00, 0.79]
+        · 51 windows</div>
+      <ul class="drivers"><li><span class="dir lowers">▼</span><code>feature[79]</code><span class="contrib">-1.11</span></li><li><span class="dir lowers">▼</span><code>feature[71]</code><span class="contrib">-0.51</span></li><li><span class="dir raises">▲</span><code>feature[10]</code><span class="contrib">+0.51</span></li><li><span class="dir raises">▲</span><code>feature[12]</code><span class="contrib">+0.50</span></li></ul>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <span class="subj">subject S8</span>
+        <span class="truth truth-0">cohort label: control</span>
+      </div>
+      <div class="gauge"><svg viewBox="0 12 200 100" width="220" height="118" role="img" aria-label="risk 0.20 low"><path d="M 22.0 100.0 A 78 78 0 0 1 44.8 44.8" fill="none" stroke="#1a9850" stroke-width="16" stroke-linecap="round"/><path d="M 44.8 44.8 A 78 78 0 0 1 100.0 22.0" fill="none" stroke="#f4a836" stroke-width="16" stroke-linecap="round"/><path d="M 100.0 22.0 A 78 78 0 0 1 155.2 44.8" fill="none" stroke="#f46d43" stroke-width="16" stroke-linecap="round"/><path d="M 155.2 44.8 A 78 78 0 0 1 178.0 100.0" fill="none" stroke="#d73027" stroke-width="16" stroke-linecap="round"/><path d="M 22.0 100.0 A 78 78 0 1 1 164.7 56.5" fill="none" stroke="rgba(20,20,30,.55)" stroke-width="5" stroke-linecap="round"/><line x1="100" y1="100" x2="49.6" y2="63.8" stroke="#111" stroke-width="3"/><circle cx="100" cy="100" r="5" fill="#111"/><text x="100" y="86" text-anchor="middle" font-size="30" font-weight="700" fill="#1a9850">0.20</text><text x="100" y="104" text-anchor="middle" font-size="12" fill="#555" letter-spacing="1">LOW</text></svg></div>
+      <div class="ivl">90% conformal interval [0.00, 0.81]
+        · 48 windows</div>
+      <ul class="drivers"><li><span class="dir raises">▲</span><code>feature[71]</code><span class="contrib">+0.64</span></li><li><span class="dir lowers">▼</span><code>feature[20]</code><span class="contrib">-0.31</span></li><li><span class="dir lowers">▼</span><code>feature[19]</code><span class="contrib">-0.31</span></li><li><span class="dir lowers">▼</span><code>feature[16]</code><span class="contrib">-0.31</span></li></ul>
+    </div></div>
+    <div class="evidence">
+      <div><strong>Model:</strong> band-power physiology features</div>
+      <div><strong>Cohort:</strong> 8 subjects · 392 windows ·
+           ECE 0.0525</div>
+      <details><summary>Literature &amp; caveat</summary>
+        <ul class="lit"><li>WESAD — Schmidt et al., 2018 (wearable stress cohort)</li><li>PhysioNet Non-EEG — Birjandtalab et al., 2016 (peripheral physiology, stress states)</li></ul>
+        <p class="caveat">Research-grade screening, not a diagnosis. Held-out AUROC is a subject-disjoint estimate on a research cohort.</p>
+      </details>
+    </div>
+  </section>
+
+</main>
+<footer>DVXR Lab · research prototype · screening / decision-support only, never a diagnostic claim.
+</footer>
+</body></html>

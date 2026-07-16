@@ -5,6 +5,7 @@ import HeroSection from "./components/HeroSection.jsx";
 import ProblemSection from "./components/ProblemSection.jsx";
 import SignalWorld from "./components/SignalWorld.jsx";
 import IntelligencePipeline from "./components/IntelligencePipeline.jsx";
+import ResearchSimulator from "./components/ResearchSimulator.jsx";
 import InteractiveExperience from "./components/InteractiveExperience.jsx";
 import FeatureGrid from "./components/FeatureGrid.jsx";
 import UseCases from "./components/UseCases.jsx";
@@ -28,6 +29,7 @@ export default function App() {
         {worlds.map((w) => <SignalWorld key={w.idx} world={w} />)}
       </section>
       <IntelligencePipeline />
+      <ResearchSimulator />
       <InteractiveExperience />
       <FeatureGrid />
       <UseCases />

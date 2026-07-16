@@ -177,8 +177,10 @@ def window_to_anchor(history: Optional[pd.DataFrame], cutoff, *, time_col: str,
     features match the training distribution. ``anchor`` is the cutoff when known, else the last sample."""
     if history is None or len(history) == 0:
         return history
-    t = pd.to_datetime(history[time_col], errors="coerce")
-    anchor = pd.to_datetime(cutoff, errors="coerce") if cutoff is not None else pd.NaT
+    # UTC-normalize both sides: windowed history may be tz-naive while a resolved cutoff is tz-aware;
+    # comparing them raw raises "Cannot compare tz-naive and tz-aware". utc=True coerces either form.
+    t = pd.to_datetime(history[time_col], errors="coerce", utc=True)
+    anchor = pd.to_datetime(cutoff, errors="coerce", utc=True) if cutoff is not None else pd.NaT
     if pd.isna(anchor):
         anchor = t.max()
     if pd.isna(anchor):
@@ -234,8 +236,12 @@ def staleness_minutes(history: Optional[pd.DataFrame], cutoff, time_col: str) ->
     feed, reported as such rather than mis-read as 'no history' after windowing."""
     if cutoff is None or history is None or len(history) == 0:
         return None
-    last_t = pd.to_datetime(history[time_col], errors="coerce").max()
-    c = pd.to_datetime(cutoff, errors="coerce")
+    # Normalize BOTH sides to UTC-aware before subtracting: the windowed history may be tz-naive
+    # (``_cgm_history_from_events`` localizes to None) while a resolved "Generate now" cutoff is
+    # tz-aware. Comparing the two raw raises "Cannot subtract tz-naive and tz-aware"; ``utc=True``
+    # coerces either form to UTC so staleness is computed instead of crashing the request path.
+    last_t = pd.to_datetime(history[time_col], errors="coerce", utc=True).max()
+    c = pd.to_datetime(cutoff, errors="coerce", utc=True)
     if pd.isna(last_t) or pd.isna(c):
         return None
     return float((c - last_t) / pd.Timedelta(minutes=1))
@@ -430,8 +436,8 @@ class CgmOnlyExcursionService:
         # before the cutoff is STALE — report that, rather than letting the window drop every stale
         # sample and mis-report it as "no history" (spec §5, §9).
         if inputs.cutoff is not None and inputs.cgm_history is not None and len(inputs.cgm_history):
-            last_t = pd.to_datetime(inputs.cgm_history[inputs.time_col], errors="coerce").max()
-            cutoff = pd.to_datetime(inputs.cutoff, errors="coerce")
+            last_t = pd.to_datetime(inputs.cgm_history[inputs.time_col], errors="coerce", utc=True).max()
+            cutoff = pd.to_datetime(inputs.cutoff, errors="coerce", utc=True)
             if pd.notna(last_t) and pd.notna(cutoff):
                 staleness = (cutoff - last_t) / pd.Timedelta(minutes=1)
                 if staleness > self._max_staleness:

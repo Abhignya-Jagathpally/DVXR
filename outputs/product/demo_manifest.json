@@ -1,0 +1,66 @@
+{
+  "format": "dvxr-screen-demo/1",
+  "panels": [
+    {
+      "task": "mumtaz_depression",
+      "heldout": {
+        "metric": "AUROC",
+        "auroc": 0.9608,
+        "auroc_ci": [
+          0.9417,
+          0.9756
+        ],
+        "ece": 0.0299,
+        "n_subjects": 58,
+        "n_windows": 812,
+        "n_folds": 15,
+        "protocol": "3x5 subject-held-out CV"
+      },
+      "subjects": [
+        "MDD_S9",
+        "H_S9"
+      ]
+    },
+    {
+      "task": "eegmat_workload",
+      "heldout": {
+        "metric": "AUROC",
+        "auroc": 0.6627,
+        "auroc_ci": [
+          0.6164,
+          0.7129
+        ],
+        "ece": 0.0247,
+        "n_subjects": 20,
+        "n_windows": 560,
+        "n_folds": 15,
+        "protocol": "3x5 subject-held-out CV"
+      },
+      "subjects": [
+        "Subject19",
+        "Subject18"
+      ]
+    },
+    {
+      "task": "wesad_stress",
+      "heldout": {
+        "metric": "AUROC",
+        "auroc": 0.9485,
+        "auroc_ci": [
+          0.9296,
+          0.9678
+        ],
+        "ece": 0.0525,
+        "n_subjects": 8,
+        "n_windows": 392,
+        "n_folds": 15,
+        "protocol": "3x5 subject-held-out CV"
+      },
+      "subjects": [
+        "S9",
+        "S8"
+      ]
+    }
+  ],
+  "skipped": []
+}
