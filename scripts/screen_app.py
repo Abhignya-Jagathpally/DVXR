@@ -99,6 +99,33 @@ def glucose_product_panel_md() -> str:
     )
 
 
+def report_panels_markdown(out: dict) -> str:
+    """Markdown for the six-panel Generate report (importable/testable without Streamlit). The panels
+    visibly separate data → prediction → explanation → action (spec §13)."""
+    p = out["panels"]
+    ctx, dr, pred, why = p["context"], p["data_readiness"], p["prediction"], p["why"]
+    act, prov = p["next_action"], p["evidence_provenance"]
+    risk = "ABSTAINED — no risk number" if pred["abstained"] else str(pred.get("risk"))
+    factors = ", ".join(f["statement"] for f in why["supporting_factors"]) or "—"
+    cites = ", ".join(c.get("source_id", "") for c in prov["citations"]) or "none"
+    return (
+        f"#### 1 · Context\nPatient `{ctx['patient_id']}` · role {ctx['user_role']} · "
+        f"horizons {ctx['prediction_horizons_minutes']} min · model `{ctx['model_version']}`\n\n"
+        f"#### 2 · Data readiness\nquality **{dr['data_quality']}** · "
+        f"missing {dr['missing_modalities'] or '—'} · stale {dr['stale_modalities'] or '—'} · "
+        f"abstained **{dr['abstained']}**\n\n"
+        f"#### 3 · Prediction\n{risk} · category {pred.get('risk_category')} · "
+        f"{pred.get('uncertainty_statement') or ''}\n\n"
+        f"#### 4 · Why\n{factors}\n\n"
+        f"#### 5 · Next action\n**{act['action_id']}** — {act['action_text']} · "
+        f"reasons {act['reason_codes']} · clinician-review {act['requires_clinician_review']} · "
+        f"controls {act['controls']}\n\n"
+        f"#### 6 · Evidence & provenance\nrequest `{prov['request_id']}` · prediction "
+        f"`{prov['prediction_id']}` · cutoff {prov['data_cutoff_at'] or '—'} · citations {cites}\n\n"
+        f"_{prov['disclaimer']}_"
+    )
+
+
 def main() -> None:
     try:
         import streamlit as st
@@ -122,6 +149,22 @@ def main() -> None:
 
     st.title("🩺 DVXR NeuroGlycemic Sentinel — live pipeline")
     st.info(glucose_product_panel_md())
+
+    # Generate report → the orchestration lifecycle (spec §2/§13). Never fits a model or prompts an
+    # LLM in-process here: it calls build_report_panels, which runs the audited, idempotent, abstaining
+    # Generate lifecycle and returns the six panels (data / prediction / explanation / action).
+    with st.expander("🩸 Generate glucose report (research-stage · six panels)", expanded=False):
+        pid = st.text_input("Pseudonymous patient id", value="PSEUDO-1042")
+        if st.button("Generate report"):
+            from dvxr.contracts import GenerateRequest
+            from dvxr.serve.panels import build_report_panels
+            from dvxr.storage import open_local_stores
+            pred_store, audit_store, consent_store, _m = open_local_stores(":memory:")
+            req = GenerateRequest(patient_id=pid, report_type="stress_glucose_risk",
+                                  user_role="researcher")
+            out = build_report_panels(req, prediction_store=pred_store, audit_store=audit_store,
+                                      consent_store=consent_store, require_consent=False)
+            st.markdown(report_panels_markdown(out))
     st.caption("Below: the validated **components** — real held-out subjects (or your own upload) scored "
                "**live**: raw signal → LaBraM embedding → calibration → risk → explanation. Uploads are "
                "flagged **out-of-distribution** (illustrative). Research-grade screening, **not a "
