@@ -57,6 +57,30 @@ def build_app():
                      "abstains by construction (no synchronized EEG+CGM data); only single-modality CGM "
                      "report types can return a number."),
     )
+
+    @app.get("/", include_in_schema=False)
+    def index():
+        """A human-friendly landing payload so the bare URL isn't a bare 404. Registered BEFORE the
+        mount below so it wins for exactly "/"; every other path falls through to the product app."""
+        return {
+            "product": "DVXR NeuroGlycemic Sentinel",
+            "stage": "research — decision-support, NOT a diagnosis or medical device",
+            "disclaimer": ("A raised risk is a prompt to consult a qualified clinician, never a "
+                           "conclusion."),
+            "honesty": ("The fused stress_glucose_risk report abstains by construction — there is no "
+                        "synchronized EEG+CGM data, so no fused model and no fabricated number is ever "
+                        "served. Only single-modality CGM report types can return a value, and only "
+                        "when a committed CGM artifact is provisioned."),
+            "endpoints": {
+                "GET /health": "liveness + disclaimer (no auth)",
+                "GET /docs": "interactive API docs",
+                "POST /v1/risk-reports": "generate a risk report (X-API-Key required; consent enforced)",
+                "GET /v1/predictions/{id}": "retrieve a persisted report",
+                "GET|POST /v1/alerts/{id}[/acknowledge|dismiss|escalate]": "alert lifecycle",
+            },
+            "auth": "Patient endpoints require an X-API-Key; requests without consent fail closed (403).",
+        }
+
     app.mount("/", product)                              # mount the Starlette product app unchanged
     return app
 
