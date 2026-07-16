@@ -160,10 +160,14 @@ def main() -> None:
             from dvxr.serve.panels import build_report_panels
             from dvxr.storage import open_local_stores
             pred_store, audit_store, consent_store, _m = open_local_stores(":memory:")
+            # The demo exercises the ENFORCED path: it records an explicit demo consent for this
+            # pseudonymous id rather than disabling the consent gate — so the demonstration matches how
+            # a deployment actually runs (consent is never turned off).
+            consent_store.set_scope(pid, {"purposes": ["research"], "note": "demo consent"})
             req = GenerateRequest(patient_id=pid, report_type="stress_glucose_risk",
                                   user_role="researcher")
             out = build_report_panels(req, prediction_store=pred_store, audit_store=audit_store,
-                                      consent_store=consent_store, require_consent=False)
+                                      consent_store=consent_store, require_consent=True)
             st.markdown(report_panels_markdown(out))
     st.caption("Below: the validated **components** — real held-out subjects (or your own upload) scored "
                "**live**: raw signal → LaBraM embedding → calibration → risk → explanation. Uploads are "

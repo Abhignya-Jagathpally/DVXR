@@ -35,6 +35,7 @@ PROVENANCE_COLUMNS = [
     "event_id",              # deterministic content hash — makes ingestion idempotent
     "tenant_id",             # organization / study tenant
     "patient_id",            # clinical-record namespace (NOT a medical-record number)
+    "patient_id_namespace",  # "research" (derived pseudonym) | "explicit" (caller-asserted id)
     "observed_at_utc",       # physiological time (== timestamp_utc unless a converter knows better)
     "ingested_at_utc",       # system arrival time (stamped by ingestion; "" until then)
     "source_record_id",      # id of the source row/record in its origin system
@@ -154,6 +155,7 @@ def enrich_provenance(
     *,
     tenant_id: str = "",
     patient_id_map: Optional[Dict[str, str]] = None,
+    patient_id_namespace: str = "research",
     consent_scope: str = "unspecified",
     access_scope: str = "unspecified",
     ingested_at_utc: str = "",
@@ -180,10 +182,21 @@ def enrich_provenance(
     # tenant_id is filled BEFORE event_id so the same reading under two tenants gets distinct ids
     _fill("tenant_id", tenant_id)
     _fill("event_id", [_event_id(r) for _, r in clean.iterrows()])
-    if patient_id_map is not None:
-        _fill("patient_id", clean["subject_id"].map(lambda s: patient_id_map.get(s, s)))
+    # patient_id must NOT be silently equated with subject_id — a research-participant id is not a
+    # clinical patient id. When it is derived from subject_id it is namespaced (``research:<subject>``)
+    # and the row is stamped ``patient_id_namespace="research"``, so a pseudonym can never be mistaken
+    # for a clinical MRN. An explicitly-supplied patient_id (converter column, or a map hit) wins and is
+    # marked ``"explicit"``.
+    if "patient_id" in clean.columns:
+        _fill("patient_id_namespace", "explicit")
+    elif patient_id_map is not None:
+        clean["patient_id"] = clean["subject_id"].map(
+            lambda s: patient_id_map[s] if s in patient_id_map else f"{patient_id_namespace}:{s}")
+        clean["patient_id_namespace"] = clean["subject_id"].map(
+            lambda s: "explicit" if s in patient_id_map else patient_id_namespace)
     else:
-        _fill("patient_id", clean["subject_id"])
+        clean["patient_id"] = clean["subject_id"].map(lambda s: f"{patient_id_namespace}:{s}")
+        clean["patient_id_namespace"] = patient_id_namespace
     _fill("observed_at_utc", clean["timestamp_utc"])
     _fill("ingested_at_utc", ingested_at_utc)
     if source_record_id_col and source_record_id_col in clean.columns:
