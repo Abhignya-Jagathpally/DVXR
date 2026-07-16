@@ -124,21 +124,32 @@ number is claimed. Research-grade decision-support, not a diagnosis.
 ## Glucose-excursion ablation — single-cohort, honest (CGMacros)
 
 The prospective 30/60-min excursion target (`dvxr.targets`) is evaluated on the **CGMacros** cohort
-(same-subject CGM + Fitbit) with subject-held-out CV, a separate subject-held-out calibration fold, 3
-seeds, and a paired bootstrap CI (`dvxr.eval.glucose_ablation`; full record
-[`outputs/glucose_ablation_cgmacros.md`](../outputs/glucose_ablation_cgmacros.md)):
+(same-subject CGM + Fitbit; full record
+[`outputs/glucose_ablation_cgmacros.md`](../outputs/glucose_ablation_cgmacros.md)).
 
-| Arm | AUROC | Sens@FAR0.1 | Brier |
-|---|---|---|---|
-| CGM-only | 0.841 | 0.691 | 0.104 |
-| CGM + wearable (Fitbit HR/METs) | 0.883 | 0.771 | 0.090 |
+Evaluated with the **corrected** participant-level methodology (subject K-fold with disjoint test
+folds, alert threshold frozen on a calibration fold, exact-key arm pairing, participant-level bootstrap,
+real person-time — `dvxr.eval.glucose_ablation`):
 
-**CGM+wearable − CGM-only = +0.042 AUROC, 95% CI [0.031, 0.056] → adds value.** On the *same subjects*,
-wearable autonomic/activity data genuinely improves prospective CGM-only excursion prediction. This is
-a single-cohort, single-modality-family result — **not** the fused claim: the **CGM+EEG** and full
-**fused** arms are `cannot_evaluate` (no cohort co-registers EEG+CGM), so the NeuroGlycemic Sentinel
-headline stays research-stage and abstains until synchronized same-subject pilot data exists. Research-grade
-decision-support, not a diagnosis.
+| Arm | AUROC | AUPRC | Brier | ECE |
+|---|---|---|---|---|
+| CGM-only | 0.909 | 0.887 | 0.093 | 0.038 |
+| CGM + wearable (Fitbit HR/METs) | 0.907 | 0.889 | 0.091 | 0.026 |
+
+**Honest negative result: CGM+wearable − CGM-only = −0.003 AUROC, 95% CI [−0.018, +0.008] → does NOT
+add value** (participant bootstrap, n=4,913 paired examples, 34 subjects). Adding Fitbit HR/METs does
+**not** measurably improve prospective CGM-only excursion prediction on CGMacros.
+
+> This **supersedes an earlier "+0.042 AUROC, CI [0.031, 0.056] → adds value" claim**, which was a
+> statistical artifact of a flawed evaluation (row-level bootstrap on correlated windows, an operating
+> threshold read on the test predictions, seed-pooled rows, and arms aligned by `min(len)` truncation).
+> Under rigorous participant-level evaluation the wearable benefit disappears. Full record:
+> [`outputs/glucose_ablation_cgmacros.md`](../outputs/glucose_ablation_cgmacros.md).
+
+This is a single-cohort, single-modality-family result — **not** the fused claim: the **CGM+EEG** and
+full **fused** arms are `cannot_evaluate` (no cohort co-registers EEG+CGM), so the NeuroGlycemic
+Sentinel headline stays research-stage and abstains until synchronized same-subject pilot data exists.
+Research-grade decision-support, not a diagnosis.
 
 ## Explicit limitations (the honesty gate)
 

@@ -209,6 +209,25 @@ class ProseSurfaceAudit(unittest.TestCase):
                             or "not a diagnostic" in low or "never a diagnostic" in low,
                             f"{name}: missing the research-prototype / not-a-diagnosis disclaimer")
 
+    def test_cgm_wearable_is_not_claimed_to_add_value(self):
+        # PR32 / P0-4: the corrected participant-level ablation found NO wearable benefit. The model
+        # card must not re-inflate the superseded "+0.042 AUROC ... adds value" claim.
+        mc = ROOT / "docs" / "MODEL_CARD.md"
+        if not mc.exists():
+            self.skipTest("model card absent")
+        text = mc.read_text()
+        low = text.lower()
+        # the honest negative result must be stated (whitespace/markdown-tolerant)...
+        norm = " ".join(low.replace("**", "").split())
+        self.assertIn("does not add value", norm,
+                      "model card must state the corrected CGM+wearable negative result")
+        # ...and the old positive delta may appear ONLY as a superseded/artifact reference
+        for line in text.splitlines():
+            if "0.042" in line:
+                self.assertTrue(
+                    any(w in line.lower() for w in ("supersede", "artifact", "earlier", "flawed")),
+                    f"stale positive +0.042 claim not marked as superseded: {line!r}")
+
     def test_decision_curve_surface_is_attributed_and_honest(self):
         # Wherever a net-benefit / decision curve is shown, it must name its method (Vickers & Elkin)
         # and the default policies it is measured against — never presented as a bare "utility" number.

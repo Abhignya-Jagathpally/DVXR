@@ -19,6 +19,34 @@ def brier_score(y_true: Sequence[int], prob: Sequence[float]) -> float:
     return float(np.mean((p - y) ** 2)) if len(y) else float("nan")
 
 
+def auprc(y_true: Sequence[int], prob: Sequence[float]) -> float:
+    """Area under the precision-recall curve (average precision). More informative than AUROC under
+    class imbalance, which glucose-excursion detection typically has."""
+    y = np.asarray(y_true, dtype=int)
+    p = np.asarray(prob, dtype=float)
+    if len(y) == 0 or len(np.unique(y)) < 2:
+        return float("nan")
+    from sklearn.metrics import average_precision_score
+    return float(average_precision_score(y, p))
+
+
+def expected_calibration_error(y_true: Sequence[int], prob: Sequence[float], n_bins: int = 10) -> float:
+    """Expected Calibration Error: the probability-weighted average gap between predicted probability
+    and observed frequency across ``n_bins`` equal-width probability bins (0 = perfectly calibrated)."""
+    y = np.asarray(y_true, dtype=float)
+    p = np.asarray(prob, dtype=float)
+    if len(y) == 0:
+        return float("nan")
+    edges = np.linspace(0.0, 1.0, n_bins + 1)
+    ece = 0.0
+    for lo, hi in zip(edges[:-1], edges[1:]):
+        in_bin = (p >= lo) & (p < hi) if hi < 1.0 else (p >= lo) & (p <= hi)
+        if not in_bin.any():
+            continue
+        ece += (in_bin.mean()) * abs(p[in_bin].mean() - y[in_bin].mean())
+    return float(ece)
+
+
 def rmse(y_true: Sequence[float], pred: Sequence[float]) -> float:
     y, p = np.asarray(y_true, float), np.asarray(pred, float)
     return float(np.sqrt(np.mean((p - y) ** 2))) if len(y) else float("nan")

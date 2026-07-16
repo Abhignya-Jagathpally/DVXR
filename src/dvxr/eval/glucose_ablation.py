@@ -23,9 +23,10 @@ import pandas as pd
 
 from dvxr.calibration import fit_platt_calibrator
 from dvxr.eval.clinical_metrics import (
+    auprc,
     brier_score,
-    false_alerts_per_participant_day,
-    sensitivity_at_fixed_false_alert_rate,
+    expected_calibration_error,
+    threshold_at_fixed_false_alert_rate,
 )
 from dvxr.eval.splits import subject_holdout_split
 from dvxr.prediction.service import cgm_history_features
@@ -85,11 +86,13 @@ def _wearable_features(hist: pd.DataFrame, channels: Sequence[str]) -> Dict[str,
 
 
 def build_arm_matrix(cgm: pd.DataFrame, examples: pd.DataFrame, channels: Sequence[str], *,
-                     thresholds: ExcursionThresholds) -> Tuple[np.ndarray, np.ndarray, np.ndarray, List[str]]:
+                     thresholds: ExcursionThresholds):
     """Feature matrix for one arm: CGM history features (+ wearable summaries when the arm includes
-    them). Returns (X, y, subject_ids, feature_names) over the reportable (uncensored) examples."""
+    them). Returns (X, y, subject_ids, keys, feature_names) over the reportable (uncensored) examples,
+    where ``keys[i] = "subject|anchor_iso|horizon"`` is the STABLE example id used to pair arms exactly
+    (never by positional truncation)."""
     rep = examples[examples["censored"] == False]              # noqa: E712
-    rows, ys, subs = [], [], []
+    rows, ys, subs, keys = [], [], [], []
     names: Optional[List[str]] = None
     # index CGM by subject once (avoids re-scanning/re-sorting the whole cohort per anchor)
     by_subject = {sid: g.sort_values("timestamp") for sid, g in cgm.groupby("subject_id")}
@@ -112,9 +115,11 @@ def build_arm_matrix(cgm: pd.DataFrame, examples: pd.DataFrame, channels: Sequen
         rows.append([feats[k] for k in names])
         ys.append(int(ex["label"]))
         subs.append(sid)
+        keys.append(f"{sid}|{anchor.isoformat()}|{int(ex['horizon_minutes'])}")
     if not rows:
-        return np.empty((0, 0)), np.array([]), np.array([]), names or []
-    return np.array(rows, dtype=float), np.array(ys, dtype=int), np.array(subs), names
+        return np.empty((0, 0)), np.array([]), np.array([]), np.array([]), names or []
+    return (np.array(rows, dtype=float), np.array(ys, dtype=int), np.array(subs),
+            np.array(keys, dtype=object), names)
 
 
 def _auroc(y: np.ndarray, p: np.ndarray) -> float:
@@ -143,35 +148,96 @@ class AblationReport:
     threshold_version: str = ""
 
 
-def _fit_predict_arm(X, y, subs, seed, test_frac, cal_frac):
-    if len(y) < 20 or len(np.unique(y)) < 2:
-        return None
+def _subject_folds(subjects: Sequence[str], n_folds: int, seed: int) -> Dict[str, int]:
+    """Assign every unique subject to one of ``n_folds`` folds (shared across arms so both arms train/
+    test on the SAME participant partition — the precondition for exact-key pairing)."""
+    uniq = sorted(set(str(s) for s in subjects))
+    rng = np.random.default_rng(seed)
+    order = np.array(uniq, dtype=object)
+    rng.shuffle(order)
+    return {s: (i % n_folds) for i, s in enumerate(order)}
+
+
+def _fit_arm_kfold(X, y, subs, keys, fold_of, *, n_folds, cal_frac, seed, far):
+    """K-fold over SUBJECTS (disjoint test folds). Per fold: fit on train subjects, Platt-calibrate on a
+    held-out CALIBRATION subset of the training subjects, freeze the alert threshold on that calibration
+    fold (target FAR), then predict the test fold. Returns per-example {key: {y, p, subject, threshold}}
+    — each participant appears once across the pooled test folds."""
     from sklearn.ensemble import GradientBoostingClassifier
-    tr_all, te = subject_holdout_split(subs, test_frac=test_frac, seed=seed)
-    # a SEPARATE subject-held-out calibration fold carved from the training subjects (never the test)
-    tr, cal = subject_holdout_split(subs[tr_all], test_frac=cal_frac, seed=seed + 100)
-    tr, cal = tr_all[tr], tr_all[cal]
-    if min(len(np.unique(y[tr])), len(np.unique(y[cal])), len(np.unique(y[te]))) < 2:
-        return None
-    clf = GradientBoostingClassifier(random_state=seed)
-    clf.fit(X[tr], y[tr])
-    calib = fit_platt_calibrator(clf.predict_proba(X[cal])[:, 1], y[cal])
-    p_te = calib.predict(clf.predict_proba(X[te])[:, 1])
-    return {"subjects": subs[te], "y": y[te], "p": np.asarray(p_te)}
+    subs = np.array([str(s) for s in subs])
+    out: Dict[str, dict] = {}
+    for k in range(n_folds):
+        te = np.array([i for i in range(len(subs)) if fold_of.get(subs[i]) == k])
+        tr_pool = np.array([i for i in range(len(subs)) if fold_of.get(subs[i]) != k])
+        if len(te) == 0 or len(tr_pool) == 0:
+            continue
+        tr_i, cal_i = subject_holdout_split(subs[tr_pool], test_frac=cal_frac, seed=seed + k)
+        tr, cal = tr_pool[tr_i], tr_pool[cal_i]
+        if min(len(np.unique(y[tr])), len(np.unique(y[cal])), len(np.unique(y[te]))) < 2:
+            continue
+        clf = GradientBoostingClassifier(random_state=seed)
+        clf.fit(X[tr], y[tr])
+        calib = fit_platt_calibrator(clf.predict_proba(X[cal])[:, 1], y[cal])
+        p_cal = calib.predict(clf.predict_proba(X[cal])[:, 1])
+        # freeze the operating threshold on the CALIBRATION fold — never on the test predictions
+        thr = threshold_at_fixed_false_alert_rate(y[cal], p_cal, target_far=far)
+        p_te = calib.predict(clf.predict_proba(X[te])[:, 1])
+        for j, i in enumerate(te):
+            out[str(keys[i])] = {"y": int(y[i]), "p": float(p_te[j]),
+                                 "subject": subs[i], "threshold": float(thr)}
+    return out
+
+
+def _person_days(cgm: pd.DataFrame, subjects: Sequence[str]) -> float:
+    """Actual observed participant-time (days) for ``subjects`` — the honest denominator for
+    false-alerts-per-participant-day (never a placeholder 1.0)."""
+    total = 0.0
+    want = set(str(s) for s in subjects)
+    for sid, g in cgm.groupby("subject_id"):
+        if str(sid) not in want:
+            continue
+        t = pd.to_datetime(g["timestamp"]).dropna()
+        if len(t) >= 2:
+            total += (t.max() - t.min()) / pd.Timedelta(days=1)
+    return float(total)
+
+
+def _arm_metrics(pooled: Dict[str, dict], cgm: pd.DataFrame, arm: str) -> dict:
+    y = np.array([r["y"] for r in pooled.values()], dtype=int)
+    p = np.array([r["p"] for r in pooled.values()], dtype=float)
+    alert = np.array([1 if r["p"] >= r["threshold"] else 0 for r in pooled.values()], dtype=int)
+    subjects = {r["subject"] for r in pooled.values()}
+    pdays = _person_days(cgm, subjects)
+    false_alerts = int(((alert == 1) & (y == 0)).sum())
+    sens = float(alert[y == 1].mean()) if (y == 1).any() else float("nan")
+    return {
+        "n_test": int(len(y)), "n_subjects_test": int(len(subjects)),
+        "auroc": round(_auroc(y, p), 4),
+        "auprc": round(auprc(y, p), 4),
+        "sensitivity_at_frozen_threshold": round(sens, 4),
+        "false_alerts_per_participant_day": round(false_alerts / pdays, 4) if pdays > 0 else None,
+        "brier": round(brier_score(y, p), 4),
+        "ece": round(expected_calibration_error(y, p), 4),
+        "modality_scope": arm,
+    }
 
 
 def run_glucose_ablation(cgm: pd.DataFrame, *, thresholds: ExcursionThresholds = ExcursionThresholds(),
                          seeds: Sequence[int] = (1, 2, 3), test_frac: float = 0.3,
                          cal_frac: float = 0.25, anchor_stride: int = 8,
-                         max_anchors_per_subject: int = 60,
-                         participant_days: float = 1.0) -> AblationReport:
-    """Run the honest CGM-only vs CGM+wearable ablation on ``cgm``; gate every EEG/fused arm."""
+                         max_anchors_per_subject: int = 60, n_folds: int = 5,
+                         far: float = 0.1, participant_days: float = 1.0) -> AblationReport:
+    """Honest CGM-only vs CGM+wearable ablation on ``cgm``; every EEG/fused arm is gated.
+
+    Methodology (corrected): subject K-fold with DISJOINT test folds (each participant once), a
+    calibration subset carved from each fold's training subjects, the alert threshold FROZEN on the
+    calibration fold, arms paired by EXACT example key, and a PARTICIPANT-level bootstrap for the delta
+    CI over real observed person-time. ``seeds[0]`` seeds the fold shuffle (no cross-seed row pooling)."""
     rep = AblationReport(n_subjects=int(cgm["subject_id"].nunique()),
                          threshold_version=thresholds.version)
     for arm, reason in GATED_ARMS.items():
         rep.gated[arm] = {"status": "cannot_evaluate", "reason": reason}
 
-    # anchors: subsample per subject for tractability (deterministic)
     anchors = []
     for sid, g in cgm.groupby("subject_id"):
         t = pd.to_datetime(g["timestamp"]).sort_values()
@@ -179,56 +245,62 @@ def run_glucose_ablation(cgm: pd.DataFrame, *, thresholds: ExcursionThresholds =
     examples = build_excursion_labels(cgm, thresholds=thresholds, anchors=sorted(set(anchors)),
                                       subject_col="subject_id")
 
-    pooled: Dict[str, Dict[str, list]] = {a: {"y": [], "p": []} for a in HONEST_ARMS}
-    for arm, channels in HONEST_ARMS.items():
-        X, y, subs, _names = build_arm_matrix(cgm, examples, channels, thresholds=thresholds)  # once
-        for seed in seeds:
-            out = _fit_predict_arm(X, y, subs, seed, test_frac, cal_frac)
-            if out is None:
-                continue
-            pooled[arm]["y"].append(out["y"])
-            pooled[arm]["p"].append(out["p"])
+    n_folds = max(2, min(n_folds, int(cgm["subject_id"].nunique())))
+    fold_of = _subject_folds(cgm["subject_id"].tolist(), n_folds, seed=int(seeds[0]))
 
-    for arm in HONEST_ARMS:
-        if not pooled[arm]["y"]:
+    per_arm: Dict[str, Dict[str, dict]] = {}
+    for arm, channels in HONEST_ARMS.items():
+        X, y, subs, keys, _names = build_arm_matrix(cgm, examples, channels, thresholds=thresholds)
+        if len(y) < 20 or len(np.unique(y)) < 2:
             rep.honest[arm] = {"status": "insufficient_data"}
             continue
-        y = np.concatenate(pooled[arm]["y"]); p = np.concatenate(pooled[arm]["p"])
-        sfar = sensitivity_at_fixed_false_alert_rate(y, p, target_far=0.1)
-        rep.honest[arm] = {
-            "n_test": int(len(y)),
-            "auroc": round(_auroc(y, p), 4),
-            "sensitivity_at_far10": round(sfar["sensitivity"], 4),
-            "false_alerts_per_participant_day": round(
-                false_alerts_per_participant_day(y, p, sfar["threshold"], participant_days), 4),
-            "brier": round(brier_score(y, p), 4),
-            "modality_scope": arm,
-        }
+        pooled = _fit_arm_kfold(X, y, subs, keys, fold_of, n_folds=n_folds, cal_frac=cal_frac,
+                                seed=int(seeds[0]), far=far)
+        if not pooled:
+            rep.honest[arm] = {"status": "insufficient_data"}
+            continue
+        per_arm[arm] = pooled
+        rep.honest[arm] = _arm_metrics(pooled, cgm, arm)
 
-    # paired delta (cgm_wearable - cgm_only) with a bootstrap CI over test rows, when both ran
-    if all(pooled[a]["y"] for a in HONEST_ARMS):
-        rep.paired_delta = _paired_auroc_delta(pooled)
+    if all(a in per_arm for a in HONEST_ARMS):
+        rep.paired_delta = _paired_auroc_delta(per_arm["cgm_only"], per_arm["cgm_wearable"])
     return rep
 
 
-def _paired_auroc_delta(pooled, n_boot: int = 200, seed: int = 0) -> dict:
-    yb = np.concatenate(pooled["cgm_only"]["y"]); pb = np.concatenate(pooled["cgm_only"]["p"])
-    ya = np.concatenate(pooled["cgm_wearable"]["y"]); pa = np.concatenate(pooled["cgm_wearable"]["p"])
-    n = min(len(yb), len(ya))
-    yb, pb, pa = yb[:n], pb[:n], pa[:n]           # aligned pooled rows (same target)
+def _paired_auroc_delta(pooled_b: Dict[str, dict], pooled_a: Dict[str, dict],
+                        n_boot: int = 500, seed: int = 0) -> dict:
+    """AUROC(cgm_wearable) − AUROC(cgm_only) paired by EXACT example key, with a PARTICIPANT-level
+    bootstrap CI (resample subjects with replacement — the correlated unit — never individual rows)."""
+    keys = sorted(set(pooled_b) & set(pooled_a))          # exact-key pairing, not truncation
+    if not keys:
+        return {"metric": "auroc(cgm_wearable) - auroc(cgm_only)", "point": float("nan"),
+                "ci95": [float("nan"), float("nan")], "adds_value": False, "n_paired": 0}
+    y = np.array([pooled_b[k]["y"] for k in keys], dtype=int)
+    pb = np.array([pooled_b[k]["p"] for k in keys], dtype=float)
+    pa = np.array([pooled_a[k]["p"] for k in keys], dtype=float)
+    subj = np.array([pooled_b[k]["subject"] for k in keys], dtype=object)
+    # group row indices by subject for the participant bootstrap
+    by_subj: Dict[str, list] = {}
+    for i, s in enumerate(subj):
+        by_subj.setdefault(s, []).append(i)
+    subjects = np.array(sorted(by_subj), dtype=object)
     rng = np.random.RandomState(seed)
     deltas = []
     for _ in range(n_boot):
-        idx = rng.randint(0, n, n)
-        if len(np.unique(yb[idx])) < 2:
+        pick = rng.randint(0, len(subjects), len(subjects))
+        idx = np.concatenate([by_subj[subjects[j]] for j in pick])
+        if len(np.unique(y[idx])) < 2:
             continue
-        deltas.append(_auroc(yb[idx], pa[idx]) - _auroc(yb[idx], pb[idx]))
+        deltas.append(_auroc(y[idx], pa[idx]) - _auroc(y[idx], pb[idx]))
     deltas = np.array([d for d in deltas if not np.isnan(d)])
-    lo, hi = (float(np.percentile(deltas, 2.5)), float(np.percentile(deltas, 97.5))) if len(deltas) else (float("nan"), float("nan"))
-    point = _auroc(ya, pa) - _auroc(yb, pb)
+    lo, hi = ((float(np.percentile(deltas, 2.5)), float(np.percentile(deltas, 97.5)))
+              if len(deltas) else (float("nan"), float("nan")))
+    point = _auroc(y, pa) - _auroc(y, pb)
     return {
         "metric": "auroc(cgm_wearable) - auroc(cgm_only)",
         "point": round(point, 4),
         "ci95": [round(lo, 4), round(hi, 4)],
+        "n_paired": int(len(keys)),
+        "bootstrap_unit": "participant",
         "adds_value": bool(lo > 0),               # honest: wearable adds only if the CI clears 0
     }
