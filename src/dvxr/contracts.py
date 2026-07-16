@@ -35,6 +35,7 @@ class GenerateRequest:
     data_cutoff_at: str = ""            # explicit causal cutoff; "" ⇒ 'now' resolved by orchestrator
     requested_at: str = ""
     user_role: str = "researcher"
+    tenant_id: str = "default"          # server-derived (from the authenticated principal), not body
     question: Optional[str] = None
     idempotency_key: Optional[str] = None
     request_id: str = ""
@@ -61,6 +62,7 @@ class RiskPrediction:
     request_id: str
     patient_id: str
     report_type: str
+    tenant_id: str = "default"                     # owning tenant (for cross-tenant access control)
     risk: Optional[Dict[str, float]] = None       # {"excursion_30m": 0.58, ...} or None if abstained
     risk_category: Optional[str] = None           # low | elevated | high | None
     confidence: Optional[float] = None

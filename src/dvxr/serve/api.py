@@ -26,7 +26,12 @@ _SCREENER_ROOT = Path("outputs/product/screeners")
 
 
 def create_app(screener_root: str | Path = _SCREENER_ROOT,
-               db_path: str = ":memory:", require_consent: bool = False):
+               db_path: str = ":memory:", require_consent: bool = True,
+               principals: dict | None = None, unsafe_dev: bool = False):
+    """Build the ASGI app. Secure by default: the /v1 patient endpoints require an ``X-API-Key`` that
+    resolves to a server-side Principal (role/tenant come from the principal, NOT the request body).
+    Pass ``principals`` (api_key -> Principal) for a real deployment, or ``unsafe_dev=True`` for a
+    local demo with no auth. ``require_consent`` defaults ON (spec §2, §18)."""
     from starlette.applications import Starlette
     from starlette.responses import JSONResponse, PlainTextResponse
     from starlette.routing import Route
@@ -124,30 +129,58 @@ def create_app(screener_root: str | Path = _SCREENER_ROOT,
         return JSONResponse({"task": task, "n": int(len(df)),
                              "ranking": df.to_dict(orient="records"), "disclaimer": DISCLAIMER})
 
+    def _principal(request):
+        from dvxr.serve.auth import authenticate
+        return authenticate(request.headers.get("X-API-Key"), principals, unsafe_dev=unsafe_dev)
+
     async def risk_reports(request):
         """POST /v1/risk-reports — the Generate lifecycle (spec §2). Never trains; persists a
-        reproducible, audited request; idempotent by idempotency_key."""
+        reproducible, audited request; idempotent by (tenant, patient, report_type, key). The actor's
+        role + tenant are taken from the authenticated principal, NEVER from the request body."""
+        import dataclasses
+
         from dvxr.contracts import GenerateRequest
+        from dvxr.serve.auth import AuthError, AuthorizationError, authorize
         from dvxr.serve.orchestrate import ConsentError, generate_risk_report
+        try:
+            principal = _principal(request)
+        except AuthError as e:
+            return JSONResponse({"error": str(e)}, status_code=401)
         body = await request.json()
         if not body.get("patient_id"):
             return JSONResponse({"error": "body must include 'patient_id'"}, status_code=400)
-        req = GenerateRequest.from_dict(body)
+        try:
+            authorize(principal, str(body["patient_id"]), "generate_risk_report")
+        except AuthorizationError as e:
+            return JSONResponse({"error": str(e)}, status_code=403)
+        # server-derived identity overrides anything the caller tried to self-assert in the body
+        req = dataclasses.replace(GenerateRequest.from_dict(body),
+                                  user_role=principal.role, tenant_id=principal.tenant_id)
         try:
             out = generate_risk_report(req, prediction_store=pred_store, audit_store=audit_store,
                                        consent_store=consent_store, require_consent=require_consent)
         except ConsentError as e:
             return JSONResponse({"error": str(e)}, status_code=403)
-        except Exception as e:  # noqa: BLE001
-            return JSONResponse({"error": str(e)}, status_code=500)
+        except Exception:  # noqa: BLE001 — never leak internals to the client
+            return JSONResponse({"error": "internal error generating report"}, status_code=500)
         out["disclaimer"] = DISCLAIMER
         return JSONResponse(out)
 
     async def get_risk_report(request):
+        from dvxr.serve.auth import AuthError, AuthorizationError, authorize
+        try:
+            principal = _principal(request)
+        except AuthError as e:
+            return JSONResponse({"error": str(e)}, status_code=401)
         pid = request.path_params["prediction_id"]
         rec = pred_store.get(pid)
         if rec is None:
             return JSONResponse({"error": f"unknown prediction {pid!r}"}, status_code=404)
+        try:
+            authorize(principal, str(rec.get("patient_id")), "read_prediction",
+                      record_tenant=rec.get("tenant_id"))
+        except AuthorizationError as e:
+            return JSONResponse({"error": str(e)}, status_code=403)
         return JSONResponse({"prediction": rec, "disclaimer": DISCLAIMER})
 
     return Starlette(routes=[

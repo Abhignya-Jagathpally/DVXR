@@ -113,7 +113,8 @@ class RiskReportsEndpointTest(unittest.TestCase):
     def _client(self):
         from starlette.testclient import TestClient
         from dvxr.serve.api import create_app
-        return TestClient(create_app(require_consent=False))   # research deployment default
+        # local research deployment: no auth registry ⇒ explicit unsafe_dev, consent off
+        return TestClient(create_app(require_consent=False, unsafe_dev=True))
 
     def test_post_returns_persisted_abstention(self):
         c = self._client()

@@ -73,6 +73,7 @@ def _prediction_from_bundle(req: GenerateRequest, bundle, snapshot) -> RiskPredi
         request_id=req.request_id,
         patient_id=req.patient_id,
         report_type=req.report_type,
+        tenant_id=req.tenant_id,
         risk=bundle.risk,
         risk_category=bundle.risk_category,
         confidence=bundle.confidence,
@@ -86,6 +87,14 @@ def _prediction_from_bundle(req: GenerateRequest, bundle, snapshot) -> RiskPredi
         data_cutoff_at=req.data_cutoff_at,
         snapshot_id=snapshot.snapshot_id,
     ).with_prediction_id()
+
+
+def _scoped_idempotency_key(req: GenerateRequest):
+    """Namespace a caller's idempotency key by tenant+patient+report_type so the same raw key issued
+    for a different patient (or tenant) never returns the wrong patient's prediction (spec §18)."""
+    if not req.idempotency_key:
+        return None
+    return f"{req.tenant_id}|{req.patient_id}|{req.report_type}|{req.idempotency_key}"
 
 
 def _action_for(prediction: RiskPrediction, role: str):
@@ -127,9 +136,12 @@ def generate_risk_report(
                                 "patient_id": req.patient_id, "purpose": purpose})
             raise ConsentError(f"patient {req.patient_id!r} has no consent for purpose {purpose!r}")
 
-    # idempotency — reuse the already-stored prediction for a repeated key (no recompute)
-    if req.idempotency_key:
-        existing = prediction_store.get_by_idempotency_key(req.idempotency_key)
+    # idempotency — reuse the already-stored prediction for a repeated key (no recompute). The key is
+    # SCOPED by tenant+patient+report_type so the same raw key cannot collide across patients/tenants
+    # (spec §18): patient A's prediction can never be returned for patient B's request.
+    scoped_key = _scoped_idempotency_key(req)
+    if scoped_key:
+        existing = prediction_store.get_by_idempotency_key(scoped_key)
         if existing is not None:
             audit_store.append({"request_id": req.request_id, "event": "generate.reused",
                                 "prediction_id": existing.get("prediction_id")})
@@ -159,7 +171,7 @@ def generate_risk_report(
     )
     bundle = service.predict(inputs)
     prediction = _prediction_from_bundle(req, bundle, snapshot)
-    pid = prediction_store.put(prediction.to_dict(), idempotency_key=req.idempotency_key)
+    pid = prediction_store.put(prediction.to_dict(), idempotency_key=scoped_key)
     report = _assemble_report(req, prediction, pid, reused=False)
     audit_store.append({"request_id": req.request_id, "event": "generate.completed",
                         "prediction_id": pid, "abstained": prediction.abstained,
