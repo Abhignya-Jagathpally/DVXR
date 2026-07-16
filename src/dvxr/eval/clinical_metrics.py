@@ -62,6 +62,27 @@ def bias(y_true: Sequence[float], pred: Sequence[float]) -> float:
     return float(np.mean(p - y)) if len(y) else float("nan")
 
 
+def interval_coverage(y_true: Sequence[float], lower: Sequence[float],
+                      upper: Sequence[float]) -> float:
+    """Empirical coverage of a prediction interval: the fraction of true values that land in
+    ``[lower, upper]`` (inclusive). For a valid conformal interval at level ``1-alpha`` this should be
+    at least ``1-alpha`` on exchangeable held-out data."""
+    y = np.asarray(y_true, dtype=float)
+    lo = np.asarray(lower, dtype=float)
+    hi = np.asarray(upper, dtype=float)
+    if len(y) == 0:
+        return float("nan")
+    return float(np.mean((y >= lo) & (y <= hi)))
+
+
+def mean_interval_width(lower: Sequence[float], upper: Sequence[float]) -> float:
+    """Average width ``upper - lower`` of the prediction intervals (the sharpness/efficiency term that
+    accompanies coverage — a trivially wide interval covers everything)."""
+    lo = np.asarray(lower, dtype=float)
+    hi = np.asarray(upper, dtype=float)
+    return float(np.mean(hi - lo)) if len(lo) else float("nan")
+
+
 def threshold_at_fixed_false_alert_rate(y_true: Sequence[int], prob: Sequence[float],
                                         target_far: float) -> float:
     """The lowest probability threshold whose false-alert rate (FPR on negatives) is <= target_far.
