@@ -21,7 +21,7 @@ from dvxr.encoders.eeg_adapter import EEGAdapter  # noqa: E402
 CFG = DEFAULTS.with_(d=8, use_real_weights=False, epochs=5, codebook_size=32)
 
 FALLBACK_NAMES = {"vq_biosignal", "pca_feature", "cgm_summary",
-                  "ehr_code_timeline", "omics_linear"}
+                  "ehr_code_timeline", "omics_linear", "tfidf_svd"}
 
 
 def _fixture(n=24, f=10, seed=1):

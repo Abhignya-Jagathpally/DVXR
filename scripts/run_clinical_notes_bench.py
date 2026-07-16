@@ -101,7 +101,8 @@ def _eval_task(task, emb, kind, n_folds=5, seed=7):
             return p[:, pos]
         # align columns to the global class order
         col = {c: i for i, c in enumerate(clf.classes_)}
-        return np.column_stack([p[:, col[c]] if c in col else np.zeros(len(Xte))
+        n = Xte.shape[0]
+        return np.column_stack([p[:, col[c]] if c in col else np.zeros(n)
                                 for c in classes])
 
     folds = list(GroupKFold(n_splits=n_folds).split(y, y, task.subject_ids))
