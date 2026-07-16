@@ -109,6 +109,18 @@ each subject's calibration sample is too small. It is therefore **off by default
 documented opt-in with the negative reported rather than hidden. Persistence is versioned
 (`dvxr-screener/2`) and back-compatible (v1 artifacts load unchanged).
 
+## Clinical evaluation metrics (for the glucose product, when synchronized data exists)
+
+AUROC measures ranking, not operational usefulness. The glucose early-warning product is evaluated
+with the clinically-relevant metrics in `dvxr.eval.clinical_metrics` (spec §9): **sensitivity at a
+prespecified false-alert rate**, **false alerts per participant-day** (alert fatigue), **median event
+lead time** and **fraction of events detected ≥15 min early**, plus **Brier / RMSE / MAE / bias** for
+the glucose forecast. Within-person evaluation uses a **chronological personalization split** (each
+participant's earliest window is baseline/calibration, later windows are evaluation) so a participant's
+future never leaks into its own baseline. These are reported only on synchronized same-subject data;
+until such pilot data exists the fused product remains research-stage and abstains — no operational
+number is claimed. Research-grade decision-support, not a diagnosis.
+
 ## Explicit limitations (the honesty gate)
 
 - **Fidelity-limited EEG:** the EEG cohorts are 64 Hz (≤32 Hz content) vs LaBraM's 200 Hz training;
