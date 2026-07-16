@@ -121,6 +121,25 @@ future never leaks into its own baseline. These are reported only on synchronize
 until such pilot data exists the fused product remains research-stage and abstains — no operational
 number is claimed. Research-grade decision-support, not a diagnosis.
 
+## Glucose-excursion ablation — single-cohort, honest (CGMacros)
+
+The prospective 30/60-min excursion target (`dvxr.targets`) is evaluated on the **CGMacros** cohort
+(same-subject CGM + Fitbit) with subject-held-out CV, a separate subject-held-out calibration fold, 3
+seeds, and a paired bootstrap CI (`dvxr.eval.glucose_ablation`; full record
+[`outputs/glucose_ablation_cgmacros.md`](../outputs/glucose_ablation_cgmacros.md)):
+
+| Arm | AUROC | Sens@FAR0.1 | Brier |
+|---|---|---|---|
+| CGM-only | 0.841 | 0.691 | 0.104 |
+| CGM + wearable (Fitbit HR/METs) | 0.883 | 0.771 | 0.090 |
+
+**CGM+wearable − CGM-only = +0.042 AUROC, 95% CI [0.031, 0.056] → adds value.** On the *same subjects*,
+wearable autonomic/activity data genuinely improves prospective CGM-only excursion prediction. This is
+a single-cohort, single-modality-family result — **not** the fused claim: the **CGM+EEG** and full
+**fused** arms are `cannot_evaluate` (no cohort co-registers EEG+CGM), so the NeuroGlycemic Sentinel
+headline stays research-stage and abstains until synchronized same-subject pilot data exists. Research-grade
+decision-support, not a diagnosis.
+
 ## Explicit limitations (the honesty gate)
 
 - **Fidelity-limited EEG:** the EEG cohorts are 64 Hz (≤32 Hz content) vs LaBraM's 200 Hz training;

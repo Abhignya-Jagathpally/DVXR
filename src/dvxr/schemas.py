@@ -62,10 +62,19 @@ def _quality_from_flag(flag: str) -> tuple[float, str]:
     return _QUALITY_FLAG_MAP.get(str(flag).strip().lower(), (0.5, "acceptable"))
 
 
-def _event_id(row: pd.Series) -> str:
-    """Deterministic content hash of the identity+value fields — same event ⇒ same id (idempotent)."""
-    key = "|".join(str(row[c]) for c in
-                   ["subject_id", "session_id", "timestamp_utc", "modality", "channel", "value"])
+#: Identity fields hashed into the event id. Tenant + source fields are included when present so the
+#: same physiological reading ingested under two tenants (or two source systems) gets DISTINCT ids —
+#: preventing a cross-tenant idempotency collision at the event layer (spec §5).
+_EVENT_ID_FIELDS = ["tenant_id", "source_system", "source_record_id", "device",
+                    "subject_id", "session_id", "timestamp_utc", "modality", "channel", "unit", "value"]
+
+
+def _event_id(row) -> str:
+    """Deterministic content hash of the identity+value fields — same event ⇒ same id (idempotent).
+    Missing fields contribute an empty string, so callers with only the 13-column floor still get a
+    stable id, while richer rows get a more collision-resistant one."""
+    get = (lambda c: row[c] if c in row else "") if hasattr(row, "__contains__") else (lambda c: "")
+    key = "|".join(str(get(c)) for c in _EVENT_ID_FIELDS)
     return hashlib.sha1(key.encode("utf-8")).hexdigest()[:16]
 
 
@@ -168,8 +177,9 @@ def enrich_provenance(
         if col not in clean.columns:
             clean[col] = value
 
-    _fill("event_id", [_event_id(r) for _, r in clean.iterrows()])
+    # tenant_id is filled BEFORE event_id so the same reading under two tenants gets distinct ids
     _fill("tenant_id", tenant_id)
+    _fill("event_id", [_event_id(r) for _, r in clean.iterrows()])
     if patient_id_map is not None:
         _fill("patient_id", clean["subject_id"].map(lambda s: patient_id_map.get(s, s)))
     else:
@@ -209,9 +219,31 @@ def validate_provenanced_events(events: pd.DataFrame) -> pd.DataFrame:
     clean["quality_score"] = pd.to_numeric(clean["quality_score"], errors="coerce")
     if clean["quality_score"].isna().any():
         raise ValueError("quality_score contains non-numeric entries")
+    # quality_score is a probability-like reliability in [0, 1] — reject out-of-range values
+    oob = (clean["quality_score"] < 0.0) | (clean["quality_score"] > 1.0)
+    if oob.any():
+        raise ValueError(f"quality_score out of [0,1] for {int(oob.sum())} row(s)")
+    # event_id is a content hash; duplicates mean the same event was ingested twice — reject (spec §5)
+    dups = clean["event_id"][clean["event_id"].duplicated()].unique().tolist()
+    if dups:
+        raise ValueError(f"duplicate event_id(s) in the batch: {dups[:5]}")
     for col in PROVENANCE_COLUMNS:
         if col != "quality_score":
             clean[col] = clean[col].fillna("").astype(str)
     ordered = REQUIRED_EVENT_COLUMNS + PROVENANCE_COLUMNS
     extras = [c for c in clean.columns if c not in ordered]
     return clean[ordered + extras].reset_index(drop=True)
+
+
+def quarantine_unconsented_events(events: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Split a provenanced batch into (prediction_ready, quarantined). A row whose ``consent_scope`` or
+    ``access_scope`` is missing/``unspecified`` is QUARANTINED — it must never reach a prediction-ready
+    table (spec §5: "a record with unspecified consent should be quarantined rather than accepted").
+    Returns two frames; the ready frame is safe to feed downstream."""
+    clean = validate_provenanced_events(events)
+    unspecified = {"", "unspecified", "unknown", "none"}
+    bad = (clean["consent_scope"].str.lower().isin(unspecified)
+           | clean["access_scope"].str.lower().isin(unspecified))
+    ready = clean[~bad].reset_index(drop=True)
+    quarantined = clean[bad].reset_index(drop=True)
+    return ready, quarantined
