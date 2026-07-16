@@ -31,6 +31,7 @@ import pandas as pd
 from dvxr.eval.clinical_metrics import mae, rmse
 from dvxr.eval.glucose_forecast import (
     _conformal_quantile,
+    _grouped_conformal_quantile,
     build_forecast_examples,
     build_forecast_matrix,
 )
@@ -118,6 +119,7 @@ class CgmOnlyGlucoseForecastService:
         models: Dict[int, Tuple[object, float]] = {}
         skipped: List[int] = []
         baseline: Dict[int, Dict[str, float]] = {}
+        blocked_certified: Dict[int, bool] = {}
         for h in sorted(set(int(x) for x in thresholds.horizons_minutes)):
             m = horizons == h
             if int(m.sum()) < 8 or len(np.unique(subs[m])) < 2:
@@ -131,11 +133,22 @@ class CgmOnlyGlucoseForecastService:
             reg = GradientBoostingRegressor(random_state=seed)
             reg.fit(Xh[tr_i], yh[tr_i])
             resid = np.abs(yh[cal_i] - reg.predict(Xh[cal_i]))
+            # The SERVABLE interval uses the pooled radius so it is finite and usable. A strict
+            # participant-blocked radius needs ~1/alpha calibration PARTICIPANTS (≥9 at alpha=0.1) —
+            # more than a single cohort's calibration split supplies — so it would be infinite here.
+            # We therefore label the interval "empirical-conformal" (NOT an unconditional distribution-
+            # free guarantee under within-participant correlation); its true held-out coverage is
+            # characterized honestly by dvxr.eval.glucose_forecast (grouped conformal + coverage report).
             q = _conformal_quantile(resid, alpha)
+            q_blocked = _grouped_conformal_quantile(resid, sh[cal_i], alpha)
             models[h] = (reg, float(q))
-            baseline[h] = cls._baseline_scores(Xh[cal_i], yh[cal_i], reg, h)
+            blocked_certified[h] = bool(np.isfinite(q_blocked))
+            b = cls._baseline_scores(Xh[cal_i], yh[cal_i], reg, h)
+            b["blocked_conformal_certified"] = blocked_certified[h]
+            baseline[h] = b
         return cls(models, model_version=model_version,
-                   interval_version=f"split-conformal/{1 - alpha:.2f}", coverage_target=1.0 - alpha,
+                   interval_version=f"empirical-conformal/{1 - alpha:.2f}",
+                   coverage_target=1.0 - alpha,
                    thresholds=thresholds, max_staleness_minutes=max_staleness_minutes, adequacy=adequacy,
                    feature_mean=feat_mean, feature_std=feat_std, skipped_horizons=skipped,
                    baseline_report=baseline)

@@ -34,6 +34,23 @@ guarantee. This is the correct, conservative thing to surface: a subject-split c
 *approximately* calibrated, not exactly. Closing the gap honestly would need per-subject/online conformal
 recalibration on each participant's own early data (future work), not a wider global fudge factor.
 
+## Update (PR36): participant-blocked conformal + honest scorability
+
+The coverage undershoot above has a named cause — overlapping windows from one participant are
+correlated, so ordinary split conformal treats a calibration set of ~n correlated rows as if it were n
+independent draws and under-covers on a *new* participant. `run_glucose_forecast` now defaults to
+**participant-blocked (grouped) conformal**: each calibration participant is reduced to one conformity
+score and the radius is the finite-sample quantile over *participants*, so the exchangeable unit is the
+person. Because that needs ≈1/α ≈ 9 calibration participants to certify a finite radius, the report also
+emits `fraction_infinite_intervals` / `fraction_scorable` and computes coverage over **finite intervals
+only** — an infinite interval is reported as unscorable, never silently counted as "covered".
+
+The **servable** forecaster (`CgmOnlyGlucoseForecastService`) keeps a finite, usable radius (a single
+cohort's calibration split rarely has ≥9 participants) but labels it honestly as
+`empirical-conformal/0.90` — an empirically-calibrated interval, **not** an unconditional
+distribution-free guarantee — and records per-horizon `blocked_conformal_certified` in its manifest.
+True held-out coverage is what this eval measures, not what the label claims.
+
 ## Scope
 
 CGM-only, CGMacros-only, threshold config `pilot-v1`. This says nothing about EEG and is **not** the

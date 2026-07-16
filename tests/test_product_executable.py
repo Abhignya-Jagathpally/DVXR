@@ -164,7 +164,8 @@ class RegistryResolverTest(unittest.TestCase):
             self.assertIn("point", fc[k])
             self.assertIn("lower", fc[k])
             self.assertIn("upper", fc[k])
-        self.assertTrue(out["prediction"]["forecast_interval_version"].startswith("split-conformal/"))
+        self.assertTrue(out["prediction"]["forecast_interval_version"].startswith(
+            "empirical-conformal/"))
         self.assertEqual(out["prediction"]["forecast_coverage_target"], 0.9)
 
     def test_forecast_only_report_type_serves_a_forecast(self):

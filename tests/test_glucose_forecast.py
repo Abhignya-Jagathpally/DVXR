@@ -22,6 +22,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 from dvxr.eval.clinical_metrics import interval_coverage, mean_interval_width  # noqa: E402
 from dvxr.eval.glucose_forecast import (  # noqa: E402
     _conformal_quantile,
+    _grouped_conformal_quantile,
     build_forecast_examples,
     run_glucose_forecast,
 )
@@ -59,6 +60,26 @@ class ConformalQuantileTest(unittest.TestCase):
         self.assertEqual(_conformal_quantile(np.array([]), alpha=0.1), float("inf"))
 
 
+class GroupedConformalTest(unittest.TestCase):
+    def test_participant_blocked_uses_participant_count_not_row_count(self):
+        # 3 participants, many correlated rows each. Ordinary split conformal sees ~n=big and returns a
+        # finite radius; grouped sees m=3 participants and (with the (m+1) correction) cannot certify a
+        # finite radius at 0.1 -> inf. This is the honest "too few participants" signal.
+        rs = np.random.RandomState(0)
+        groups = np.repeat(["p0", "p1", "p2"], 50)
+        resid = np.abs(rs.normal(0, 5, 150))
+        self.assertTrue(np.isfinite(_conformal_quantile(resid, alpha=0.1)))
+        self.assertEqual(_grouped_conformal_quantile(resid, groups, alpha=0.1), float("inf"))
+
+    def test_grouped_is_finite_with_enough_participants(self):
+        rs = np.random.RandomState(1)
+        groups = np.repeat([f"p{i}" for i in range(30)], 10)
+        resid = np.abs(rs.normal(0, 5, 300))
+        q = _grouped_conformal_quantile(resid, groups, alpha=0.1)
+        self.assertTrue(np.isfinite(q))
+        self.assertGreater(q, 0.0)
+
+
 class ForecastTargetIsFutureTest(unittest.TestCase):
     def test_label_is_strictly_after_anchor(self):
         cgm = _cohort(n_subjects=2, n=120)
@@ -81,21 +102,35 @@ class IntervalMetricsTest(unittest.TestCase):
 
 class EndToEndForecastTest(unittest.TestCase):
     def test_report_is_calibrated_and_carries_point_error(self):
+        # split-conformal path (grouped=False) exercises the coverage mechanics on this small cohort
         rep = run_glucose_forecast(_cohort(), thresholds=ExcursionThresholds(history_minutes=120),
                                    seed=1, alpha=0.1, n_folds=5, anchor_stride=6,
-                                   max_anchors_per_subject=30)
+                                   max_anchors_per_subject=30, grouped=False)
         self.assertTrue(rep.per_horizon)
         for h, res in rep.per_horizon.items():
             if res.get("status") == "insufficient_data":
                 continue
             for field in ("rmse", "mae", "bias", "coverage", "target_coverage",
-                          "mean_interval_width", "n_subjects_test"):
+                          "mean_interval_width", "n_subjects_test", "fraction_infinite_intervals"):
                 self.assertIn(field, res)
-            # split-conformal on held-out subjects should land near the requested coverage
             self.assertGreaterEqual(res["coverage"], 0.80)
             self.assertLessEqual(res["coverage"], 1.0)
             self.assertGreater(res["mean_interval_width"], 0.0)
             self.assertEqual(res["target_coverage"], 0.90)
+
+    def test_grouped_conformal_is_default_and_reports_scorability(self):
+        # the honest default is participant-blocked; on a small cohort the per-fold participant count can
+        # be too low to certify a finite radius, which is REPORTED (fraction_infinite_intervals), not hidden
+        rep = run_glucose_forecast(_cohort(), thresholds=ExcursionThresholds(history_minutes=120),
+                                   seed=1, alpha=0.1, n_folds=5, anchor_stride=6,
+                                   max_anchors_per_subject=30)
+        self.assertEqual(rep.method, "participant-blocked conformal (CGM-only)")
+        for h, res in rep.per_horizon.items():
+            if res.get("status") == "insufficient_data":
+                continue
+            self.assertEqual(res["conformal"], "participant-blocked")
+            self.assertIn("fraction_infinite_intervals", res)
+            self.assertIn("fraction_scorable", res)
 
     def test_forecast_makes_no_eeg_or_fused_claim(self):
         rep = run_glucose_forecast(_cohort(), thresholds=ExcursionThresholds(history_minutes=120),

@@ -59,6 +59,28 @@ def _conformal_quantile(residuals: Sequence[float], alpha: float) -> float:
     return float(r[k - 1])
 
 
+def _grouped_conformal_quantile(residuals: Sequence[float], groups: Sequence, alpha: float) -> float:
+    """Participant-blocked conformal radius (honest under within-participant correlation).
+
+    Ordinary split conformal assumes the calibration residuals are exchangeable, but many overlapping
+    windows from the SAME participant are strongly correlated — treating them as independent
+    under-covers on a NEW participant. This reduces each participant to a single conformity score (that
+    participant's own ``1-alpha`` residual quantile — a per-person "typical worst case") and takes the
+    finite-sample conformal quantile OVER PARTICIPANTS, so the exchangeable unit is the participant. With
+    ``m`` participants the radius is the ``ceil((m+1)(1-alpha))``-th smallest per-participant score, or
+    ``inf`` when ``m`` is too small to certify a finite interval."""
+    res = np.asarray(residuals, dtype=float)
+    grp = np.asarray(groups, dtype=object)
+    if len(res) == 0:
+        return float("inf")
+    per_group = []
+    for g in np.unique(grp):
+        gr = res[grp == g]
+        if len(gr):
+            per_group.append(float(np.quantile(gr, 1.0 - alpha)))
+    return _conformal_quantile(per_group, alpha)
+
+
 def build_forecast_examples(
     cgm: pd.DataFrame,
     *,
@@ -179,11 +201,13 @@ def _subject_folds(subjects: Sequence[str], n_folds: int, seed: int) -> Dict[str
     return {s: (i % n_folds) for i, s in enumerate(order)}
 
 
-def _forecast_one_horizon(X, y, subs, *, alpha, n_folds, cal_frac, seed):
-    """Subject K-fold split-conformal forecast for one horizon. Per fold: fit a regressor on the train
+def _forecast_one_horizon(X, y, subs, *, alpha, n_folds, cal_frac, seed, grouped=True):
+    """Subject K-fold conformal forecast for one horizon. Per fold: fit a regressor on the train
     subjects, size the conformal radius ``q`` on a held-out CALIBRATION subset of the training subjects,
-    then predict the test fold and form ``yhat ± q``. Pools one prediction per test example (each
-    participant scored once). Returns (y_true, y_hat, lower, upper, test_subjects)."""
+    then predict the test fold and form ``yhat ± q``. With ``grouped=True`` (default) the radius is
+    PARTICIPANT-blocked — the exchangeable unit is the participant, not the correlated overlapping window
+    — which is the honest choice under within-participant correlation. Pools one prediction per test
+    example. Returns (y_true, y_hat, lower, upper, test_subjects)."""
     from sklearn.ensemble import GradientBoostingRegressor
     from dvxr.eval.splits import subject_holdout_split
 
@@ -202,7 +226,9 @@ def _forecast_one_horizon(X, y, subs, *, alpha, n_folds, cal_frac, seed):
         reg = GradientBoostingRegressor(random_state=seed)
         reg.fit(X[tr], y[tr])
         resid = np.abs(y[cal] - reg.predict(X[cal]))            # conformity scores on calibration fold
-        q = _conformal_quantile(resid, alpha)                   # radius frozen off the test rows
+        # radius frozen off the test rows; participant-blocked so correlated windows don't overstate n
+        q = (_grouped_conformal_quantile(resid, subs[cal], alpha) if grouped
+             else _conformal_quantile(resid, alpha))
         pred = reg.predict(X[te])
         yt.extend(y[te].tolist()); yh.extend(pred.tolist())
         lo.extend((pred - q).tolist()); hi.extend((pred + q).tolist())
@@ -214,13 +240,17 @@ def run_glucose_forecast(cgm: pd.DataFrame, *,
                          thresholds: ExcursionThresholds = ExcursionThresholds(),
                          seed: int = 1, alpha: float = 0.1, n_folds: int = 5,
                          cal_frac: float = 0.25, anchor_stride: int = 8,
-                         max_anchors_per_subject: int = 60) -> ForecastReport:
-    """CGM-only continuous glucose forecast with a split-conformal ``1-alpha`` interval, evaluated
-    per horizon on subject-held-out folds. Reports RMSE/MAE/bias, empirical coverage, and interval width
-    per horizon. A horizon without enough subjects/rows is ``insufficient_data`` (never a number)."""
+                         max_anchors_per_subject: int = 60, grouped: bool = True) -> ForecastReport:
+    """CGM-only continuous glucose forecast with a ``1-alpha`` conformal interval, evaluated per horizon
+    on subject-held-out folds. ``grouped=True`` (default) uses a PARTICIPANT-blocked conformal radius so
+    the interval is honest under within-participant correlation. Reports RMSE/MAE/bias, empirical
+    coverage, interval width, and the fraction of unscorable/infinite intervals per horizon. A horizon
+    without enough subjects/rows is ``insufficient_data`` (never a number)."""
     rep = ForecastReport(target_coverage=round(1.0 - alpha, 4),
                          n_subjects=int(cgm["subject_id"].nunique()),
-                         threshold_version=thresholds.version)
+                         threshold_version=thresholds.version,
+                         method=("participant-blocked conformal (CGM-only)" if grouped
+                                 else "split-conformal (CGM-only)"))
     anchors = []
     for sid, g in cgm.groupby("subject_id"):
         t = pd.to_datetime(g["timestamp"]).sort_values()
@@ -237,19 +267,28 @@ def run_glucose_forecast(cgm: pd.DataFrame, *,
                                        "n_examples": int(m.sum())}
             continue
         yt, yh, lo, hi, ts = _forecast_one_horizon(
-            X[m], y[m], subs[m], alpha=alpha, n_folds=n_folds, cal_frac=cal_frac, seed=seed)
+            X[m], y[m], subs[m], alpha=alpha, n_folds=n_folds, cal_frac=cal_frac, seed=seed,
+            grouped=grouped)
         if len(yt) == 0:
             rep.per_horizon[int(h)] = {"status": "insufficient_data", "n_examples": int(m.sum())}
             continue
         finite = np.isfinite(hi - lo)
+        # coverage is honestly computed only where the interval is FINITE; an infinite interval trivially
+        # "covers" and would inflate coverage, so report the unscorable fraction explicitly instead.
+        frac_infinite = round(float((~finite).mean()), 4) if len(finite) else float("nan")
+        cov = round(interval_coverage(yt[finite], lo[finite], hi[finite]), 4) if finite.any() else None
         rep.per_horizon[int(h)] = {
             "horizon_minutes": int(h), "n_test": int(len(yt)),
             "n_subjects_test": int(len(set(ts.tolist()))),
             "rmse": round(rmse(yt, yh), 3), "mae": round(mae(yt, yh), 3),
             "bias": round(bias(yt, yh), 3),
-            "coverage": round(interval_coverage(yt, lo, hi), 4),
+            "coverage": cov, "coverage_basis": "finite_intervals_only",
             "target_coverage": round(1.0 - alpha, 4),
-            "mean_interval_width": round(mean_interval_width(lo[finite], hi[finite]), 3),
+            "conformal": "participant-blocked" if grouped else "split",
+            "fraction_infinite_intervals": frac_infinite,
+            "fraction_scorable": round(float(finite.mean()), 4) if len(finite) else float("nan"),
+            "mean_interval_width": round(mean_interval_width(lo[finite], hi[finite]), 3)
+            if finite.any() else None,
             "median_interval_width": round(float(np.median((hi - lo)[finite])), 3)
             if finite.any() else None,
             "modality_scope": MODALITY_SCOPE,
