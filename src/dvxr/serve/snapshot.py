@@ -17,13 +17,30 @@ from dvxr.contracts import PatientSnapshot
 from dvxr.schemas import SCHEMA_VERSION
 
 
+class EventIntegrityConflict(ValueError):
+    """Two admitted events share an ``event_id`` but carry DIFFERENT content. Silently keeping one would
+    make the snapshot misrepresent what the model saw — so this is an integrity error, not a dedup."""
+
+
 def _observed_at(ev: Mapping) -> Optional[str]:
     return ev.get("observed_at_utc") or ev.get("timestamp_utc") or ev.get("timestamp")
 
 
+#: fields hashed into a snapshot event's content signature. Beyond the raw reading (modality/channel/
+#: value/time/quality) this includes the provenance that changes what the model effectively saw — unit,
+#: cadence, source lineage, converter/preprocessing versions, and consent/access scope — so two
+#: materially-different inputs cannot collide on one snapshot id. (Only fields that actually exist in
+#: dvxr-events/2 are listed; firmware_version/clock_offset_ms/study_id are intentionally absent.)
+_CONTENT_HASH_FIELDS = (
+    "event_id", "modality", "channel", "value", "unit", "sampling_rate_hz",
+    "observed_at_utc", "quality_score", "quality_status", "quality_reasons",
+    "source_system", "device", "source_record_id", "source_file_hash",
+    "converter_version", "preprocessing_version", "consent_scope", "access_scope", "schema_version",
+)
+
+
 def _content_hash(ev: Mapping) -> str:
-    key = "|".join(str(ev.get(c, "")) for c in
-                   ("event_id", "modality", "channel", "value", "observed_at_utc", "quality_score"))
+    key = "|".join(str(ev.get(c, "")) for c in _CONTENT_HASH_FIELDS)
     return hashlib.sha1(key.encode("utf-8")).hexdigest()[:16]
 
 
@@ -67,14 +84,21 @@ def build_patient_snapshot(
                 continue
         admitted.append(ev)
 
-    # dedup by event_id (a duplicate id is the same event ingested twice — count it once)
-    seen = set()
+    # dedup by event_id. A duplicate id with the SAME content hash is the same event ingested twice
+    # (idempotent — count once). A duplicate id with DIVERGENT content is an integrity CONFLICT — two
+    # different readings claiming one identity — and is raised, never silently collapsed (spec §5).
+    seen: Dict[str, str] = {}
     deduped = []
     for ev in admitted:
         eid = str(ev["event_id"])
+        h = _content_hash(ev)
         if eid in seen:
+            if seen[eid] != h:
+                raise EventIntegrityConflict(
+                    f"event_id {eid!r} appears with divergent content "
+                    f"({seen[eid]} != {h}) — refusing to build an ambiguous snapshot")
             continue
-        seen.add(eid)
+        seen[eid] = h
         deduped.append(ev)
     admitted = deduped
 
