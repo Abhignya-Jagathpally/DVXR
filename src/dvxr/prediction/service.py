@@ -318,6 +318,18 @@ class CgmOnlyExcursionService:
             return AbstainingPredictionService(
                 f"CGM-only service abstains: request needs {sorted(needed - {'cgm'})}, which this "
                 f"single-modality model does not cover.").predict(inputs)
+        # freshness gate FIRST, on the ORIGINAL (pre-window) history: a feed whose newest sample is long
+        # before the cutoff is STALE — report that, rather than letting the window drop every stale
+        # sample and mis-report it as "no history" (spec §5, §9).
+        if inputs.cutoff is not None and inputs.cgm_history is not None and len(inputs.cgm_history):
+            last_t = pd.to_datetime(inputs.cgm_history[inputs.time_col], errors="coerce").max()
+            cutoff = pd.to_datetime(inputs.cutoff, errors="coerce")
+            if pd.notna(last_t) and pd.notna(cutoff):
+                staleness = (cutoff - last_t) / pd.Timedelta(minutes=1)
+                if staleness > self._max_staleness:
+                    return AbstainingPredictionService(
+                        f"CGM-only service abstains: CGM feed is stale "
+                        f"({staleness:.0f} min > {self._max_staleness:.0f} min at the cutoff).").predict(inputs)
         # window to the SAME [anchor-H, anchor] slice training used, so features are comparable
         inputs = dataclasses.replace(inputs, cgm_history=self._causal_window(inputs))
         # adequacy gate (spec §9): a single reading or a thin/gappy window earns an abstention, not a guess
@@ -329,16 +341,6 @@ class CgmOnlyExcursionService:
         if any(np.isnan(v) for v in feats.values()):
             return AbstainingPredictionService(
                 "CGM-only service abstains: no usable CGM history at the cutoff.").predict(inputs)
-        # freshness gate (spec §5, §9): a stale CGM feed cannot support a live prediction
-        if inputs.cutoff is not None and inputs.cgm_history is not None and len(inputs.cgm_history):
-            last_t = pd.to_datetime(inputs.cgm_history[inputs.time_col], errors="coerce").max()
-            cutoff = pd.to_datetime(inputs.cutoff, errors="coerce")
-            if pd.notna(last_t) and pd.notna(cutoff):
-                staleness = (cutoff - last_t) / pd.Timedelta(minutes=1)
-                if staleness > self._max_staleness:
-                    return AbstainingPredictionService(
-                        f"CGM-only service abstains: CGM feed is stale "
-                        f"({staleness:.0f} min > {self._max_staleness:.0f} min at the cutoff).").predict(inputs)
         x = np.array([[feats[k] for k in CGM_FEATURE_NAMES]], dtype=float)
         # out-of-distribution gate (spec §9): a window unlike anything the model was trained on gets no
         # number — extrapolation is not a calibrated prediction.
