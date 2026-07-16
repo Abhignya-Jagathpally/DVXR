@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass
 
 import numpy as np
@@ -18,6 +19,12 @@ from .calibration import (
     interval_coverage,
 )
 from .features import feature_columns
+
+
+class ScientificValidityError(ValueError):
+    """Raised when a split/fit would leak within-subject data into a REPORTABLE run — e.g. a row-level
+    split placing one person's windows into train, calibration, and test. Callers that genuinely want the
+    demo-only fallback must opt in explicitly (``allow_row_level_fallback=True``)."""
 
 
 @dataclass
@@ -56,11 +63,14 @@ def train_binary_classifier(
     negative_label: str,
     probability_col: str,
     raw_probability_col: str,
+    *,
+    allow_row_level_fallback: bool = False,
 ) -> TrainedModel:
     features = feature_columns(windows)
     y = (windows["target"] == positive_label).astype(int)
     groups = windows["subject_id"].astype(str)
-    train_idx, calibration_idx, test_idx = _group_train_calibration_test_split(windows, groups)
+    train_idx, calibration_idx, test_idx = _group_train_calibration_test_split(
+        windows, groups, allow_row_level_fallback=allow_row_level_fallback)
 
     model = Pipeline(
         [
@@ -96,11 +106,13 @@ def train_binary_classifier(
     return TrainedModel(model=model, feature_columns=features, metrics=metrics, predictions=predictions, calibrator=calibrator)
 
 
-def train_glucose_forecaster(glucose_frame: pd.DataFrame) -> TrainedModel:
+def train_glucose_forecaster(glucose_frame: pd.DataFrame, *,
+                             allow_row_level_fallback: bool = False) -> TrainedModel:
     features = [col for col in glucose_frame.columns if col.startswith("glucose_") or col == "time_in_range_fraction"]
     features = [col for col in features if col != "target_glucose"]
     groups = glucose_frame["subject_id"].astype(str)
-    train_idx, calibration_idx, test_idx = _group_train_calibration_test_split(glucose_frame, groups)
+    train_idx, calibration_idx, test_idx = _group_train_calibration_test_split(
+        glucose_frame, groups, allow_row_level_fallback=allow_row_level_fallback)
 
     model = Pipeline([("scale", StandardScaler()), ("ridge", Ridge(alpha=1.0))])
     model.fit(glucose_frame.iloc[train_idx][features], glucose_frame.iloc[train_idx]["target_glucose"])
@@ -139,13 +151,17 @@ def _group_train_calibration_test_split(
     frame: pd.DataFrame,
     groups: pd.Series,
     seed: int = 7,
+    *,
+    allow_row_level_fallback: bool = False,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Split into train/calibration/test, keeping subjects disjoint when possible.
+    """Split into train/calibration/test with SUBJECTS disjoint.
 
-    With three or more subjects the split is by whole subject (no subject appears
-    in more than one fold), which is the honest setting for personalized health
-    models. With fewer subjects we fall back to a deterministic row-level split so
-    the demo still runs end to end.
+    With three or more subjects the split is by whole subject (no subject appears in more than one fold),
+    which is the honest setting for personalized health models. With fewer subjects an honest
+    subject-disjoint split is impossible: by default this **raises** ``ScientificValidityError`` so a
+    reportable run can never silently leak one person's windows across train/calibration/test. Only a
+    demo/smoke caller that explicitly passes ``allow_row_level_fallback=True`` gets the (leaky) row-level
+    split, and it is warned.
     """
     group_values = np.asarray(groups).astype(str)
     positions = np.arange(len(frame))
@@ -166,6 +182,15 @@ def _group_train_calibration_test_split(
         test_idx = positions[np.isin(group_values, test_groups)]
         return train_idx, calibration_idx, test_idx
 
+    if not allow_row_level_fallback:
+        raise ScientificValidityError(
+            f"only {len(unique)} subject(s) — an honest subject-disjoint split needs >= 3. A row-level "
+            f"split would leak one person's windows across train/calibration/test; refusing. Pass "
+            f"allow_row_level_fallback=True ONLY for a non-reportable demo/smoke run.")
+    warnings.warn(
+        f"row-level train/cal/test split over {len(unique)} subject(s) — WINDOWS FROM ONE PERSON LEAK "
+        f"across folds; this is a demo-only fallback and its metrics are NOT reportable.",
+        stacklevel=2)
     shuffled_positions = positions.copy()
     rng.shuffle(shuffled_positions)
     n = len(shuffled_positions)

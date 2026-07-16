@@ -101,7 +101,10 @@ CLINICAL_TASKS: List[ClinicalTask] = [
             "variation (CV = std/mean) of CGM values within each window. "
             "Windows where CV > median(CV) are labelled unstable; otherwise "
             "stable. This mirrors clinical cut-offs (CV > 36 % is considered "
-            "high variability in diabetes care)."
+            "high variability in diabetes care). SCAFFOLDING ONLY (circular "
+            "median-split — the label is derived from the same CGM signal it predicts, so it has no "
+            "external ground truth). For a prospective, honestly-evaluated CGM claim use the excursion "
+            "target (dvxr.targets.excursion) and the CGM-only product model, not this proxy."
         ),
         source_modalities=["cgm"],
     ),
@@ -113,7 +116,9 @@ CLINICAL_TASKS: List[ClinicalTask] = [
             "Proxy: complication risk is approximated by the fraction of time "
             "above 180 mg/dL (hyperglycemia fraction) within each window. "
             "Windows where time_above_180 > median are labelled "
-            "high_complication_risk; otherwise low_complication_risk."
+            "high_complication_risk; otherwise low_complication_risk. SCAFFOLDING ONLY (circular "
+            "median-split — the label is a function of the same CGM window it predicts, no external "
+            "complication ground truth). Not a validated complication-risk result."
         ),
         source_modalities=["cgm"],
     ),
@@ -126,7 +131,9 @@ CLINICAL_TASKS: List[ClinicalTask] = [
             "EHR lab values that exceed standard reference ranges. Subjects "
             "where abnormal_lab_fraction > median are labelled "
             "high_clinical_risk; otherwise low_clinical_risk. Abnormal labs "
-            "are detected by checking HbA1c > 6.5 or BMI > 30."
+            "are detected by checking HbA1c > 6.5 or BMI > 30. SCAFFOLDING ONLY (circular median-split — "
+            "the label is derived from the same EHR features it predicts, no external outcome ground "
+            "truth). Not a validated clinical-risk result."
         ),
         source_modalities=["ehr"],
     ),
@@ -544,7 +551,8 @@ def derive_task_labels(
     return labeled.reset_index(drop=True)
 
 
-def train_clinical_task(frame: pd.DataFrame, task_name: str) -> TrainedModel:
+def train_clinical_task(frame: pd.DataFrame, task_name: str, *,
+                        allow_row_level_fallback: bool = False) -> TrainedModel:
     """Train a binary classifier for a clinical task.
 
     Parameters
@@ -568,6 +576,7 @@ def train_clinical_task(frame: pd.DataFrame, task_name: str) -> TrainedModel:
         negative_label=task.negative_label,
         probability_col=probability_col,
         raw_probability_col=raw_probability_col,
+        allow_row_level_fallback=allow_row_level_fallback,
     )
 
 
