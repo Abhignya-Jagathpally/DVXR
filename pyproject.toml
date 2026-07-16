@@ -18,18 +18,18 @@ classifiers = [
 ]
 
 # Core runtime for the serving layer (fit -> save -> load -> predict) AND the deployable product
-# (dvxr.serve.asgi:app). fastapi/uvicorn are core because the product ships as a FastAPI app on
-# FastAPI Cloud and imports cleanly on this set alone (verified with all heavy encoders blocked).
-# Heavier optional encoders (torch/transformers/LaBraM weights, xgboost) stay extras so a plain
-# install stays light; the band-power screeners run on the core alone.
+# (dvxr.serve.asgi:app). fastapi[standard] is core because the product ships on FastAPI Cloud, whose
+# runtime starts the app via the `fastapi run` CLI (needs fastapi-cli, in the standard extra); the app
+# imports cleanly on this set alone (verified with all heavy encoders blocked). Heavier optional
+# encoders (torch/transformers/LaBraM weights, xgboost) stay extras so a plain install stays light;
+# the band-power screeners run on the core alone.
 dependencies = [
     "numpy",
     "scipy",
     "pandas",
     "scikit-learn",
     "joblib",
-    "fastapi",
-    "uvicorn",
+    "fastapi[standard]",
 ]
 
 [project.optional-dependencies]
