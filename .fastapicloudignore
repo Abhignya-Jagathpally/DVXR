@@ -1,0 +1,32 @@
+# Files excluded from the FastAPI Cloud upload (gitignore syntax, additive to .gitignore).
+# The deployed app is dvxr.serve.asgi:app in product_only mode — it imports the installed `dvxr`
+# package and reads NOTHING else from this tree, so everything below is safe to withhold.
+
+# Personal documents and run logs — must never leave the machine.
+*.docx
+*.pdf
+*.pptx
+*.log
+
+# Large / local-only assets provisioned in the deploy env, not shipped in the image.
+outputs/
+data/
+artifacts/
+*.db
+
+# Not part of the runtime product.
+tests/
+scripts/
+notebooks/
+*.ipynb
+
+# The repo-root requirements.txt is the HEAVY research manifest (torch/transformers/momentfm/…,
+# momentfm won't even build on 3.12). Withhold it so the cloud build resolves the slim runtime from
+# pyproject.toml (`pip install .` -> core deps + fastapi + uvicorn) instead.
+requirements.txt
+
+# The Dockerfile targets a DIFFERENT image (the EEG screener: installs .[eeg,io,api], bakes LaBraM
+# weights, COPYs outputs/, runs dvxr.serve.api:app). It must NOT drive the FastAPI Cloud build —
+# withhold it so the platform builds the slim FastAPI product (dvxr.serve.asgi:app) from pyproject.
+Dockerfile
+.dockerignore

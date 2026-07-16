@@ -2,7 +2,15 @@
 
 The DVXR product API is a **Starlette** app (`dvxr.sentinel.create_product_api`). FastAPI Cloud deploys a
 **FastAPI** `app`, so `dvxr/serve/asgi.py` wraps the Starlette product app in a FastAPI instance
-(mounted as-is — no routes are re-modeled). Install the deploy extra: `pip install -e '.[deploy]'`.
+(mounted as-is — no routes are re-modeled). `fastapi`/`uvicorn` are in the core dependencies (the app
+imports on the slim runtime alone — no torch/transformers), so the cloud build resolves them from
+`pyproject.toml` via `pip install .`.
+
+**Entrypoint.** FastAPI Cloud discovers the app from a root-level `main.py`, which re-exports
+`dvxr.serve.asgi:app`. **Build hygiene** is enforced by `.fastapicloudignore`: the heavy research
+`requirements.txt` (torch/transformers/momentfm — won't build on 3.12), the screener `Dockerfile`,
+`outputs/`, `data/`, `tests/`, and all personal docs/logs are withheld from the upload so the platform
+builds the slim FastAPI product and nothing sensitive leaves the machine.
 
 ## What deploys
 
@@ -51,15 +59,32 @@ reaches the service is a real PHI/consent decision for a health tool — provisi
 
 ## Deploy
 
+`fastapi login` and `fastapi deploy` are **interactive** (browser login; team picker + first-run
+app-creation wizard) — run them yourself in a terminal:
+
 ```bash
-fastapi login                 # once (the user has already signed in)
-fastapi deploy                # deploys dvxr.serve.asgi:app
+fastapi login                 # once (opens a browser)
+fastapi deploy                # discovers main:app, uploads (respecting .fastapicloudignore), builds
 ```
+
+The first deploy creates the app and prints its URL. **Set the API key** so `/v1` is reachable (without
+it every `/v1` call fails closed with 401 — `/health` still works):
+
+```bash
+fastapi cloud env set DVXR_API_KEY <a-strong-random-key>
+fastapi cloud env set DVXR_REQUIRE_CONSENT 1     # default; keep consent ON
+# do NOT set DVXR_UNSAFE_DEV — auth stays ON in production
+fastapi deploy                                    # redeploy so the new env takes effect
+```
+
+A clean deploy has no CGM artifact (`artifacts/` is withheld), so **every report abstains** — CGM types
+with "no committed artifact", the fused type by construction. That is the honest, safe default; provision
+the artifact deliberately (above) to serve real CGM-only numbers.
 
 Smoke-test after deploy:
 
 ```bash
-curl https://<your-app>/health
+curl https://<your-app>/health                                      # -> ok + disclaimer, no auth
 curl -H "X-API-Key: $DVXR_API_KEY" -X POST https://<your-app>/v1/risk-reports \
      -d '{"patient_id":"P1","report_type":"stress_glucose_risk"}'   # -> abstains (honest)
 ```
