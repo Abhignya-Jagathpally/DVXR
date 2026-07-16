@@ -53,10 +53,11 @@ from dvxr.retrieval import LocalKeywordTextIndex, RetrievalRepository  # noqa: F
 
 
 def create_product_api(**kwargs):
-    """The Sentinel HTTP product. Delegates to the serving app; the product routes are the /v1
-    lifecycle (POST /v1/risk-reports, GET /v1/predictions/{id}). Secure-by-default (see
-    ``dvxr.serve.api.create_app``)."""
+    """The Sentinel HTTP product — ONLY the /v1 lifecycle routes (POST /v1/risk-reports,
+    GET /v1/predictions/{id}) plus /health. The benchmark/screener endpoints are NOT part of the
+    product surface. Secure-by-default (see ``dvxr.serve.api.create_app``)."""
     from dvxr.serve.api import create_app
+    kwargs.setdefault("product_only", True)
     return create_app(**kwargs)
 
 

@@ -36,6 +36,7 @@ class GenerateRequest:
     requested_at: str = ""
     user_role: str = "researcher"
     tenant_id: str = "default"          # server-derived (from the authenticated principal), not body
+    actor_id: str = ""                  # server-derived actor; audited, NOT part of the request id
     question: Optional[str] = None
     idempotency_key: Optional[str] = None
     request_id: str = ""

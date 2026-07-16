@@ -27,11 +27,16 @@ _SCREENER_ROOT = Path("outputs/product/screeners")
 
 def create_app(screener_root: str | Path = _SCREENER_ROOT,
                db_path: str = ":memory:", require_consent: bool = True,
-               principals: dict | None = None, unsafe_dev: bool = False):
+               principals: dict | None = None, unsafe_dev: bool = False,
+               product_only: bool = False):
     """Build the ASGI app. Secure by default: the /v1 patient endpoints require an ``X-API-Key`` that
     resolves to a server-side Principal (role/tenant come from the principal, NOT the request body).
     Pass ``principals`` (api_key -> Principal) for a real deployment, or ``unsafe_dev=True`` for a
-    local demo with no auth. ``require_consent`` defaults ON (spec §2, §18)."""
+    local demo with no auth. ``require_consent`` defaults ON (spec §2, §18).
+
+    ``product_only`` (used by ``dvxr.sentinel.create_product_api``) exposes ONLY the Sentinel product
+    routes (/health + the two /v1 lifecycle routes) — the benchmark/screener endpoints (/screen,
+    /triage, /evidence) are NOT part of the product surface and are omitted (Gate D §23)."""
     from starlette.applications import Starlette
     from starlette.responses import JSONResponse, PlainTextResponse
     from starlette.routing import Route
@@ -143,7 +148,7 @@ def create_app(screener_root: str | Path = _SCREENER_ROOT,
 
         from dvxr.contracts import GenerateRequest
         from dvxr.serve.auth import AuthError, AuthorizationError, authorize
-        from dvxr.serve.orchestrate import ConsentError, generate_risk_report
+        from dvxr.serve.orchestrate import ConsentError, IdempotencyConflict, generate_risk_report
         try:
             principal = _principal(request)
         except AuthError as e:
@@ -157,13 +162,16 @@ def create_app(screener_root: str | Path = _SCREENER_ROOT,
             return JSONResponse({"error": str(e)}, status_code=403)
         # server-derived identity overrides anything the caller tried to self-assert in the body
         req = dataclasses.replace(GenerateRequest.from_dict(body),
-                                  user_role=principal.role, tenant_id=principal.tenant_id)
+                                  user_role=principal.role.value, tenant_id=principal.tenant_id,
+                                  actor_id=principal.actor_id)
         try:
             out = generate_risk_report(req, prediction_store=pred_store, audit_store=audit_store,
                                        consent_store=consent_store, require_consent=require_consent,
                                        event_repository=event_store, model_registry=model_registry)
         except ConsentError as e:
             return JSONResponse({"error": str(e)}, status_code=403)
+        except IdempotencyConflict as e:
+            return JSONResponse({"error": str(e)}, status_code=409)
         except Exception:  # noqa: BLE001 — never leak internals to the client
             return JSONResponse({"error": "internal error generating report"}, status_code=500)
         out["disclaimer"] = DISCLAIMER
@@ -190,9 +198,18 @@ def create_app(screener_root: str | Path = _SCREENER_ROOT,
         # return the FULL persisted report (prediction + evidence + action + explanation), rebuilt
         # deterministically — the same shape POST produced, not a bare prediction row.
         from dvxr.serve.orchestrate import assemble_persisted_report
-        out = assemble_persisted_report(rec, user_role=principal.role)
+        out = assemble_persisted_report(rec, user_role=principal.role.value)
         out["disclaimer"] = DISCLAIMER
         return JSONResponse(out)
+
+    # the Sentinel PRODUCT surface — only these routes are part of the product contract (Gate D §23)
+    product_routes = [
+        Route("/health", health),
+        Route("/v1/risk-reports", risk_reports, methods=["POST"]),
+        Route("/v1/predictions/{prediction_id}", get_risk_report),
+    ]
+    if product_only:
+        return Starlette(routes=product_routes)
 
     return Starlette(routes=[
         Route("/health", health),

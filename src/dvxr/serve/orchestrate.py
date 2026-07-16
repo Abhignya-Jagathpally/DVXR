@@ -34,6 +34,12 @@ class ConsentError(PermissionError):
     """Raised when the patient has not consented to the requested purpose (fail-closed)."""
 
 
+class IdempotencyConflict(ValueError):
+    """Raised when a caller reuses an idempotency key with a DIFFERENT semantic request. The key maps
+    to an already-stored prediction whose request fingerprint does not match — returning it would be
+    wrong, so we reject (HTTP 409) rather than silently serve a mismatched result (spec §18)."""
+
+
 #: report_type -> the modalities a valid report of that type needs. Anything spanning >1 modality
 #: (the fused headline) needs synchronized data that does not exist ⇒ the default predictor abstains.
 _REPORT_MODALITIES = {
@@ -145,7 +151,8 @@ def generate_risk_report(
     req = request.with_request_id()
     audit_store.append({"request_id": req.request_id, "event": "generate.requested",
                         "patient_id": req.patient_id, "report_type": req.report_type,
-                        "user_role": req.user_role})
+                        "user_role": req.user_role, "actor_id": req.actor_id,
+                        "tenant_id": req.tenant_id})
 
     if require_consent:
         purpose = _ROLE_PURPOSE.get(req.user_role, req.user_role)
@@ -163,7 +170,18 @@ def generate_risk_report(
     if scoped_key:
         existing = prediction_store.get_by_idempotency_key(scoped_key, tenant_id=req.tenant_id)
         if existing is not None:
+            # canonical-fingerprint guard: the stored prediction's request_id (a hash of tenant,
+            # patient, report_type, horizons, cutoff, key) must match this request. A repeated key with
+            # a DIFFERENT semantic request is a conflict — reject, never serve a mismatched result.
+            stored_rid = existing.get("request_id")
+            if stored_rid and stored_rid != req.request_id:
+                audit_store.append({"request_id": req.request_id, "event": "generate.conflict",
+                                    "actor_id": req.actor_id, "idempotency_key": req.idempotency_key,
+                                    "stored_request_id": stored_rid})
+                raise IdempotencyConflict(
+                    f"idempotency key {req.idempotency_key!r} was already used for a different request")
             audit_store.append({"request_id": req.request_id, "event": "generate.reused",
+                                "actor_id": req.actor_id,
                                 "prediction_id": existing.get("prediction_id")})
             # Reconstruct the (deterministic) action + explanation from the stored prediction so a
             # reused report has the SAME shape as a fresh one. The prediction itself is not recomputed;
@@ -220,7 +238,8 @@ def generate_risk_report(
     report = _assemble_report(req, prediction, pid, reused=False,
                               evidence=evidence.to_dict(), sources=sources)
     audit_store.append({"request_id": req.request_id, "event": "generate.completed",
-                        "prediction_id": pid, "abstained": prediction.abstained,
+                        "actor_id": req.actor_id, "prediction_id": pid,
+                        "abstained": prediction.abstained,
                         "action_id": report["action"]["action_id"]})
     return report
 
