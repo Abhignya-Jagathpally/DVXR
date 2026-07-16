@@ -204,8 +204,8 @@ def _cross_modal_attention(task, latents, seed) -> tuple[Dict, int]:
     model.eval()
     with torch.no_grad():
         lat = {m: torch.tensor(v, dtype=torch.float32) for m, v in latents.items()}
-        fo = model.fuse(lat, use_codebook=True)
-        att = model.attention_weights() or {}
+        fr = model.fuse_result(lat, use_codebook=True)       # request-local (no shared _last*)
+        att = fr.attention or {}
         alpha = {m: round(float(att[m].mean().item()), 4) for m in att}
     # normalize for display (attention over present modalities sums to 1)
     tot = sum(alpha.values()) or 1.0

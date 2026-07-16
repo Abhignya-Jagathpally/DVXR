@@ -45,6 +45,8 @@ def build_multitask_model(config, input_dims: Dict[str, int],
 
         def forward(self, features: Dict[str, "torch.Tensor"], use_codebook: bool = True):
             z = self.encode(features)
+            # Training/inference forward on a SINGLE model instance (no cross-request sharing) — keep
+            # fuse() so the VQ loss stays a grad-carrying tensor (fuse_result detaches it to a float).
             fo = self.cacmf.fuse(z, use_codebook=use_codebook)
             logits, yhat = self.heads(fo.h)
             q = self.cacmf._last_q

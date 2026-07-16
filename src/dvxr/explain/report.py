@@ -48,9 +48,9 @@ def explain_prediction(
             feature_frame, feature_columns, top_n=top_n)
 
     if cacmf_model is not None and latents is not None:
-        fo = cacmf_model.fuse(latents)
-        blocks["modality_attention"] = attention_table(fo)
-        codes = {m: cacmf_model._last_codes[m] for m in cacmf_model._last_codes}
+        fr = cacmf_model.fuse_result(latents)                # request-local (no _last*)
+        blocks["modality_attention"] = attention_table(fr)
+        codes = {m: fr.codes[m] for m in fr.codes}
         if codes:
             blocks["active_codes"] = codebook_histogram(codes)
             blocks["codebook_perplexity"] = codebook_perplexity(codes)

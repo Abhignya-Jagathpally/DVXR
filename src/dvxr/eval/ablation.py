@@ -38,7 +38,7 @@ def _fuse_h(model, feats):
     with torch.no_grad():
         ft = {m: torch.tensor(feats[m], dtype=torch.float32) for m in feats}
         z = model.encode(ft)
-        return model.cacmf.fuse(z).h.numpy()
+        return model.cacmf.fuse_result(z).h.numpy()          # request-local (no _last*)
 
 
 def _clf_proba(Xtr, ytr, Xte):

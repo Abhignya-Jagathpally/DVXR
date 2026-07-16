@@ -44,10 +44,24 @@ class QualityGatedFusionTest(unittest.TestCase):
         _f, w = quality_gated(_confident_probs(0.9), availability={"eeg": 0.0}, return_weights=True)
         self.assertAlmostEqual(w["eeg"], 0.0, places=6)
 
-    def test_all_unreliable_falls_back_to_mean_not_divide_by_zero(self):
+    def test_all_unreliable_abstains_instead_of_manufacturing_a_mean(self):
+        # every modality unavailable ⇒ the gate collapses ⇒ NaN (abstain), NOT a confident mean
         fused = quality_gated(_confident_probs(0.9), availability={"eeg": 0.0, "cgm": 0.0})
-        self.assertTrue(np.all(np.isfinite(fused)))
-        self.assertAlmostEqual(fused[0, 1], 0.5, places=6)     # mean fallback of symmetric votes
+        self.assertTrue(np.all(np.isnan(fused)))
+
+    def test_gated_fusion_returns_typed_abstention(self):
+        from dvxr.fusion.aggregate import gated_fusion
+        res = gated_fusion(_confident_probs(0.9), availability={"eeg": 0.0, "cgm": 0.0})
+        self.assertTrue(res.all_abstained)
+        self.assertIsNone(res.fused)
+        self.assertEqual(res.abstain_reason, "all_modality_gates_zero")
+
+    def test_gated_fusion_predicts_when_a_modality_is_reliable(self):
+        from dvxr.fusion.aggregate import gated_fusion
+        res = gated_fusion(_confident_probs(0.9), availability={"eeg": 0.0, "cgm": 1.0})
+        self.assertFalse(res.all_abstained)
+        self.assertIsNotNone(res.fused)
+        self.assertFalse(bool(res.abstained.all()))
 
 
 if __name__ == "__main__":

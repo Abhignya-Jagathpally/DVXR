@@ -29,6 +29,7 @@ class FusionResult:
     attention: Optional[Dict] = None
     weights: Optional[Dict] = None
     codes: Dict = field(default_factory=dict)
+    q: Dict = field(default_factory=dict)         # per-modality quantized latents (request-local)
     present: Optional[Dict] = None
     vq_loss: float = 0.0
 
@@ -99,6 +100,7 @@ def build_cacmf_model(config, modalities: Optional[List[str]] = None):
                 weights=getattr(fo, "weights", None),
                 present=getattr(fo, "present", None),
                 codes=codes,
+                q=q,
                 vq_loss=float(vq_loss.detach()) if hasattr(vq_loss, "detach") else float(vq_loss))
 
         def forward(self, latents, use_codebook: bool = True):

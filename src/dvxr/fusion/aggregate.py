@@ -6,9 +6,23 @@ strategies (which combine latents).
 """
 from __future__ import annotations
 
+from dataclasses import dataclass, field
 from typing import Dict, Optional
 
 import numpy as np
+
+
+@dataclass(frozen=True)
+class GatedFusionResult:
+    """Quality-gated fusion outcome that ABSTAINS instead of manufacturing confidence. When every
+    modality gate for a sample collapses to ~0 (all unavailable / stale / low-quality / OOD), the
+    fused probability for that sample is None-equivalent (NaN) and ``abstained`` marks it — the caller
+    must surface an abstention, never a mean (spec §8.7, §11)."""
+    fused: Optional[np.ndarray]              # (B, C); NaN rows where abstained
+    weights: Dict[str, float] = field(default_factory=dict)
+    abstained: Optional[np.ndarray] = None   # (B,) bool per-sample
+    all_abstained: bool = False
+    abstain_reason: Optional[str] = None
 
 
 def _stack(probs: Dict[str, np.ndarray]):
@@ -80,9 +94,10 @@ def quality_gated(probs: Dict[str, np.ndarray],
     STALE or LOW-QUALITY or OUT-OF-DISTRIBUTION modality be down-weighted even when it is confident —
     the failure modes spec §9 calls out (noisy EEG, stale CGM feed, clock drift, OOD participant).
 
-    If every gate collapses to ~0 (all modalities unreliable) the caller should abstain; here we fall
-    back to an unweighted mean so the function never divides by zero, and expose the (near-zero)
-    weights via ``return_weights`` so an abstention gate upstream can act on them.
+    If every gate collapses to ~0 for a sample (all modalities unreliable) the honest outcome is to
+    ABSTAIN, not to invent confidence. Such samples are returned as NaN here (never an unweighted
+    mean); use :func:`gated_fusion` for the typed, abstention-aware result. ``return_weights`` still
+    exposes the (near-zero) per-modality weights so an upstream gate can act on them.
     """
     mods, arr = _stack(probs)                                   # (M, B, C)
     M, B, _C = arr.shape
@@ -100,11 +115,10 @@ def quality_gated(probs: Dict[str, np.ndarray],
         gate[i] = np.clip(static, 0.0, 1.0) * conf[i]
 
     denom = gate.sum(axis=0)                                    # (B,)
-    zero = denom <= 1e-12
-    if zero.any():                                             # all-unreliable samples → mean fallback
-        gate[:, zero] = 1.0
-        denom = gate.sum(axis=0)
-    fused = (gate[:, :, None] * arr).sum(axis=0) / denom[:, None]
+    collapsed = denom <= 1e-12
+    safe_denom = np.where(collapsed, 1.0, denom)               # avoid divide-by-zero
+    fused = (gate[:, :, None] * arr).sum(axis=0) / safe_denom[:, None]
+    fused[collapsed] = np.nan                                  # abstain, do NOT fall back to a mean
 
     if return_weights:
         # mean gate per modality across the batch, normalized → a per-modality contribution weight
@@ -113,6 +127,24 @@ def quality_gated(probs: Dict[str, np.ndarray],
         weights = {m: float(mean_gate[i] / wsum) for i, m in enumerate(mods)}
         return fused, weights
     return fused
+
+
+def gated_fusion(probs: Dict[str, np.ndarray],
+                 quality: Optional[Dict[str, float]] = None,
+                 freshness: Optional[Dict[str, float]] = None,
+                 availability: Optional[Dict[str, float]] = None,
+                 ood: Optional[Dict[str, float]] = None) -> GatedFusionResult:
+    """Quality-aware gated fusion that abstains when all gates collapse (spec §11). Returns a typed
+    :class:`GatedFusionResult`: samples whose every modality gate is ~0 are marked ``abstained`` and
+    their fused row is NaN; ``all_abstained`` is True when no sample could be fused."""
+    fused, weights = quality_gated(probs, quality=quality, freshness=freshness,
+                                   availability=availability, ood=ood, return_weights=True)
+    abstained = np.isnan(fused).any(axis=1)                    # (B,)
+    all_abstained = bool(abstained.all())
+    reason = "all_modality_gates_zero" if abstained.any() else None
+    return GatedFusionResult(
+        fused=None if all_abstained else fused, weights=weights,
+        abstained=abstained, all_abstained=all_abstained, abstain_reason=reason)
 
 
 AGGREGATORS = {
