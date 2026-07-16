@@ -3,6 +3,7 @@ audited reproducible request, and abstains for the research-stage glucose produc
 import os
 import sys
 import unittest
+from datetime import datetime, timezone
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
@@ -85,13 +86,16 @@ class GenerateLifecycleTest(unittest.TestCase):
         self.assertIn("generate.completed", events)
 
     def test_consent_is_fail_closed(self):
+        # a no-key request fingerprints on the RESOLVED cutoff, so inject a fixed clock to know its id
+        clock = lambda: datetime(2026, 7, 16, 12, 0, 0, tzinfo=timezone.utc)
         with self.assertRaises(ConsentError):
             generate_risk_report(self._req(patient_id="P-unknown"), prediction_store=self.pred,
-                                 audit_store=self.audit, consent_store=self.consent)
-        # the denial is audited
-        denied = [e for req in [self.audit] for e in req.for_request(
-            GenerateRequest(patient_id="P-unknown", report_type="stress_glucose_risk",
-                            user_role="researcher").with_request_id().request_id)]
+                                 audit_store=self.audit, consent_store=self.consent, clock=clock)
+        # the denial is audited under the request_id derived from the resolved cutoff
+        cutoff = clock().astimezone(timezone.utc).isoformat()
+        rid = GenerateRequest(patient_id="P-unknown", report_type="stress_glucose_risk",
+                              user_role="researcher", data_cutoff_at=cutoff).with_request_id().request_id
+        denied = self.audit.for_request(rid)
         self.assertTrue(any(e["event"] == "generate.denied.consent" for e in denied))
 
     def test_prediction_is_retrievable(self):

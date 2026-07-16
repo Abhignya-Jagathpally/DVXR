@@ -175,6 +175,19 @@ class ProductVisionAudit(unittest.TestCase):
         for k in ("cgmacros_diabetes", "cacmf_as_win", "llm_as_predictor"):
             self.assertIn(k, EXCLUDED_CLAIMS, f"{k} must stay excluded as a validated claim")
 
+    def test_fused_report_type_has_no_committed_artifact_and_abstains(self):
+        """PR34 guardrail: the model resolver must ALWAYS return an abstaining service for the fused
+        stress_glucose_risk report type — no synchronized cohort exists, so no fused artifact can be
+        committed. Even with a fully populated registry, the fused path can never serve a number."""
+        from dvxr.prediction.registry import resolve_predictor
+        from dvxr.prediction.service import PredictionInputs
+        svc = resolve_predictor("stress_glucose_risk", model_registry=None, artifact_root=None)
+        b = svc.predict(PredictionInputs("stress_glucose_risk", [30, 60],
+                                         requested_modalities=["cgm", "eeg", "wearable_phys"]))
+        self.assertTrue(b.abstained, "the fused stress-glucose report must abstain (no synchronized data)")
+        self.assertIsNone(b.risk)
+        self.assertIsNone(b.forecast, "an abstaining fused report must carry no fabricated forecast")
+
 
 _NEGATOR = re.compile(r"not |never |rather than|decision-support|screening|isn't|is not")
 

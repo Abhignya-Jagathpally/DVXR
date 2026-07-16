@@ -32,7 +32,9 @@ class GenerateRequest:
     patient_id: str
     report_type: str = "stress_glucose_risk"
     prediction_horizons_minutes: List[int] = field(default_factory=lambda: [30, 60])
-    data_cutoff_at: str = ""            # explicit causal cutoff; "" ⇒ 'now' resolved by orchestrator
+    data_cutoff_at: str = ""            # explicit causal cutoff; "" ⇒ orchestrator resolves it to a
+                                        # concrete UTC instant (via its injected clock) BEFORE the
+                                        # request_id/snapshot are computed — never left empty downstream
     requested_at: str = ""
     user_role: str = "researcher"
     tenant_id: str = "default"          # server-derived (from the authenticated principal), not body
@@ -41,11 +43,17 @@ class GenerateRequest:
     idempotency_key: Optional[str] = None
     request_id: str = ""
 
-    def with_request_id(self) -> "GenerateRequest":
-        """Return a copy carrying a deterministic request_id derived from the request content."""
+    def with_request_id(self, *, id_cutoff: Optional[str] = None) -> "GenerateRequest":
+        """Return a copy carrying a deterministic request_id derived from the request content.
+
+        ``id_cutoff`` overrides which cutoff value enters the fingerprint (default: this request's
+        ``data_cutoff_at``). The orchestrator uses it so an idempotency-keyed request fingerprints on the
+        caller's *submitted* cutoff (empty when auto-resolved) — keeping replays stable — while a no-key
+        request fingerprints on the *resolved* instant, so two distinct "Generate now" requests differ."""
+        cutoff_for_id = self.data_cutoff_at if id_cutoff is None else id_cutoff
         rid = self.request_id or _stable_id(
             "req", self.tenant_id, self.patient_id, self.report_type,
-            tuple(self.prediction_horizons_minutes), self.data_cutoff_at, self.idempotency_key or "")
+            tuple(self.prediction_horizons_minutes), cutoff_for_id, self.idempotency_key or "")
         return GenerateRequest(**{**asdict(self), "request_id": rid})
 
     def to_dict(self) -> Dict[str, Any]:
@@ -78,12 +86,19 @@ class RiskPrediction:
     calibration_version: str = ""
     data_cutoff_at: str = ""
     snapshot_id: str = ""                          # links to the reproducible PatientSnapshot (Gate 2)
+    # continuous glucose forecast (CGM-only), per horizon: {"glucose_30m": {"point","lower","upper"}, …}
+    # None ⇒ the active model produced no forecast (e.g. an excursion-only or abstaining service).
+    forecast: Optional[Dict[str, Dict[str, float]]] = None
+    forecast_model_version: str = ""
+    forecast_interval_version: str = ""            # e.g. "split-conformal/0.90"
+    forecast_coverage_target: Optional[float] = None
     prediction_id: str = ""
 
     def with_prediction_id(self) -> "RiskPrediction":
         pid = self.prediction_id or _stable_id(
             "pred", self.tenant_id, self.request_id, self.patient_id, self.report_type,
-            json.dumps(self.risk, sort_keys=True), self.abstained, self.model_version,
+            json.dumps(self.risk, sort_keys=True), json.dumps(self.forecast, sort_keys=True),
+            self.abstained, self.model_version, self.forecast_model_version,
             self.feature_version, self.calibration_version, self.data_cutoff_at, self.snapshot_id)
         return RiskPrediction(**{**asdict(self), "prediction_id": pid})
 

@@ -14,13 +14,16 @@ trained here — a missing artifact yields an abstention, never an on-the-fly fi
 """
 from __future__ import annotations
 
-from typing import Optional
+import dataclasses
+from datetime import datetime, timezone
+from typing import Callable, Optional
 
 from dvxr.cohort import GLUCOSE_FUSION_MODALITIES
 from dvxr.contracts import GenerateRequest, RiskPrediction
 from dvxr.llm.grounded import grounded_explanation
 from dvxr.safety.validators import GroundingError
 from dvxr.prediction import AbstainingPredictionService, PredictionInputs, build_model_evidence
+from dvxr.prediction.registry import resolve_predictor
 from dvxr.safety.policy import select_action
 from dvxr.serve.snapshot import build_patient_snapshot
 
@@ -47,7 +50,27 @@ _REPORT_MODALITIES = {
     "stress_glucose_risk": tuple(sorted(GLUCOSE_FUSION_MODALITIES)),
     "glucose_risk": ("cgm",),
     "cgm_glucose_risk": ("cgm",),
+    "cgm_glucose_forecast": ("cgm",),
 }
+
+
+def _resolve_cutoff(request: GenerateRequest, clock: Callable[[], datetime]) -> GenerateRequest:
+    """Resolve an empty ``data_cutoff_at`` to a concrete UTC instant (spec §2 step 2). An unresolved
+    cutoff would make the snapshot unbounded and non-reproducible, and would collapse every
+    "Generate now" into one unresolved request fingerprint. Resolution happens BEFORE ``with_request_id``
+    so the id, snapshot, consent evaluation, and persisted prediction all anchor to the same real instant.
+    ``requested_at`` is stamped from the same clock when absent. The clock is injected so tests are
+    deterministic; production passes UTC ``now``."""
+    cutoff = request.data_cutoff_at
+    if not cutoff:
+        now = clock()
+        if now.tzinfo is None:
+            now = now.replace(tzinfo=timezone.utc)
+        cutoff = now.astimezone(timezone.utc).isoformat()
+    requested_at = request.requested_at or cutoff
+    if cutoff == request.data_cutoff_at and requested_at == request.requested_at:
+        return request
+    return dataclasses.replace(request, data_cutoff_at=cutoff, requested_at=requested_at)
 
 
 def _cgm_history_from_events(events, *, tenant_id: str, patient_id: str, cutoff: str):
@@ -105,6 +128,10 @@ def _prediction_from_bundle(req: GenerateRequest, bundle, snapshot) -> RiskPredi
         calibration_version=bundle.calibration_version,
         data_cutoff_at=req.data_cutoff_at,
         snapshot_id=snapshot.snapshot_id,
+        forecast=getattr(bundle, "forecast", None),
+        forecast_model_version=getattr(bundle, "forecast_model_version", "") or "",
+        forecast_interval_version=getattr(bundle, "forecast_interval_version", "") or "",
+        forecast_coverage_target=getattr(bundle, "forecast_coverage_target", None),
     ).with_prediction_id()
 
 
@@ -135,6 +162,8 @@ def generate_risk_report(
     event_repository=None,
     model_registry=None,
     retrieval=None,
+    artifact_root=None,
+    clock: Callable[[], datetime] = lambda: datetime.now(timezone.utc),
 ) -> dict:
     """Run the Generate lifecycle and return the persisted report. Never trains a model.
 
@@ -149,7 +178,14 @@ def generate_risk_report(
     grounded citation sources for the explanation. Model-derived ``ModelEvidence`` is assembled and
     persisted with the prediction, so the retrieved report carries the same evidence a fresh one does.
     """
-    req = request.with_request_id()
+    # resolve the causal cutoff to a concrete instant FIRST, so consent, events, the snapshot, and the
+    # persisted prediction all anchor to the same reproducible time (spec §2 step 2). The fingerprint
+    # cutoff differs by intent: a no-key request fingerprints on the RESOLVED instant (so two distinct
+    # "Generate now" requests differ), while an idempotency-keyed request fingerprints on the caller's
+    # SUBMITTED cutoff (empty when auto-resolved) so replays stay stable and dedup correctly (spec §18).
+    resolved = _resolve_cutoff(request, clock)
+    id_cutoff = request.data_cutoff_at if request.idempotency_key is not None else None
+    req = resolved.with_request_id(id_cutoff=id_cutoff)
     audit_store.append({"tenant_id": req.tenant_id, "request_id": req.request_id, "event": "generate.requested",
                         "patient_id": req.patient_id, "report_type": req.report_type,
                         "user_role": req.user_role, "actor_id": req.actor_id})
@@ -208,10 +244,22 @@ def generate_risk_report(
     audit_store.append({"tenant_id": req.tenant_id, "request_id": req.request_id, "event": "snapshot.created",
                         "snapshot": snapshot.to_dict()})
 
-    # produce the prediction via the injected service (Gate 3) — NEVER trains. The default is the
-    # abstaining service; the fused headline always abstains (no synchronized data). A CGM-only
-    # service returns a number only for a single-modality CGM request with real history.
-    service = predictor if predictor is not None else AbstainingPredictionService()
+    # produce the prediction via the ACTIVE committed artifact (Gate 3) — NEVER trains. Precedence:
+    # an explicitly injected `predictor` wins (tests / bespoke callers); otherwise the registry resolver
+    # loads the committed CGM artifact for this report_type (fused report types abstain — no synchronized
+    # data); with no registry at all we fall back to the abstaining service. A CGM-only service returns a
+    # number only for a single-modality CGM request with real history.
+    if predictor is not None:
+        service = predictor
+    elif model_registry is not None:
+        service = resolve_predictor(req.report_type, model_registry=model_registry,
+                                    artifact_root=artifact_root)
+    else:
+        service = AbstainingPredictionService()
+    audit_store.append({"tenant_id": req.tenant_id, "request_id": req.request_id,
+                        "event": "model.selected", "report_type": req.report_type,
+                        "model_version": getattr(service, "model_version", ""),
+                        "modality_scope": getattr(service, "modality_scope", "")})
     inputs = PredictionInputs(
         report_type=req.report_type,
         horizons_minutes=req.prediction_horizons_minutes,

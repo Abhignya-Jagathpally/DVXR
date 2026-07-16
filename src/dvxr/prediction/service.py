@@ -82,6 +82,11 @@ class PredictionBundle:
     decision_margin: Optional[float] = None
     reliability: Optional[float] = None
     ood_score: Optional[float] = None
+    # optional continuous glucose forecast, per horizon {"glucose_30m": {"point","lower","upper"}, …}
+    forecast: Optional[Dict[str, Dict[str, float]]] = None
+    forecast_model_version: str = ""
+    forecast_interval_version: str = ""
+    forecast_coverage_target: Optional[float] = None
 
 
 @runtime_checkable
@@ -132,16 +137,28 @@ def build_cgm_feature_matrix(cgm: pd.DataFrame, examples: pd.DataFrame, *,
                              thresholds: ExcursionThresholds = ExcursionThresholds()
                              ) -> pd.DataFrame:
     """For each (reportable) example row, compute the causal CGM history features. Returns a frame with
-    the feature columns + subject_id + horizon_minutes + label, aligned to ``examples``' order."""
-    from dvxr.targets import history_slice
+    the feature columns + subject_id + horizon_minutes + label, aligned to ``examples``' order.
+
+    The cohort is indexed by subject ONCE (sorted by time) and each anchor slices its subject's frame in
+    place — never re-sorting the whole cohort per example (which made an offline fit on a dense real
+    cohort O(examples × cohort). The causal window ``[anchor − history, anchor]`` is identical to
+    ``dvxr.targets.history_slice``."""
     cgm = cgm.copy()
     cgm[time_col] = pd.to_datetime(cgm[time_col], errors="coerce")
+    by_subject = {str(sid): g.sort_values(time_col, kind="stable")
+                  for sid, g in cgm.groupby(subject_col)}
+    hist = pd.Timedelta(minutes=thresholds.history_minutes)
+    empty = pd.DataFrame(columns=[time_col, glucose_col])
     rows: List[Dict[str, float]] = []
     for _, ex in examples.iterrows():
         sid = str(ex["subject_id"])
         anchor = pd.Timestamp(ex["anchor_time"])
-        sl = history_slice(cgm, anchor, thresholds=thresholds, time_col=time_col,
-                           glucose_col=glucose_col, subject_col=subject_col, subject_id=sid)
+        g = by_subject.get(sid)
+        if g is None:
+            sl = empty
+        else:
+            t = g[time_col]
+            sl = g[(t >= anchor - hist) & (t <= anchor)][[time_col, glucose_col]]
         feats = cgm_history_features(sl, time_col=time_col, glucose_col=glucose_col,
                                      thresholds=thresholds)
         feats["subject_id"] = sid
@@ -149,6 +166,79 @@ def build_cgm_feature_matrix(cgm: pd.DataFrame, examples: pd.DataFrame, *,
         feats["label"] = ex["label"]
         rows.append(feats)
     return pd.DataFrame(rows)
+
+
+# --------------------------------------------------------------------------- shared request-time gates
+# Free functions so the excursion classifier and the continuous forecaster apply IDENTICAL causal
+# windowing, adequacy, freshness, and OOD gates (spec §5, §9) — no drift between the two services.
+def window_to_anchor(history: Optional[pd.DataFrame], cutoff, *, time_col: str,
+                     history_minutes: float) -> Optional[pd.DataFrame]:
+    """Slice a CGM history to the ``[anchor − history_minutes, anchor]`` window training used, so serving
+    features match the training distribution. ``anchor`` is the cutoff when known, else the last sample."""
+    if history is None or len(history) == 0:
+        return history
+    t = pd.to_datetime(history[time_col], errors="coerce")
+    anchor = pd.to_datetime(cutoff, errors="coerce") if cutoff is not None else pd.NaT
+    if pd.isna(anchor):
+        anchor = t.max()
+    if pd.isna(anchor):
+        return history
+    start = anchor - pd.Timedelta(minutes=float(history_minutes))
+    return history[(t >= start) & (t <= anchor)]
+
+
+def assess_history_adequacy(history: Optional[pd.DataFrame], *, time_col: str, glucose_col: str,
+                            adequacy: "AdequacyConfig") -> Tuple[bool, Optional[str], float, int]:
+    """Return (ok, abstain_reason, span_minutes, n_valid). A single reading or a thin/gappy window is
+    NOT enough to forecast — require a minimum span, point count, and cadence."""
+    if history is None or len(history) == 0:
+        return False, "no usable CGM history at the cutoff", 0.0, 0
+    g = pd.to_numeric(history[glucose_col], errors="coerce")
+    t = pd.to_datetime(history[time_col], errors="coerce")
+    ok_mask = g.notna() & t.notna()
+    t = t[ok_mask].sort_values()
+    n_valid = int(len(t))
+    if n_valid == 0:
+        return False, "no usable CGM history at the cutoff", 0.0, 0
+    span = float((t.iloc[-1] - t.iloc[0]) / pd.Timedelta(minutes=1)) if n_valid > 1 else 0.0
+    a = adequacy
+    if n_valid < a.minimum_valid_points:
+        return (False, f"inadequate CGM history: {n_valid} readings "
+                f"(< {a.minimum_valid_points} required)", span, n_valid)
+    if span < a.minimum_history_minutes:
+        return (False, f"inadequate CGM history span: {span:.0f} min "
+                f"(< {a.minimum_history_minutes:.0f} required)", span, n_valid)
+    gaps = t.diff().dropna() / pd.Timedelta(minutes=1)
+    if len(gaps) and float(gaps.max()) > a.max_gap_minutes:
+        return (False, f"CGM history has a {float(gaps.max()):.0f}-min gap "
+                f"(> {a.max_gap_minutes:.0f} allowed) — coverage too sparse", span, n_valid)
+    return True, None, span, n_valid
+
+
+def ood_from_moments(x: np.ndarray, feat_mean, feat_std, ood_abstain_z: float) -> float:
+    """Max per-feature |z| against the training moments, normalised by the abstention threshold →
+    0 = in-distribution, 1 = at the OOD boundary, >1 = out of distribution. Near-zero-variance features
+    carry no distributional signal and are excluded."""
+    if feat_mean is None or feat_std is None:
+        return 0.0
+    std = np.asarray(feat_std, dtype=float)
+    informative = std > 1e-6
+    if not informative.any():
+        return 0.0
+    z = np.abs((x[0][informative] - feat_mean[informative]) / std[informative])
+    return float(np.max(z) / ood_abstain_z) if len(z) else 0.0
+
+
+def staleness_minutes(history: Optional[pd.DataFrame], cutoff, time_col: str) -> Optional[float]:
+    """Minutes between the newest sample and the cutoff (None if not computable). A large value ⇒ a stale
+    feed, reported as such rather than mis-read as 'no history' after windowing."""
+    if cutoff is None or history is None or len(history) == 0:
+        return None
+    last_t = pd.to_datetime(history[time_col], errors="coerce").max()
+    c = pd.to_datetime(cutoff, errors="coerce")
+    if pd.isna(last_t) or pd.isna(c):
+        return None
+    return float((c - last_t) / pd.Timedelta(minutes=1))
 
 
 # --------------------------------------------------------------------------- services
@@ -249,6 +339,66 @@ class CgmOnlyExcursionService:
                    max_staleness_minutes=max_staleness_minutes, adequacy=adequacy,
                    feature_mean=feat_mean, feature_std=feat_std, skipped_horizons=skipped)
 
+    # ---- artifact persistence (fit OFFLINE, save, then load-and-serve; the API never fits) ----
+    ARTIFACT_FORMAT = "dvxr-cgm-excursion/1"
+
+    def save(self, path) -> "object":
+        """Persist the fitted service as a portable artifact (``model.joblib`` + ``manifest.json``),
+        mirroring ``serve.screener.Screener.save``. The joblib blob carries the picklable model state
+        (per-horizon classifier+calibrator, thresholds, adequacy config, OOD moments); the manifest
+        carries human-readable metadata plus the joblib's sha256 so a loader can verify integrity."""
+        import hashlib
+        import json
+        from pathlib import Path
+
+        import joblib
+
+        path = Path(path)
+        path.mkdir(parents=True, exist_ok=True)
+        blob = {
+            "models": self._models, "thresholds": self._thr, "adequacy": self._adeq,
+            "feature_names": self._features, "max_staleness_minutes": self._max_staleness,
+            "feature_mean": self._feat_mean, "feature_std": self._feat_std,
+            "skipped_horizons": self.skipped_horizons,
+            "model_version": self.model_version, "calibration_version": self.calibration_version,
+        }
+        joblib.dump(blob, path / "model.joblib")
+        sha = hashlib.sha256((path / "model.joblib").read_bytes()).hexdigest()
+        manifest = {
+            "format": self.ARTIFACT_FORMAT, "modality_scope": self.modality_scope,
+            "model_version": self.model_version, "calibration_version": self.calibration_version,
+            "threshold_version": self._thr.version, "feature_names": list(self._features),
+            "horizons_fitted": sorted(int(h) for h in self._models),
+            "skipped_horizons": list(self.skipped_horizons),
+            "max_staleness_minutes": self._max_staleness, "artifact_sha256": sha,
+        }
+        (path / "manifest.json").write_text(json.dumps(manifest, indent=2))
+        return path
+
+    @classmethod
+    def load(cls, path) -> "CgmOnlyExcursionService":
+        """Load a committed artifact and verify its integrity against the manifest sha256. Raises if the
+        joblib bytes do not match (a tampered/corrupt artifact must never silently serve)."""
+        import hashlib
+        import json
+        from pathlib import Path
+
+        import joblib
+
+        path = Path(path)
+        manifest = json.loads((path / "manifest.json").read_text())
+        raw = (path / "model.joblib").read_bytes()
+        sha = hashlib.sha256(raw).hexdigest()
+        if manifest.get("artifact_sha256") and sha != manifest["artifact_sha256"]:
+            raise ValueError(f"CGM artifact sha256 mismatch at {path} — refusing to load a tampered model")
+        blob = joblib.load(path / "model.joblib")
+        return cls(blob["models"], model_version=blob["model_version"],
+                   calibration_version=blob["calibration_version"], thresholds=blob["thresholds"],
+                   feature_names=blob["feature_names"],
+                   max_staleness_minutes=blob["max_staleness_minutes"], adequacy=blob["adequacy"],
+                   feature_mean=blob["feature_mean"], feature_std=blob["feature_std"],
+                   skipped_horizons=blob["skipped_horizons"])
+
     # ---- request-time gates ----
     def _causal_window(self, inputs: PredictionInputs) -> Optional[pd.DataFrame]:
         """Slice the request history to the SAME ``[anchor − history_minutes, anchor]`` window training
@@ -256,59 +406,17 @@ class CgmOnlyExcursionService:
         ``cgm_n_samples`` — which counts readings in the window — differs purely because the caller
         passed a longer history, and every prediction would look out-of-distribution). ``anchor`` is the
         request cutoff when known, else the last observed sample."""
-        h = inputs.cgm_history
-        if h is None or len(h) == 0:
-            return h
-        t = pd.to_datetime(h[inputs.time_col], errors="coerce")
-        anchor = pd.to_datetime(inputs.cutoff, errors="coerce") if inputs.cutoff is not None else pd.NaT
-        if pd.isna(anchor):
-            anchor = t.max()
-        if pd.isna(anchor):
-            return h
-        start = anchor - pd.Timedelta(minutes=float(self._thr.history_minutes))
-        return h[(t >= start) & (t <= anchor)]
+        return window_to_anchor(inputs.cgm_history, inputs.cutoff, time_col=inputs.time_col,
+                                history_minutes=self._thr.history_minutes)
 
     def _history_adequacy(self, inputs: PredictionInputs) -> Tuple[bool, Optional[str], float, int]:
-        """Return (ok, abstain_reason, span_minutes, n_valid). A single reading or a thin/gappy window
-        is NOT enough to forecast an excursion — require a minimum span, point count, and cadence."""
-        h = inputs.cgm_history
-        if h is None or len(h) == 0:
-            return False, "no usable CGM history at the cutoff", 0.0, 0
-        g = pd.to_numeric(h[inputs.glucose_col], errors="coerce")
-        t = pd.to_datetime(h[inputs.time_col], errors="coerce")
-        ok_mask = g.notna() & t.notna()
-        t = t[ok_mask].sort_values()
-        n_valid = int(len(t))
-        if n_valid == 0:
-            return False, "no usable CGM history at the cutoff", 0.0, 0
-        span = float((t.iloc[-1] - t.iloc[0]) / pd.Timedelta(minutes=1)) if n_valid > 1 else 0.0
-        a = self._adeq
-        if n_valid < a.minimum_valid_points:
-            return (False, f"inadequate CGM history: {n_valid} readings "
-                    f"(< {a.minimum_valid_points} required)", span, n_valid)
-        if span < a.minimum_history_minutes:
-            return (False, f"inadequate CGM history span: {span:.0f} min "
-                    f"(< {a.minimum_history_minutes:.0f} required)", span, n_valid)
-        gaps = t.diff().dropna() / pd.Timedelta(minutes=1)
-        if len(gaps) and float(gaps.max()) > a.max_gap_minutes:
-            return (False, f"CGM history has a {float(gaps.max()):.0f}-min gap "
-                    f"(> {a.max_gap_minutes:.0f} allowed) — coverage too sparse", span, n_valid)
-        return True, None, span, n_valid
+        """Return (ok, abstain_reason, span_minutes, n_valid) — the shared adequacy gate."""
+        return assess_history_adequacy(inputs.cgm_history, time_col=inputs.time_col,
+                                       glucose_col=inputs.glucose_col, adequacy=self._adeq)
 
     def _ood_score(self, x: np.ndarray) -> float:
-        """Max per-feature |z| against the training moments, normalised by the abstention threshold →
-        0 = perfectly in-distribution, 1 = at the OOD abstention boundary, >1 = out of distribution.
-
-        Features with ~zero training variance carry NO distributional signal (any deviation would divide
-        by a floor and dominate spuriously), so they are excluded from the score."""
-        if self._feat_mean is None or self._feat_std is None:
-            return 0.0
-        std = np.asarray(self._feat_std, dtype=float)
-        informative = std > 1e-6
-        if not informative.any():
-            return 0.0
-        z = np.abs((x[0][informative] - self._feat_mean[informative]) / std[informative])
-        return float(np.max(z) / self._adeq.ood_abstain_z) if len(z) else 0.0
+        """Max per-feature |z| against the training moments (shared OOD gate)."""
+        return ood_from_moments(x, self._feat_mean, self._feat_std, self._adeq.ood_abstain_z)
 
     # ---- request-time inference ----
     def predict(self, inputs: PredictionInputs) -> PredictionBundle:
