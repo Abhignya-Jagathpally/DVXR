@@ -28,7 +28,7 @@ _SCREENER_ROOT = Path("outputs/product/screeners")
 def create_app(screener_root: str | Path = _SCREENER_ROOT,
                db_path: str = ":memory:", require_consent: bool = True,
                principals: dict | None = None, unsafe_dev: bool = False,
-               product_only: bool = False):
+               product_only: bool = False, artifact_root: str | Path | None = None):
     """Build the ASGI app. Secure by default: the /v1 patient endpoints require an ``X-API-Key`` that
     resolves to a server-side Principal (role/tenant come from the principal, NOT the request body).
     Pass ``principals`` (api_key -> Principal) for a real deployment, or ``unsafe_dev=True`` for a
@@ -168,7 +168,8 @@ def create_app(screener_root: str | Path = _SCREENER_ROOT,
         try:
             out = generate_risk_report(req, prediction_store=pred_store, audit_store=audit_store,
                                        consent_store=consent_store, require_consent=require_consent,
-                                       event_repository=event_store, model_registry=model_registry)
+                                       event_repository=event_store, model_registry=model_registry,
+                                       artifact_root=(str(artifact_root) if artifact_root else None))
         except ConsentError as e:
             return JSONResponse({"error": str(e)}, status_code=403)
         except IdempotencyConflict as e:

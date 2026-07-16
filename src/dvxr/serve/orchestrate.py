@@ -102,9 +102,14 @@ def _cgm_history_from_events(events, *, tenant_id: str, patient_id: str, cutoff:
     if not rows:
         return None
     df = pd.DataFrame(rows)
-    df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
+    # Normalize to tz-naive UTC on BOTH sides: stored events may be tz-naive while a resolved
+    # "Generate now" cutoff is tz-aware (datetime.now(timezone.utc)); comparing the two raw would
+    # raise "Cannot compare tz-naive and tz-aware". utc=True coerces either form to UTC first.
+    df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce", utc=True).dt.tz_localize(None)
     if cutoff:
-        df = df[df["timestamp"] <= pd.to_datetime(cutoff, errors="coerce")]
+        cut = pd.to_datetime(cutoff, errors="coerce", utc=True)
+        if cut is not pd.NaT:
+            df = df[df["timestamp"] <= cut.tz_localize(None)]
     return df.sort_values("timestamp").reset_index(drop=True) if len(df) else None
 
 

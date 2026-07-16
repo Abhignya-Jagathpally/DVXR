@@ -34,6 +34,7 @@ floor = ["xgboost"]
 io = ["wfdb", "openpyxl", "pyarrow", "kagglehub"]
 app = ["streamlit"]                       # the live interactive demo (dvxr demo --serve)
 api = ["starlette", "uvicorn"]            # the thin HTTP API (dvxr serve-api)
+deploy = ["fastapi", "uvicorn"]           # FastAPI wrapper for FastAPI Cloud (dvxr.serve.asgi:app)
 all = ["dvxr[eeg,floor,io,app,api]"]
 
 [project.scripts]
