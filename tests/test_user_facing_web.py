@@ -47,6 +47,29 @@ def test_static_assets_are_served(monkeypatch, tmp_path):
     assert client.get("/assets/app.js").status_code == 200
 
 
+def test_index_asset_references_all_resolve(monkeypatch, tmp_path):
+    """Every stylesheet/script the served page links must resolve to 200.
+
+    Regression guard for the path mismatch that made the dashboard look "crashed": index.html linked
+    href="./styles.css" / src="./app.js" (root) while the app serves them under /assets/, so the CSS and
+    JS both 404'd — the page loaded but rendered unstyled and never initialized. Fetching every ref the
+    HTML actually points at (not just probing /assets/*) is what catches this.
+    """
+    import re
+
+    client = TestClient(_load_app(monkeypatch, tmp_path, unsafe_dev=True))
+    html = client.get("/").text
+    refs = re.findall(r'(?:href|src)="([^"]+?\.(?:css|js)(?:\?[^"]*)?)"', html)
+    local = [r for r in refs if not r.startswith(("http://", "https://"))]
+    assert local, "index.html should reference at least one local css/js asset"
+    for ref in local:
+        path = ref[1:] if ref.startswith("./") else ref  # "./assets/app.js" -> "/assets/app.js"
+        if not path.startswith("/"):
+            path = "/" + path
+        path = path.split("?", 1)[0]  # drop any ?v= cache-buster
+        assert client.get(path).status_code == 200, f"asset ref {ref!r} -> {path} did not return 200"
+
+
 def test_ui_session_does_not_expose_key(monkeypatch, tmp_path):
     client = TestClient(_load_app(monkeypatch, tmp_path, key="secret-code"))
     config = client.get("/ui/config")

@@ -38,3 +38,7 @@ artifacts/
 dvxr-user-facing-patch/
 neuroglycemic-sentinel-claude-integration/
 src/dvxr/serve/asgi.py.before-*
+
+# UI recovery patch (user download) — not applied; real fix is the index.html asset path
+dvxr-ui-recovery-patch/
+ROOT_CAUSE_AND_DEPLOY.md
