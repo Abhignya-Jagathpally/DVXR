@@ -32,3 +32,7 @@ outputs/product/glassbox/trace_*.json
 
 # Built model artifacts (produced by scripts/build_cgm_artifact.py; not committed — fail-closed on clean checkout)
 artifacts/
+
+# Frontend patch working directory (its files are applied into src/ + tests/ and committed there;
+# the staging copy is not part of the repo and must not ship in the FastAPI Cloud upload).
+dvxr-user-facing-patch/

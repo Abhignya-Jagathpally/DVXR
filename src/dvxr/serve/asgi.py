@@ -1,159 +1,166 @@
-"""FastAPI wrapper so the DVXR product API deploys on FastAPI Cloud (``fastapi deploy``).
+"""FastAPI Cloud entry point with a user-facing Sentinel web application.
 
-The product API itself is a Starlette app (:func:`dvxr.sentinel.create_product_api`). FastAPI Cloud
-deploys a FastAPI ``app`` object, so this thin module wraps the Starlette product app in a FastAPI
-instance — **no routes are re-modeled**, the Starlette app is mounted as-is.
+The scientific product API remains the existing, secure-by-default Starlette application from
+``dvxr.sentinel.create_product_api``. This wrapper adds only:
 
-Secure-by-default configuration via environment variables (all optional):
+* a responsive, same-origin web interface at ``/``;
+* static assets at ``/assets``;
+* a short-lived HttpOnly UI session that bridges to the existing ``X-API-Key`` contract; and
+* developer documentation under ``/developer/docs``.
 
-    DVXR_DB_PATH          sqlite path for the persistent stores (default ``dvxr.db`` — NOT ``:memory:``,
-                          so predictions/alerts/audit survive restarts).
-    DVXR_ARTIFACT_ROOT    committed model-artifact root (default ``artifacts``). CGM report types return
-                          real predictions only when an artifact is present here AND registered in
-                          DVXR_DB_PATH (run ``scripts/build_cgm_artifact.py`` against the same db + root).
-    DVXR_API_KEY          an ``X-API-Key`` that maps to a researcher principal. If unset AND
-                          DVXR_UNSAFE_DEV is not ``1``, the ``/v1`` endpoints fail closed (401) — there
-                          is no anonymous access to patient endpoints.
-    DVXR_UNSAFE_DEV=1     local demo only: disables auth. NEVER set this in a real deployment.
-    DVXR_REQUIRE_CONSENT=0  disable consent enforcement (demo only; default is ON).
-
-Honesty: the fused ``stress_glucose_risk`` report **abstains by construction** — there is no
-synchronized EEG+CGM data and therefore no fused artifact. Only the single-modality CGM report types can
-return a number, and only when a committed CGM artifact is provisioned.
+No prediction, evidence, policy, consent, abstention, or audit behavior is reimplemented here.
+The fused ``stress_glucose_risk`` report therefore continues to abstain by construction until a
+validated synchronized EEG + wearable + CGM artifact exists.
 """
 from __future__ import annotations
 
+import hmac
 import os
+from pathlib import Path
 
-# Module-level so FastAPI can resolve the stringized `Request` annotation on index() (this file uses
-# `from __future__ import annotations`; hints resolve against module globals, not local scope). fastapi
-# is a core dependency, so importing it at module load is expected for this wrapper module.
-from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 
-#: Machine-readable landing payload (also the source of truth for the HTML page below).
-_LANDING = {
-    "product": "DVXR NeuroGlycemic Sentinel",
-    "stage": "research — decision-support, NOT a diagnosis or medical device",
-    "disclaimer": "A raised risk is a prompt to consult a qualified clinician, never a conclusion.",
-    "honesty": ("The fused stress_glucose_risk report abstains by construction — there is no "
-                "synchronized EEG+CGM data, so no fused model and no fabricated number is ever served. "
-                "Only single-modality CGM report types can return a value, and only when a committed CGM "
-                "artifact is provisioned."),
-    "endpoints": {
-        "GET /health": "liveness + disclaimer (no auth)",
-        "GET /docs": "interactive API docs",
-        "POST /v1/risk-reports": "generate a risk report (X-API-Key required; consent enforced)",
-        "GET /v1/predictions/{id}": "retrieve a persisted report",
-        "GET|POST /v1/alerts/{id}[/acknowledge|dismiss|escalate]": "alert lifecycle",
-    },
-    "auth": "Patient endpoints require an X-API-Key; requests without consent fail closed (403).",
-}
-
-# Self-contained HTML landing page (charset asserted, so em dashes render correctly instead of
-# mojibake). Theme-aware via prefers-color-scheme. No external assets — CSP-safe.
-_LANDING_HTML = """<!doctype html>
-<html lang="en"><head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>DVXR NeuroGlycemic Sentinel</title>
-<style>
-  :root{--bg:#f7f8fa;--card:#fff;--fg:#1c2024;--mut:#5b6572;--line:#e4e7ec;--accent:#0b6b5b;--warn:#8a5a00;--warnbg:#fff7e6}
-  @media (prefers-color-scheme:dark){:root{--bg:#0e1116;--card:#161b22;--fg:#e6edf3;--mut:#9aa4b2;--line:#2a313c;--accent:#3fb9a3;--warn:#e2b341;--warnbg:#241d08}}
-  *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
-  .wrap{max-width:760px;margin:0 auto;padding:40px 20px 64px}
-  .tag{display:inline-block;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--accent);border:1px solid var(--accent);border-radius:999px;padding:3px 10px;margin-bottom:14px}
-  h1{font-size:26px;margin:0 0 6px}
-  .sub{color:var(--mut);margin:0 0 22px}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:14px 0}
-  .warn{background:var(--warnbg);border-color:transparent;color:var(--warn)}
-  h2{font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);margin:0 0 10px}
-  table{width:100%;border-collapse:collapse;font-size:14.5px}
-  td{padding:7px 0;border-top:1px solid var(--line);vertical-align:top}
-  td.k{white-space:nowrap;padding-right:16px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--accent)}
-  tr:first-child td{border-top:none}
-  a{color:var(--accent)}
-  .foot{color:var(--mut);font-size:13px;margin-top:26px;text-align:center}
-</style></head>
-<body><div class="wrap">
-  <span class="tag">Research stage</span>
-  <h1>DVXR NeuroGlycemic Sentinel</h1>
-  <p class="sub">Multimodal glucose-excursion early-warning — decision-support, <b>not a diagnosis or medical device</b>.</p>
-
-  <div class="card warn"><b>Disclaimer.</b> A raised risk is a prompt to consult a qualified clinician, never a conclusion.</div>
-
-  <div class="card">
-    <h2>Honesty guardrail</h2>
-    <p style="margin:0">The fused <code>stress_glucose_risk</code> report <b>abstains by construction</b> — there is no
-    synchronized EEG+CGM data, so no fused model and <b>no fabricated number is ever served</b>. Only single-modality
-    CGM report types can return a value, and only when a committed CGM artifact is provisioned.</p>
-  </div>
-
-  <div class="card">
-    <h2>Endpoints</h2>
-    <table>
-      <tr><td class="k">GET /health</td><td>liveness + disclaimer (no auth) &middot; <a href="/health">open</a></td></tr>
-      <tr><td class="k">GET /docs</td><td>interactive API docs &middot; <a href="/docs">open</a></td></tr>
-      <tr><td class="k">POST /v1/risk-reports</td><td>generate a risk report (X-API-Key required; consent enforced)</td></tr>
-      <tr><td class="k">GET /v1/predictions/{id}</td><td>retrieve a persisted report</td></tr>
-      <tr><td class="k">/v1/alerts/{id}</td><td>alert lifecycle: acknowledge &middot; dismiss &middot; escalate</td></tr>
-    </table>
-  </div>
-
-  <div class="card">
-    <h2>Access</h2>
-    <p style="margin:0">Patient endpoints require an <code>X-API-Key</code>. Requests without recorded consent
-    fail closed (<code>403</code>). No key ⇒ <code>401</code>. There is no anonymous access to patient data.</p>
-  </div>
-
-  <p class="foot">DVXR — research-grade, not for clinical use. Machine clients: request <code>Accept: application/json</code> for this page as JSON.</p>
-</div></body></html>
-"""
+_UI_COOKIE = "dvxr_ui_session"
+_UI_COOKIE_MAX_AGE_SECONDS = 60 * 60
 
 
 def _principals():
-    """Build the X-API-Key → Principal map from env. Returns None when no key is set (the API then fails
-    closed on /v1 unless DVXR_UNSAFE_DEV=1)."""
+    """Build the existing X-API-Key -> Principal map from deployment environment variables."""
     key = os.environ.get("DVXR_API_KEY")
     if not key:
         return None
     from dvxr.serve.auth import Principal, Role
+
     tenant = os.environ.get("DVXR_TENANT", "default")
-    return {key: Principal(actor_id="deploy", role=Role.RESEARCHER, tenant_id=tenant, patient_scope="*")}
+    return {
+        key: Principal(
+            actor_id=os.environ.get("DVXR_ACTOR_ID", "web-user"),
+            role=Role.RESEARCHER,
+            tenant_id=tenant,
+            patient_scope="*",
+        )
+    }
 
 
-def build_app():
-    """Construct the FastAPI app wrapping the Starlette Sentinel product API."""
+def _same_secret(left: str | None, right: str | None) -> bool:
+    if not left or not right:
+        return False
+    return hmac.compare_digest(str(left), str(right))
+
+
+def build_app() -> FastAPI:
+    """Construct the FastAPI Cloud application without altering the Sentinel product contract."""
     from dvxr.sentinel import create_product_api
+
+    unsafe_dev = os.environ.get("DVXR_UNSAFE_DEV") == "1"
+    api_key = os.environ.get("DVXR_API_KEY")
+    web_root = Path(__file__).resolve().parents[1] / "web"
+    assets_root = web_root / "assets"
+
+    if not (web_root / "index.html").exists():
+        raise RuntimeError(f"Sentinel web assets are missing at {web_root}")
 
     product = create_product_api(
         db_path=os.environ.get("DVXR_DB_PATH", "dvxr.db"),
         artifact_root=os.environ.get("DVXR_ARTIFACT_ROOT", "artifacts"),
         require_consent=os.environ.get("DVXR_REQUIRE_CONSENT", "1") != "0",
         principals=_principals(),
-        unsafe_dev=os.environ.get("DVXR_UNSAFE_DEV") == "1",
+        unsafe_dev=unsafe_dev,
     )
+
     app = FastAPI(
-        title="DVXR NeuroGlycemic Sentinel (research-stage)",
-        version="0.1.0",
-        description=("Research-grade decision-support, not a diagnosis. The fused stress-glucose report "
-                     "abstains by construction (no synchronized EEG+CGM data); only single-modality CGM "
-                     "report types can return a number."),
+        title="DVXR NeuroGlycemic Sentinel",
+        version="0.2.0",
+        description=(
+            "Research-grade multimodal clinical-risk decision support. The predictive service "
+            "computes or abstains; the language layer explains verified outputs and never invents risk."
+        ),
+        docs_url="/developer/docs",
+        redoc_url=None,
+        openapi_url="/developer/openapi.json",
     )
+
+    # The UI never stores the deployment API key in JavaScript. An authorized user enters the
+    # access code once; it is retained only as a secure, HttpOnly, same-site cookie. For /v1 calls,
+    # this middleware translates that cookie back into the API's existing X-API-Key contract.
+    @app.middleware("http")
+    async def ui_session_bridge(request: Request, call_next):
+        if request.url.path.startswith("/v1/") and not request.headers.get("X-API-Key"):
+            cookie = request.cookies.get(_UI_COOKIE)
+            if _same_secret(cookie, api_key):
+                headers = list(request.scope.get("headers", []))
+                headers.append((b"x-api-key", str(api_key).encode("utf-8")))
+                request.scope["headers"] = headers
+        response = await call_next(request)
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("Referrer-Policy", "same-origin")
+        response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+        return response
+
+    app.mount("/assets", StaticFiles(directory=str(assets_root)), name="sentinel-assets")
 
     @app.get("/", include_in_schema=False)
-    def index(request: Request):
-        """A human-friendly landing so the bare URL isn't a bare 404. Registered BEFORE the mount below
-        so it wins for exactly "/"; every other path falls through to the product app. Content-negotiated:
-        HTML for browsers (charset asserted → no mojibake), JSON for API clients that ask for it."""
-        accept = request.headers.get("accept", "")
-        if "application/json" in accept and "text/html" not in accept:
-            return JSONResponse(_LANDING)
-        return HTMLResponse(_LANDING_HTML)
+    async def home():
+        response = FileResponse(web_root / "index.html", media_type="text/html")
+        response.headers["Cache-Control"] = "no-store"
+        return response
 
-    app.mount("/", product)                              # mount the Starlette product app unchanged
+    @app.get("/ui/config", include_in_schema=False)
+    async def ui_config():
+        return {
+            "product": "DVXR NeuroGlycemic Sentinel",
+            "research_stage": True,
+            "auth_required": bool(api_key) and not unsafe_dev,
+            "unsafe_dev": unsafe_dev,
+            "consent_required": os.environ.get("DVXR_REQUIRE_CONSENT", "1") != "0",
+            "fused_report_status": "abstains_until_synchronized_artifact",
+        }
+
+    @app.get("/ui/session", include_in_schema=False)
+    async def session_status(request: Request):
+        authenticated = unsafe_dev or _same_secret(request.cookies.get(_UI_COOKIE), api_key)
+        return {"authenticated": authenticated}
+
+    @app.post("/ui/session", include_in_schema=False)
+    async def create_session(request: Request):
+        if unsafe_dev:
+            return {"authenticated": True, "mode": "unsafe_dev"}
+        if not api_key:
+            raise HTTPException(
+                status_code=503,
+                detail="The deployment has no DVXR_API_KEY configured; patient endpoints remain closed.",
+            )
+        try:
+            payload = await request.json()
+        except Exception as exc:  # noqa: BLE001
+            raise HTTPException(status_code=400, detail="Expected a JSON request body.") from exc
+        if not _same_secret(str(payload.get("access_code", "")), api_key):
+            raise HTTPException(status_code=401, detail="The access code is not valid.")
+
+        response = JSONResponse({"authenticated": True})
+        response.set_cookie(
+            key=_UI_COOKIE,
+            value=api_key,
+            max_age=_UI_COOKIE_MAX_AGE_SECONDS,
+            httponly=True,
+            secure=True,
+            samesite="strict",
+            path="/",
+        )
+        return response
+
+    @app.delete("/ui/session", include_in_schema=False)
+    async def delete_session():
+        response = JSONResponse({"authenticated": False})
+        response.delete_cookie(_UI_COOKIE, path="/", secure=True, httponly=True, samesite="strict")
+        return response
+
+    # Mount last so exact UI/static/developer routes above win, while all established product routes
+    # remain available at their original paths: /health, /v1/risk-reports, /v1/predictions/..., etc.
+    app.mount("/", product)
     return app
 
 
-#: the ASGI app FastAPI Cloud deploys: `fastapi deploy` / `uvicorn dvxr.serve.asgi:app`.
 app = build_app()

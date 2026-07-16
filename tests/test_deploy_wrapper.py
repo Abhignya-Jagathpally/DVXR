@@ -83,18 +83,19 @@ class DeployWrapperTest(unittest.TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertIn("not a diagnosis", json.dumps(r.json()).lower())
 
-    def test_root_serves_html_to_browsers_utf8(self):
-        r = self._client().get("/", headers={"accept": "text/html,application/xhtml+xml"})
+    def test_root_serves_the_user_facing_spa(self):
+        # The wrapper now serves the full product web app at "/" (superseding the old JSON landing);
+        # the machine-readable summary moved to /ui/config.
+        r = self._client().get("/")
         self.assertEqual(r.status_code, 200)                      # not a 404 at the bare URL
-        self.assertIn("charset=utf-8", r.headers.get("content-type", ""))
-        self.assertIn("<html", r.text)
-        self.assertIn("—", r.content.decode("utf-8"))            # em dash, not mojibake
-        self.assertIn("abstains by construction", r.text)         # honesty note is on the page
+        self.assertIn("text/html", r.headers.get("content-type", ""))
+        self.assertIn("DVXR NeuroGlycemic Sentinel", r.text)
+        self.assertIn("Generate a risk review", r.text)           # the risk-review workspace is present
 
-    def test_root_serves_json_to_api_clients(self):
-        r = self._client().get("/", headers={"accept": "application/json"})
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.json()["product"], "DVXR NeuroGlycemic Sentinel")
+    def test_ui_config_reports_fused_abstains(self):
+        cfg = self._client().get("/ui/config")
+        self.assertEqual(cfg.status_code, 200)
+        self.assertEqual(cfg.json()["fused_report_status"], "abstains_until_synchronized_artifact")
 
     def test_cgm_report_serves_a_real_prediction(self):
         c = self._client()

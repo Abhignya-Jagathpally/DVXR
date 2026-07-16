@@ -324,5 +324,44 @@ class UploadOutOfDistributionAudit(unittest.TestCase):
                             f"{rel}: upload path missing the out-of-distribution disclaimer")
 
 
+class UserFacingWebAudit(unittest.TestCase):
+    """The user-facing web surface (dvxr.serve.asgi + src/dvxr/web) must never present fabricated
+    numbers as real: it renders only backend-returned fields, its one canned example is visibly labeled
+    'illustrative / no live model executed', and it carries the not-a-diagnosis disclaimer. It must also
+    load no external resource (offline / CSP-safe), like every other DVXR surface."""
+
+    def _web(self, rel: str) -> str:
+        return (ROOT / "src" / "dvxr" / "web" / rel).read_text()
+
+    def test_landing_page_discloses_research_stage_and_not_a_diagnosis(self):
+        page = self._web("index.html").lower()
+        self.assertTrue("not a diagnos" in page or "never a diagnos" in page,
+                        "landing page missing the not-a-diagnosis disclaimer")
+
+    def test_illustrative_example_is_visibly_labeled(self):
+        # index.html must carry a visible illustrative banner; app.js must mark the canned sample as an
+        # interface-only object with no model executed — so it can never be mistaken for a real result.
+        page = self._web("index.html").lower()
+        self.assertIn("illustrative", page, "landing page missing the illustrative-example labeling")
+        js = self._web("assets/app.js")
+        self.assertIn("illustrative-interface/no-model-executed", js,
+                      "the canned sample is not marked as no-model-executed")
+        self.assertIn("illustrative: true", js.replace('"true"', "true"),
+                      "the canned sample is not flagged illustrative:true")
+
+    def test_fused_report_status_is_abstains_in_the_ui_config(self):
+        # the machine-readable UI config must advertise the fused report as abstaining, never as a number
+        asgi = (ROOT / "src" / "dvxr" / "serve" / "asgi.py").read_text()
+        self.assertIn("abstains_until_synchronized_artifact", asgi,
+                      "asgi /ui/config must report the fused report as abstaining")
+
+    def test_web_surface_loads_no_external_resource(self):
+        html = self._web("index.html")
+        for bad in ("http://", "https://", "//cdn", "<script src=\"http"):
+            self.assertNotIn(bad, html, f"landing page loads an external resource: {bad}")
+        css = self._web("assets/styles.css")
+        self.assertNotIn("url(http", css, "stylesheet loads an external resource")
+
+
 if __name__ == "__main__":
     unittest.main()

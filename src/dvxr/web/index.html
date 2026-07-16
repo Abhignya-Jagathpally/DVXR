@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="DVXR NeuroGlycemic Sentinel research-stage multimodal glucose-risk review." />
+  <meta name="theme-color" content="#07130f" />
+  <title>DVXR NeuroGlycemic Sentinel</title>
+  <link rel="stylesheet" href="/assets/styles.css" />
+  <script defer src="/assets/app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#workspace">Skip to risk review</a>
+  <div class="ambient ambient-one" aria-hidden="true"></div>
+  <div class="ambient ambient-two" aria-hidden="true"></div>
+
+  <header class="site-header">
+    <a class="brand" href="#top" aria-label="DVXR NeuroGlycemic Sentinel home">
+      <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+      <span><strong>NeuroGlycemic</strong><small>Sentinel · DVXR Lab</small></span>
+    </a>
+    <nav aria-label="Primary navigation">
+      <a href="#how-it-works">How it works</a>
+      <a href="#trust">Safety</a>
+      <a href="#workspace">Risk review</a>
+    </nav>
+    <div class="header-actions">
+      <span class="stage-pill"><span></span> Research-stage</span>
+      <button class="button button-ghost button-small" id="signOutButton" type="button" hidden>Sign out</button>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero section-shell">
+      <div class="hero-copy">
+        <p class="eyebrow">MULTIMODAL CLINICAL-RISK INTELLIGENCE</p>
+        <h1>See the signal.<br /><em>Understand the risk.</em></h1>
+        <p class="hero-lede">
+          Bring CGM dynamics, physiological stress signals, neural context, and clinical evidence into one
+          traceable risk review—without letting a language model invent the prediction.
+        </p>
+        <div class="hero-actions">
+          <a class="button button-primary" href="#workspace">Start a risk review <span aria-hidden="true">→</span></a>
+          <button class="button button-secondary" id="sampleReportButton" type="button">Explore an illustrative report</button>
+        </div>
+        <div class="hero-proof" aria-label="Product principles">
+          <span><i>01</i> Calibrated prediction</span>
+          <span><i>02</i> Grounded explanation</span>
+          <span><i>03</i> Protocol-controlled action</span>
+        </div>
+      </div>
+
+      <div class="hero-visual" aria-label="Illustration of synchronized patient signals">
+        <div class="signal-console">
+          <div class="console-topline">
+            <span>LIVE RESEARCH WORKSPACE</span>
+            <span class="status-dot">System ready</span>
+          </div>
+          <div class="orb-wrap">
+            <div class="risk-orb"><span>30–60</span><small>minute horizon</small></div>
+            <svg class="orbit" viewBox="0 0 420 420" aria-hidden="true">
+              <circle cx="210" cy="210" r="158"></circle>
+              <circle cx="210" cy="210" r="120"></circle>
+            </svg>
+            <span class="modality modality-cgm">CGM<small>trajectory</small></span>
+            <span class="modality modality-eeg">EEG<small>neural state</small></span>
+            <span class="modality modality-wearable">HRV · EDA<small>autonomic state</small></span>
+            <span class="modality modality-ehr">EHR<small>clinical context</small></span>
+          </div>
+          <div class="wave-panel" aria-hidden="true">
+            <svg viewBox="0 0 620 120" preserveAspectRatio="none">
+              <path class="gridline" d="M0 30H620M0 60H620M0 90H620"></path>
+              <path class="wave wave-a" d="M0 71 C25 70, 29 64, 42 68 S70 75, 82 68 S104 43, 119 71 S144 88, 160 66 S186 57, 201 70 S222 76, 236 67 S260 38, 276 69 S299 87, 316 67 S339 53, 356 69 S380 76, 394 66 S418 47, 432 68 S459 82, 475 66 S498 57, 516 69 S540 77, 554 67 S590 54, 620 68"></path>
+              <path class="wave wave-b" d="M0 87 C34 83, 47 88, 73 82 S113 76, 143 83 S185 92, 214 79 S255 67, 286 78 S331 90, 362 76 S406 61, 441 75 S486 88, 515 73 S571 62, 620 71"></path>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="principles" id="trust">
+      <div class="section-shell principles-grid">
+        <article><span>01</span><h2>Prediction stays deterministic</h2><p>Numerical models calculate or abstain. The language layer receives an immutable result.</p></article>
+        <article><span>02</span><h2>Every claim has provenance</h2><p>Risk, evidence, policy, model version, and data cutoff remain inspectable in the report.</p></article>
+        <article><span>03</span><h2>Uncertainty is a product state</h2><p>Missing, stale, or unsynchronized data produce an explicit abstention—not a confident guess.</p></article>
+      </div>
+    </section>
+
+    <section class="story section-shell" id="how-it-works">
+      <div class="section-heading">
+        <p class="eyebrow">FROM SIGNAL TO DECISION SUPPORT</p>
+        <h2>One request. A fully traceable lifecycle.</h2>
+        <p>The interface translates a complex pipeline into three decisions a user can understand.</p>
+      </div>
+      <div class="story-rail">
+        <article class="story-card active"><b>1</b><div><span>CHECK</span><h3>Is the data ready?</h3><p>Align the latest authorized patient signals at one explicit causal cutoff.</p></div></article>
+        <article class="story-card"><b>2</b><div><span>UNDERSTAND</span><h3>What does the model support?</h3><p>Show calibrated risk or abstention, confidence, contributing modalities, and limitations.</p></div></article>
+        <article class="story-card"><b>3</b><div><span>ACT</span><h3>What happens next?</h3><p>Present only the action selected by the versioned policy engine, with an auditable alert state.</p></div></article>
+      </div>
+    </section>
+
+    <section class="workspace-section" id="workspace">
+      <div class="section-shell">
+        <div class="workspace-heading">
+          <div>
+            <p class="eyebrow">RESEARCH WORKSPACE</p>
+            <h2>Generate a risk review</h2>
+          </div>
+          <div class="connection-state" id="connectionState"><span></span><b>Checking service</b></div>
+        </div>
+
+        <div class="workspace-grid">
+          <aside class="request-card">
+            <form id="riskForm">
+              <div class="form-intro">
+                <span class="step-chip">New review</span>
+                <h3>Choose the patient and question</h3>
+                <p>Only pseudonymous research identifiers should be entered here.</p>
+              </div>
+
+              <label class="field">
+                <span>Patient identifier</span>
+                <input id="patientId" name="patient_id" autocomplete="off" placeholder="e.g., PSEUDO-1042" required />
+                <small>Do not enter a patient name or direct identifier.</small>
+              </label>
+
+              <label class="field">
+                <span>Report type</span>
+                <select id="reportType" name="report_type">
+                  <option value="stress_glucose_risk">Multimodal stress + glucose risk</option>
+                  <option value="glucose_risk">CGM excursion risk</option>
+                  <option value="cgm_glucose_forecast">CGM glucose forecast</option>
+                </select>
+                <small id="reportTypeHint">Research fusion is expected to abstain until synchronized same-subject data and a validated artifact exist.</small>
+              </label>
+
+              <fieldset class="field horizon-field">
+                <legend>Prediction horizon</legend>
+                <label><input type="checkbox" name="horizon" value="30" checked /><span>30 minutes</span></label>
+                <label><input type="checkbox" name="horizon" value="60" checked /><span>60 minutes</span></label>
+              </fieldset>
+
+              <label class="field">
+                <span>Optional question</span>
+                <textarea id="question" rows="3" placeholder="What changed since the previous review?"></textarea>
+                <small>Used only to retrieve authorized supporting context; it does not change the risk score.</small>
+              </label>
+
+              <button class="button button-primary generate-button" type="submit" id="generateButton">
+                <span class="button-label">Generate risk review</span><span aria-hidden="true">→</span>
+              </button>
+              <p class="form-footnote">Research-grade decision support. Not a diagnosis or treatment recommendation.</p>
+            </form>
+          </aside>
+
+          <section class="report-shell" aria-live="polite" aria-busy="false" id="reportShell">
+            <div class="report-empty" id="reportEmpty">
+              <div class="empty-visual"><span></span><span></span><span></span></div>
+              <p class="eyebrow">NO REVIEW SELECTED</p>
+              <h3>Your report will appear here.</h3>
+              <p>Generate a live report or open the clearly labeled illustrative example to explore the interface.</p>
+            </div>
+
+            <div class="loading-state" id="loadingState" hidden>
+              <div class="loader-orb"></div>
+              <p class="eyebrow">ASSEMBLING TRACEABLE REPORT</p>
+              <h3>Checking authorization, data readiness, model evidence, and policy action.</h3>
+              <ol><li class="done">Register request</li><li>Build causal snapshot</li><li>Resolve prediction</li><li>Validate explanation</li></ol>
+            </div>
+
+            <div class="report-view" id="reportView" hidden>
+              <div class="illustrative-banner" id="illustrativeBanner" hidden>
+                Illustrative interface data · no live model was executed
+              </div>
+              <div class="report-topbar">
+                <div><span class="step-chip" id="reportStatusChip">Completed</span><h3 id="reportTitle">Risk review</h3><p id="reportSubtitle"></p></div>
+                <button class="icon-button" type="button" id="copyReportId" title="Copy prediction ID" aria-label="Copy prediction ID">⌁</button>
+              </div>
+
+              <div class="status-panel" id="statusPanel">
+                <div class="status-copy"><p class="eyebrow" id="statusEyebrow">CURRENT MODEL STATE</p><h2 id="statusHeadline"></h2><p id="statusSummary"></p></div>
+                <div class="confidence-ring" id="confidenceRing"><span id="confidenceValue">—</span><small>confidence</small></div>
+              </div>
+
+              <div class="metric-grid" id="metricGrid"></div>
+
+              <div class="report-columns">
+                <article class="report-card">
+                  <div class="card-heading"><span>01</span><div><p>DATA READINESS</p><h4>What the model could see</h4></div></div>
+                  <div class="modality-list" id="modalityList"></div>
+                  <p class="card-note" id="dataQualityNote"></p>
+                </article>
+
+                <article class="report-card">
+                  <div class="card-heading"><span>02</span><div><p>GROUNDED EXPLANATION</p><h4>What supports this result</h4></div></div>
+                  <div id="supportingFactors" class="supporting-list"></div>
+                  <p class="card-note" id="uncertaintyStatement"></p>
+                </article>
+              </div>
+
+              <article class="action-card" id="actionCard">
+                <div class="action-index">03</div>
+                <div class="action-copy"><p>NEXT ACTION</p><h3 id="actionHeadline"></h3><p id="actionExplanation"></p><div class="reason-codes" id="reasonCodes"></div></div>
+                <div class="action-buttons" id="actionButtons"></div>
+              </article>
+
+              <details class="provenance-card">
+                <summary><span>Evidence and provenance</span><small>Open the audit-ready details</small></summary>
+                <div class="provenance-grid" id="provenanceGrid"></div>
+                <div class="limitations" id="limitations"></div>
+              </details>
+            </div>
+
+            <div class="error-state" id="errorState" hidden>
+              <span>!</span><p class="eyebrow">REVIEW NOT GENERATED</p><h3 id="errorTitle">The request could not be completed.</h3><p id="errorMessage"></p><button class="button button-secondary" id="retryButton" type="button">Return to request</button>
+            </div>
+          </section>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="section-shell footer-grid">
+      <div class="brand footer-brand"><span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span><span><strong>NeuroGlycemic</strong><small>Sentinel · DVXR Lab at UNT</small></span></div>
+      <p>Multimodal clinical-risk prediction with grounded language-model explanations.</p>
+      <p>Research-stage decision support · Not a diagnosis</p>
+    </div>
+  </footer>
+
+  <dialog id="accessDialog" class="access-dialog">
+    <form method="dialog" id="accessForm">
+      <button class="dialog-close" value="cancel" aria-label="Close access dialog">×</button>
+      <p class="eyebrow">AUTHORIZED RESEARCH ACCESS</p>
+      <h2>Open the Sentinel workspace</h2>
+      <p>Enter the deployment access code. It is stored only in a secure HttpOnly session cookie and is never written into the page.</p>
+      <label class="field"><span>Access code</span><input id="accessCode" type="password" autocomplete="current-password" required /></label>
+      <p class="dialog-error" id="dialogError" hidden></p>
+      <button class="button button-primary" id="accessButton" value="default">Continue</button>
+      <small>Patient endpoints remain closed when access or consent cannot be verified.</small>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

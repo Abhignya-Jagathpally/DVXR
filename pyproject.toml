@@ -39,6 +39,7 @@ io = ["wfdb", "openpyxl", "pyarrow", "kagglehub"]
 app = ["streamlit"]                       # the live interactive demo (dvxr demo --serve)
 api = ["starlette", "uvicorn"]            # the thin HTTP API (dvxr serve-api)
 deploy = ["fastapi", "uvicorn"]           # FastAPI wrapper for FastAPI Cloud (dvxr.serve.asgi:app)
+dev = ["pytest"]                          # the pytest-style user-facing web tests
 all = ["dvxr[eeg,floor,io,app,api]"]
 
 [project.scripts]
@@ -49,3 +50,9 @@ package-dir = { "" = "src" }
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+# Ship the user-facing web surface (index.html + assets) INSIDE the installed dvxr package. Without
+# this, `pip install .` (what FastAPI Cloud runs) drops the non-.py files, and dvxr.serve.asgi's
+# `Path(__file__).parents[1]/"web"/"index.html"` lookup would fail at boot with "assets are missing".
+[tool.setuptools.package-data]
+"dvxr.web" = ["*.html", "assets/*"]
