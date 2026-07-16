@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS predictions (
 CREATE TABLE IF NOT EXISTS audit (
     seq INTEGER PRIMARY KEY AUTOINCREMENT,
     audit_id TEXT UNIQUE,
+    tenant_id TEXT DEFAULT 'default',
     request_id TEXT,
     payload TEXT NOT NULL
 );
@@ -145,14 +146,22 @@ class LocalAuditStore:
         seq = self._c.execute("SELECT COALESCE(MAX(seq),0)+1 AS n FROM audit").fetchone()["n"]
         aid = entry.get("audit_id") or _stable_id("aud", entry.get("request_id"), seq,
                                                   json.dumps(entry, sort_keys=True))
-        self._c.execute("INSERT INTO audit(audit_id, request_id, payload) VALUES (?,?,?)",
-                       (aid, entry.get("request_id"), json.dumps({**entry, "audit_id": aid})))
+        tenant = str(entry.get("tenant_id", "default"))
+        self._c.execute("INSERT INTO audit(audit_id, tenant_id, request_id, payload) VALUES (?,?,?,?)",
+                       (aid, tenant, entry.get("request_id"), json.dumps({**entry, "audit_id": aid})))
         self._c.commit()
         return aid
 
-    def for_request(self, request_id: str) -> List[Dict[str, Any]]:
-        rows = self._c.execute("SELECT payload FROM audit WHERE request_id=? ORDER BY seq",
-                              (request_id,)).fetchall()
+    def for_request(self, request_id: str, *, tenant_id: Optional[str] = None) -> List[Dict[str, Any]]:
+        # TENANT-SCOPED when a tenant is given: one tenant's request_id never returns another's audit
+        # trail (audit ids/request ids are not a cross-tenant capability).
+        if tenant_id is not None:
+            rows = self._c.execute(
+                "SELECT payload FROM audit WHERE request_id=? AND tenant_id=? ORDER BY seq",
+                (request_id, str(tenant_id))).fetchall()
+        else:
+            rows = self._c.execute("SELECT payload FROM audit WHERE request_id=? ORDER BY seq",
+                                  (request_id,)).fetchall()
         return [json.loads(r["payload"]) for r in rows]
 
 

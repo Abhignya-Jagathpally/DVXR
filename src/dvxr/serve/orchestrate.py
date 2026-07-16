@@ -150,10 +150,9 @@ def generate_risk_report(
     persisted with the prediction, so the retrieved report carries the same evidence a fresh one does.
     """
     req = request.with_request_id()
-    audit_store.append({"request_id": req.request_id, "event": "generate.requested",
+    audit_store.append({"tenant_id": req.tenant_id, "request_id": req.request_id, "event": "generate.requested",
                         "patient_id": req.patient_id, "report_type": req.report_type,
-                        "user_role": req.user_role, "actor_id": req.actor_id,
-                        "tenant_id": req.tenant_id})
+                        "user_role": req.user_role, "actor_id": req.actor_id})
 
     if require_consent:
         purpose = _ROLE_PURPOSE.get(req.user_role, req.user_role)
@@ -162,7 +161,7 @@ def generate_risk_report(
         ok = consent_store is not None and consent_store.check(
             req.patient_id, purpose, tenant_id=req.tenant_id, as_of=req.data_cutoff_at or None)
         if not ok:
-            audit_store.append({"request_id": req.request_id, "event": "generate.denied.consent",
+            audit_store.append({"tenant_id": req.tenant_id, "request_id": req.request_id, "event": "generate.denied.consent",
                                 "patient_id": req.patient_id, "purpose": purpose})
             raise ConsentError(f"patient {req.patient_id!r} has no consent for purpose {purpose!r}")
 
@@ -178,12 +177,12 @@ def generate_risk_report(
             # a DIFFERENT semantic request is a conflict — reject, never serve a mismatched result.
             stored_rid = existing.get("request_id")
             if stored_rid and stored_rid != req.request_id:
-                audit_store.append({"request_id": req.request_id, "event": "generate.conflict",
+                audit_store.append({"tenant_id": req.tenant_id, "request_id": req.request_id, "event": "generate.conflict",
                                     "actor_id": req.actor_id, "idempotency_key": req.idempotency_key,
                                     "stored_request_id": stored_rid})
                 raise IdempotencyConflict(
                     f"idempotency key {req.idempotency_key!r} was already used for a different request")
-            audit_store.append({"request_id": req.request_id, "event": "generate.reused",
+            audit_store.append({"tenant_id": req.tenant_id, "request_id": req.request_id, "event": "generate.reused",
                                 "actor_id": req.actor_id,
                                 "prediction_id": existing.get("prediction_id")})
             # Reconstruct the (deterministic) action + explanation from the stored prediction so a
@@ -206,7 +205,7 @@ def generate_risk_report(
         events or [], patient_id=req.patient_id, data_cutoff_at=req.data_cutoff_at,
         tenant_id=req.tenant_id, feature_version=FEATURE_VERSION,
         expected_modalities=GLUCOSE_FUSION_MODALITIES)
-    audit_store.append({"request_id": req.request_id, "event": "snapshot.created",
+    audit_store.append({"tenant_id": req.tenant_id, "request_id": req.request_id, "event": "snapshot.created",
                         "snapshot": snapshot.to_dict()})
 
     # produce the prediction via the injected service (Gate 3) — NEVER trains. The default is the
@@ -232,7 +231,7 @@ def generate_risk_report(
     if model_registry is not None:
         active = model_registry.active(prediction.model_version.split("/")[0])
         if active:
-            audit_store.append({"request_id": req.request_id, "event": "model.resolved",
+            audit_store.append({"tenant_id": req.tenant_id, "request_id": req.request_id, "event": "model.resolved",
                                 "name": active.get("name"), "version": active.get("version")})
 
     # persist the prediction WITH its evidence so the retrieved report carries the same evidence
@@ -246,7 +245,7 @@ def generate_risk_report(
     report = _assemble_report(req, prediction, pid, reused=False, evidence=evidence.to_dict(),
                               sources=sources, retrieval_manifest=manifest,
                               retrieval_status=retrieval_status)
-    audit_store.append({"request_id": req.request_id, "event": "generate.completed",
+    audit_store.append({"tenant_id": req.tenant_id, "request_id": req.request_id, "event": "generate.completed",
                         "actor_id": req.actor_id, "prediction_id": pid,
                         "abstained": prediction.abstained,
                         "action_id": report["action"]["action_id"]})
