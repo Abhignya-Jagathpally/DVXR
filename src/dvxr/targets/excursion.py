@@ -55,6 +55,15 @@ class ExcursionExample:
     actual_horizon_minutes: float       # realized (last future sample - t); <= horizon under gaps
     n_history_samples: int
     threshold_version: str
+    # --- outcome taxonomy (an EARLY-WARNING target must separate onset from persistence) ---
+    anchor_glucose: Optional[float] = None       # the reading at t (last sample in the feature window)
+    anchor_state: str = "unknown"                # in_range | hyper | hypo | unknown
+    #: incident_excursion (in-range at t → new excursion), persistent_excursion (out of range at t, still
+    #: out at t+h), recovery (out of range at t → back in range at t+h), no_excursion, or None if censored.
+    outcome_class: Optional[str] = None
+    #: the PRIMARY early-warning label: 1 = incident onset, 0 = in-range at t and stayed in range; None
+    #: for anchors that were already out of range at t (excluded from the incident model) or censored.
+    incident_label: Optional[int] = None
 
     def to_dict(self) -> dict:
         d = {k: getattr(self, k) for k in self.__dataclass_fields__}
@@ -116,6 +125,34 @@ def _label_one(future_g: np.ndarray, future_t: pd.DatetimeIndex, anchor: pd.Time
     return 0, None, False, None, float(actual)
 
 
+def _anchor_state(glucose: Optional[float], thr: ExcursionThresholds) -> str:
+    """The participant's glucose STATE at the anchor t (from the reading at t): in_range | hyper | hypo
+    | unknown. This is what separates an early-warning (incident) anchor from one already out of range."""
+    if glucose is None or (isinstance(glucose, float) and np.isnan(glucose)):
+        return "unknown"
+    if glucose < thr.low_mg_dl:
+        return "hypo"
+    if glucose > thr.high_mg_dl:
+        return "hyper"
+    return "in_range"
+
+
+def _classify_outcome(anchor_state: str, label: Optional[int], end_in_range: Optional[bool]
+                      ) -> Tuple[Optional[str], Optional[int]]:
+    """Map (state at t, future-excursion label, in-range-at-t+h?) to an outcome class and the PRIMARY
+    incident label. In-range-at-t → incident onset (1) vs stayed-in-range (0). Already out of range at t
+    → persistent (still out at t+h) or recovery (back in range) — excluded from the incident label."""
+    if label is None:                                  # censored
+        return None, None
+    if anchor_state == "in_range":
+        return ("incident_excursion" if label == 1 else "no_excursion"), int(label == 1)
+    if anchor_state in ("hyper", "hypo"):
+        if end_in_range is None:
+            return None, None
+        return ("recovery" if end_in_range else "persistent_excursion"), None
+    return None, None                                  # unknown state at t → no taxonomy
+
+
 def build_excursion_labels(
     cgm: pd.DataFrame,
     *,
@@ -124,6 +161,7 @@ def build_excursion_labels(
     time_col: str = "timestamp",
     glucose_col: str = "glucose",
     subject_col: Optional[str] = None,
+    label_definition: str = "any",
 ) -> pd.DataFrame:
     """Build the prospective excursion label table for a CGM timeline.
 
@@ -131,7 +169,19 @@ def build_excursion_labels(
     has at least ``min_history_samples`` in its feature window is used as an anchor (deterministic).
     Censored examples are kept in the table with ``label=NaN`` and a ``censor_reason`` so callers can
     audit coverage; drop them with ``df[df.censored == False]`` for a reportable label set.
+
+    Every row also carries the outcome taxonomy (``anchor_state``, ``outcome_class``, ``incident_label``)
+    so an EARLY-WARNING model can be trained on *incident onset* rather than a persistence detector.
+    ``label_definition`` selects what the primary ``label`` column means:
+
+    * ``"any"`` (default, back-compat): label = 1 iff ANY future sample in (t, t+h] is out of range —
+      this counts an already-hyperglycaemic participant who stays high as positive (persistence).
+    * ``"incident"``: label = the incident onset among anchors that were IN RANGE at t; anchors already
+      out of range at t are censored (``out_of_range_at_anchor``) so they leave the reportable set. Use
+      this for the honest prospective early-warning claim.
     """
+    if label_definition not in ("any", "incident"):
+        raise ValueError(f"label_definition must be 'any' or 'incident', got {label_definition!r}")
     p = _prep(cgm, time_col, glucose_col, subject_col)
     rows: List[dict] = []
     for sid, g in p.groupby("__subject__", sort=True):
@@ -145,9 +195,14 @@ def build_excursion_labels(
         for anchor in anchor_list:
             hist_start = anchor - pd.Timedelta(minutes=thresholds.history_minutes)
             hist_mask = (tindex >= hist_start) & (tindex <= anchor)
-            n_hist = int(hist_mask.sum())
+            hist_arr = hist_mask.to_numpy() if hasattr(hist_mask, "to_numpy") else np.asarray(hist_mask)
+            n_hist = int(hist_arr.sum())
             if n_hist < thresholds.min_history_samples:
                 continue
+            # the reading AT t (last sample in the feature window) → the participant's state at the anchor
+            hist_vals = vals[hist_arr]
+            anchor_glucose = float(hist_vals[-1]) if len(hist_vals) else None
+            anchor_state = _anchor_state(anchor_glucose, thresholds)
             for h in thresholds.horizons_minutes:
                 horizon_end = anchor + pd.Timedelta(minutes=h)
                 fut_mask = (tindex > anchor) & (tindex <= horizon_end)
@@ -155,6 +210,20 @@ def build_excursion_labels(
                 fut_g = vals[fut_mask.to_numpy() if hasattr(fut_mask, "to_numpy") else fut_mask]
                 label, first, censored, reason, actual = _label_one(
                     np.asarray(fut_g, dtype=float), fut_t, anchor, horizon_end, thresholds)
+                # is the participant back in range at t+h? (the reading nearest the horizon end)
+                end_in_range = None
+                if not censored and len(fut_g):
+                    ev = float(np.asarray(fut_g, dtype=float)[-1])
+                    end_in_range = bool(thresholds.low_mg_dl <= ev <= thresholds.high_mg_dl)
+                outcome_class, incident_label = _classify_outcome(anchor_state, label, end_in_range)
+                primary_label, primary_censored, primary_reason = label, censored, reason
+                if label_definition == "incident":
+                    # the incident model scores only anchors that were in range at t; already-out-of-range
+                    # anchors are censored so they never inflate a "persistence" as early warning.
+                    if not censored and anchor_state != "in_range":
+                        primary_label, primary_censored, primary_reason = None, True, "out_of_range_at_anchor"
+                    else:
+                        primary_label = incident_label
                 ex = ExcursionExample(
                     subject_id=str(sid),
                     anchor_time=anchor,
@@ -163,13 +232,17 @@ def build_excursion_labels(
                     horizon_minutes=int(h),
                     target_window_start=anchor,
                     target_window_end=horizon_end,
-                    label=label,
+                    label=primary_label,
                     first_excursion_time=first,
-                    censored=censored,
-                    censor_reason=reason,
+                    censored=primary_censored,
+                    censor_reason=primary_reason,
                     actual_horizon_minutes=actual,
                     n_history_samples=n_hist,
                     threshold_version=thresholds.version,
+                    anchor_glucose=anchor_glucose,
+                    anchor_state=anchor_state,
+                    outcome_class=outcome_class,
+                    incident_label=incident_label,
                 )
                 rows.append(ex.to_dict())
     cols = list(ExcursionExample.__dataclass_fields__)

@@ -52,7 +52,7 @@ def _thinned_anchors(cgm, history_minutes, anchor_stride, max_anchors_per_subjec
 
 def build(data_root: str, artifact_root: str, registry_db: str, seed: int = 7,
           history_minutes: int = 240, anchor_stride: int = 8,
-          max_anchors_per_subject: int = 60) -> dict:
+          max_anchors_per_subject: int = 60, label_definition: str = "incident") -> dict:
     cgm = load_cgmacros(data_root)
     if cgm.empty:
         raise SystemExit(f"no CGMacros data found under {data_root!r} — cannot build a real artifact")
@@ -62,8 +62,13 @@ def build(data_root: str, artifact_root: str, registry_db: str, seed: int = 7,
     anchors = _thinned_anchors(cgm, history_minutes, anchor_stride, max_anchors_per_subject)
 
     # --- CGM excursion classifier -> cgm_glucose_risk ---
-    examples = build_excursion_labels(cgm, thresholds=thr, anchors=anchors, subject_col="subject_id")
-    risk = CgmOnlyExcursionService.fit(cgm, examples, thresholds=thr, seed=seed)
+    # default target = INCIDENT onset (early warning for someone in range at t), not a persistence
+    # detector; the target definition is stamped into the model_version for provenance.
+    examples = build_excursion_labels(cgm, thresholds=thr, anchors=anchors, subject_col="subject_id",
+                                      label_definition=label_definition)
+    risk_version = f"cgm-only-{label_definition}/pilot-v1"
+    risk = CgmOnlyExcursionService.fit(cgm, examples, thresholds=thr, seed=seed,
+                                       model_version=risk_version)
     risk_dir = art / "cgm_only" / "excursion"
     risk.save(risk_dir)
     risk_rel = str(risk_dir.relative_to(art))
@@ -107,10 +112,12 @@ def main() -> None:
     ap.add_argument("--registry-db", default="artifacts/registry.db")
     ap.add_argument("--seed", type=int, default=7)
     ap.add_argument("--history-minutes", type=int, default=240)
+    ap.add_argument("--label-definition", choices=("incident", "any"), default="incident",
+                    help="incident = honest early-warning onset (default); any = includes persistence")
     args = ap.parse_args()
     Path(args.artifact_root).mkdir(parents=True, exist_ok=True)
     summary = build(args.data, args.artifact_root, args.registry_db, seed=args.seed,
-                    history_minutes=args.history_minutes)
+                    history_minutes=args.history_minutes, label_definition=args.label_definition)
     print(json.dumps(summary, indent=2))
     print("\nRegistered ACTIVE artifacts. The fused stress_glucose_risk report has NO artifact and "
           "abstains by construction.")

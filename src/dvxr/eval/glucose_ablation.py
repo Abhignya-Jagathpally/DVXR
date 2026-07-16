@@ -202,11 +202,19 @@ def _person_days(cgm: pd.DataFrame, subjects: Sequence[str]) -> float:
     return float(total)
 
 
-def _arm_metrics(pooled: Dict[str, dict], cgm: pd.DataFrame, arm: str) -> dict:
-    y = np.array([r["y"] for r in pooled.values()], dtype=int)
-    p = np.array([r["p"] for r in pooled.values()], dtype=float)
-    alert = np.array([1 if r["p"] >= r["threshold"] else 0 for r in pooled.values()], dtype=int)
-    subjects = {r["subject"] for r in pooled.values()}
+def _horizon_of(key: str) -> Optional[int]:
+    """Recover the horizon from a pooled example key ``subject|anchor_iso|horizon``."""
+    try:
+        return int(str(key).rsplit("|", 1)[1])
+    except (IndexError, ValueError):
+        return None
+
+
+def _metrics_over(items: Sequence[dict], cgm: pd.DataFrame, arm: str) -> dict:
+    y = np.array([r["y"] for r in items], dtype=int)
+    p = np.array([r["p"] for r in items], dtype=float)
+    alert = np.array([1 if r["p"] >= r["threshold"] else 0 for r in items], dtype=int)
+    subjects = {r["subject"] for r in items}
     pdays = _person_days(cgm, subjects)
     false_alerts = int(((alert == 1) & (y == 0)).sum())
     sens = float(alert[y == 1].mean()) if (y == 1).any() else float("nan")
@@ -220,6 +228,20 @@ def _arm_metrics(pooled: Dict[str, dict], cgm: pd.DataFrame, arm: str) -> dict:
         "ece": round(expected_calibration_error(y, p), 4),
         "modality_scope": arm,
     }
+
+
+def _arm_metrics(pooled: Dict[str, dict], cgm: pd.DataFrame, arm: str) -> dict:
+    """Pooled arm metrics PLUS a per-horizon breakdown. Pooling 30- and 60-minute examples into one
+    number hides that they are two different conditional tasks (P0-4), so each horizon is reported
+    separately alongside the pooled figures."""
+    out = _metrics_over(list(pooled.values()), cgm, arm)
+    by_h: Dict[int, list] = {}
+    for k, r in pooled.items():
+        h = _horizon_of(k)
+        if h is not None:
+            by_h.setdefault(h, []).append(r)
+    out["per_horizon"] = {int(h): _metrics_over(items, cgm, arm) for h, items in sorted(by_h.items())}
+    return out
 
 
 def run_glucose_ablation(cgm: pd.DataFrame, *, thresholds: ExcursionThresholds = ExcursionThresholds(),
