@@ -157,8 +157,10 @@ def generate_risk_report(
 
     if require_consent:
         purpose = _ROLE_PURPOSE.get(req.user_role, req.user_role)
+        # evaluate consent AS OF the request's causal cutoff, so an expired/not-yet-effective or revoked
+        # consent is denied (no wall-clock read). Modality/study dimensions are enforced by the store.
         ok = consent_store is not None and consent_store.check(
-            req.patient_id, purpose, tenant_id=req.tenant_id)
+            req.patient_id, purpose, tenant_id=req.tenant_id, as_of=req.data_cutoff_at or None)
         if not ok:
             audit_store.append({"request_id": req.request_id, "event": "generate.denied.consent",
                                 "patient_id": req.patient_id, "purpose": purpose})

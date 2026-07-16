@@ -14,6 +14,20 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from dvxr.contracts import _stable_id
 
+
+def _parse_ts(value):
+    """Parse an ISO-8601 instant to a comparable datetime, or None if absent/unparseable. Accepts a
+    trailing 'Z'. Used for consent temporal validity — never reads the wall clock."""
+    if not value:
+        return None
+    from datetime import datetime, timezone
+    try:
+        dt = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except (ValueError, TypeError):
+        return None
+    # normalize to UTC-naive so aware/naive instants compare without a TypeError
+    return dt.astimezone(timezone.utc).replace(tzinfo=None) if dt.tzinfo else dt
+
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS predictions (
     seq INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -158,12 +172,40 @@ class LocalConsentStore:
                               (str(tenant_id), patient_id)).fetchone()
         return json.loads(row["scope"]) if row else None
 
-    def check(self, patient_id: str, purpose: str, *, tenant_id: str = "default") -> bool:
+    def check(self, patient_id: str, purpose: str, *, tenant_id: str = "default",
+              as_of: Optional[str] = None, modality: Optional[str] = None,
+              study_id: Optional[str] = None) -> bool:
+        """Fail-closed consent check across every recorded dimension (spec §2, §18). Denies unless: a
+        scope exists AND is not ``revoked`` AND covers ``purpose`` AND (when a ``modality``/``study_id``
+        is requested and the scope restricts them) covers it AND (when ``as_of`` is given) the scope is
+        temporally valid at that instant — inside ``effective_from``..``effective_until``/``expires_at``.
+        ``as_of`` is the request's causal cutoff (no wall-clock read). A simple ``{"purposes": [...]}``
+        scope keeps working (no temporal/modality/study restriction ⇒ those dimensions are unrestricted)."""
         scope = self.get(patient_id, tenant_id=tenant_id)
         if not scope:
             return False               # no recorded consent ⇒ deny (fail-closed)
+        if scope.get("revoked"):
+            return False               # explicit revocation ⇒ deny
         purposes = scope.get("purposes", [])
-        return purpose in purposes or "all" in purposes
+        if not (purpose in purposes or "all" in purposes):
+            return False
+        mods = scope.get("modalities")
+        if modality is not None and mods is not None and not (modality in mods or "all" in mods):
+            return False               # consent does not cover the requested modality
+        study = scope.get("study_id")
+        if study_id is not None and study is not None and str(study) != str(study_id):
+            return False               # consent is scoped to a different study
+        if as_of:
+            t = _parse_ts(as_of)
+            ef = _parse_ts(scope.get("effective_from"))
+            eu = _parse_ts(scope.get("effective_until") or scope.get("expires_at"))
+            if t is None:
+                return False           # a temporal check was requested but the instant is unparseable
+            if ef is not None and t < ef:
+                return False           # not yet in effect
+            if eu is not None and t > eu:
+                return False           # expired / past the effective window
+        return True
 
 
 class LocalModelRegistry:
