@@ -25,21 +25,32 @@ DISCLAIMER = ("Research-grade screening / decision-support only — not a diagno
 _SCREENER_ROOT = Path("outputs/product/screeners")
 
 
-def create_app(screener_root: str | Path = _SCREENER_ROOT):
+def create_app(screener_root: str | Path = _SCREENER_ROOT,
+               db_path: str = ":memory:", require_consent: bool = False):
     from starlette.applications import Starlette
     from starlette.responses import JSONResponse, PlainTextResponse
     from starlette.routing import Route
 
+    from dvxr.storage import open_local_stores
+
     root = Path(screener_root)
     _screeners: dict = {}
     _tasks: dict = {}
+    # process-local stateful stores (spec §6). ":memory:" for the default single-process research
+    # deployment; pass a file path to persist predictions/audit across restarts.
+    pred_store, audit_store, consent_store, _model_registry = open_local_stores(db_path)
 
     def _get_screener(task: str):
+        """Load a COMMITTED screener. Generate/serving never trains during a request (spec §2): a
+        missing artifact raises rather than fitting on the fly."""
         if task not in _screeners:
-            from dvxr.serve.screener import Screener, fit_screener
+            from dvxr.serve.screener import Screener
             d = root / task
-            _screeners[task] = (Screener.load(d) if (d / "manifest.json").exists()
-                                else fit_screener(task))
+            if not (d / "manifest.json").exists():
+                raise RuntimeError(
+                    f"no committed screener for task {task!r} at {d} — serving never trains during a "
+                    f"request; fit and commit the screener first (`dvxr fit --task {task}`).")
+            _screeners[task] = Screener.load(d)
         return _screeners[task]
 
     def _get_task(task_name: str, representation: str):
@@ -113,6 +124,32 @@ def create_app(screener_root: str | Path = _SCREENER_ROOT):
         return JSONResponse({"task": task, "n": int(len(df)),
                              "ranking": df.to_dict(orient="records"), "disclaimer": DISCLAIMER})
 
+    async def risk_reports(request):
+        """POST /v1/risk-reports — the Generate lifecycle (spec §2). Never trains; persists a
+        reproducible, audited request; idempotent by idempotency_key."""
+        from dvxr.contracts import GenerateRequest
+        from dvxr.serve.orchestrate import ConsentError, generate_risk_report
+        body = await request.json()
+        if not body.get("patient_id"):
+            return JSONResponse({"error": "body must include 'patient_id'"}, status_code=400)
+        req = GenerateRequest.from_dict(body)
+        try:
+            out = generate_risk_report(req, prediction_store=pred_store, audit_store=audit_store,
+                                       consent_store=consent_store, require_consent=require_consent)
+        except ConsentError as e:
+            return JSONResponse({"error": str(e)}, status_code=403)
+        except Exception as e:  # noqa: BLE001
+            return JSONResponse({"error": str(e)}, status_code=500)
+        out["disclaimer"] = DISCLAIMER
+        return JSONResponse(out)
+
+    async def get_risk_report(request):
+        pid = request.path_params["prediction_id"]
+        rec = pred_store.get(pid)
+        if rec is None:
+            return JSONResponse({"error": f"unknown prediction {pid!r}"}, status_code=404)
+        return JSONResponse({"prediction": rec, "disclaimer": DISCLAIMER})
+
     return Starlette(routes=[
         Route("/health", health),
         Route("/tasks", tasks),
@@ -120,6 +157,8 @@ def create_app(screener_root: str | Path = _SCREENER_ROOT):
         Route("/evidence/{task}", evidence_task),
         Route("/screen/subject", screen_subject, methods=["POST"]),
         Route("/triage/{task}", triage),
+        Route("/v1/risk-reports", risk_reports, methods=["POST"]),
+        Route("/v1/predictions/{prediction_id}", get_risk_report),
     ])
 
 

@@ -42,7 +42,10 @@ CREATE TABLE IF NOT EXISTS models (
 
 
 def _connect(path: str = ":memory:") -> sqlite3.Connection:
-    conn = sqlite3.connect(path)
+    # check_same_thread=False so the single shared connection can serve an async server's threadpool
+    # handlers (Starlette/uvicorn). Access stays effectively serialized in the single-process research
+    # deployment; a multi-process deployment swaps this local impl for a real DB behind the Protocol.
+    conn = sqlite3.connect(path, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     conn.executescript(_SCHEMA)
     return conn
