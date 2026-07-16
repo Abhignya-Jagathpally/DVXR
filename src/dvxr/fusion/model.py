@@ -7,12 +7,30 @@ importable without torch.
 from __future__ import annotations
 
 import pathlib
+from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
 import numpy as np
 import pandas as pd
 
 from dvxr.encoders.base import _torch_available
+
+
+@dataclass(frozen=True)
+class FusionResult:
+    """A request-local fusion result (spec §11 concurrency correction).
+
+    Everything a caller needs from one ``fuse`` call, returned in the call's own return value so
+    concurrent/interleaved requests on a shared model instance never read each other's state via the
+    mutable ``_last*`` accessors. ``h`` is the joint latent; ``attention`` / ``weights`` are this
+    call's explanation; ``codes`` are the per-modality VQ indices; ``vq_loss`` is a float.
+    """
+    h: object
+    attention: Optional[Dict] = None
+    weights: Optional[Dict] = None
+    codes: Dict = field(default_factory=dict)
+    present: Optional[Dict] = None
+    vq_loss: float = 0.0
 
 
 def build_cacmf_model(config, modalities: Optional[List[str]] = None):
@@ -65,6 +83,23 @@ def build_cacmf_model(config, modalities: Optional[List[str]] = None):
             self._last_q, self._last_codes, self._last_vqloss = q, codes, vq_loss
             self._last = self.fusion(q)
             return self._last
+
+        def fuse_result(self, latents: Dict[str, "torch.Tensor"], use_codebook: bool = True) -> "FusionResult":
+            """Request-local fusion: compute and return a self-contained FusionResult WITHOUT reading
+            or depending on the mutable ``_last*`` accessors, so concurrent callers can't clobber each
+            other's attention/weights. (``fuse`` still updates ``_last*`` for legacy callers.)"""
+            if use_codebook:
+                q, codes, vq_loss = self.quantize(latents)
+            else:
+                q, codes, vq_loss = dict(latents), {}, torch.tensor(0.0)
+            fo = self.fusion(q)
+            return FusionResult(
+                h=fo.h,
+                attention=getattr(fo, "attention", None),
+                weights=getattr(fo, "weights", None),
+                present=getattr(fo, "present", None),
+                codes=codes,
+                vq_loss=float(vq_loss.detach()) if hasattr(vq_loss, "detach") else float(vq_loss))
 
         def forward(self, latents, use_codebook: bool = True):
             return self.fuse(latents, use_codebook)
