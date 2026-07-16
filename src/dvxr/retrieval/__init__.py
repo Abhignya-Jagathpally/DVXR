@@ -8,4 +8,9 @@ local implementation is embedding-free (deterministic keyword overlap) so it run
 real vector index behind the same interface at scale.
 """
 from dvxr.retrieval.chunking import chunk_note, chunk_protocol  # noqa: F401
-from dvxr.retrieval.search import LocalTextIndex  # noqa: F401
+from dvxr.retrieval.search import (  # noqa: F401
+    LocalKeywordTextIndex,
+    LocalTextIndex,               # backward-compatible alias
+    RetrievalMetadataError,
+    RetrievalRepository,
+)

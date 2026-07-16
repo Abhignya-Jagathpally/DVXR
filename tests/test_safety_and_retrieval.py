@@ -114,16 +114,31 @@ class RetrievalFilterTest(unittest.TestCase):
         hits = self._index().search("elevated risk", filters={"protocol_version": 2})
         self.assertTrue(all(h["metadata"]["protocol_version"] == 2 for h in hits))
 
-    def test_patient_namespace_is_enforced(self):
-        idx = LocalTextIndex()
+    def test_patient_namespace_is_mandatory_for_clinical_notes(self):
         from dvxr.retrieval import chunk_note
+        from dvxr.retrieval.search import LocalKeywordTextIndex
+        idx = LocalKeywordTextIndex()
         idx.index_all(chunk_note("Assessment:\nStable.", {"document_id": "n1",
-                      "document_type": "clinical_note", "patient_id": "P1"}))
+                      "document_type": "clinical_note", "patient_id": "P1", "tenant_id": "t1",
+                      "access_scope": "care_team"}))
         idx.index_all(chunk_note("Assessment:\nUnstable.", {"document_id": "n2",
-                      "document_type": "clinical_note", "patient_id": "P2"}))
-        hits = idx.search("assessment", filters={"patient_id": "P1"})
+                      "document_type": "clinical_note", "patient_id": "P2", "tenant_id": "t1",
+                      "access_scope": "care_team"}))
+        # a clinical note is NOT reachable through general search (no patient scope) ...
+        self.assertEqual(idx.search("assessment"), [])
+        # ... only through search_patient, which requires patient_id + tenant_id
+        hits = idx.search_patient("assessment", patient_id="P1", tenant_id="t1")
         self.assertTrue(hits)
         self.assertTrue(all(h["metadata"]["patient_id"] == "P1" for h in hits))
+        with self.assertRaises(ValueError):
+            idx.search_patient("assessment", patient_id="", tenant_id="t1")
+
+    def test_chunk_missing_required_metadata_is_rejected(self):
+        from dvxr.retrieval.search import LocalKeywordTextIndex, RetrievalMetadataError
+        idx = LocalKeywordTextIndex()
+        with self.assertRaises(RetrievalMetadataError):   # clinical_note without tenant_id/access_scope
+            idx.index({"chunk_id": "c1", "text": "x",
+                       "metadata": {"document_type": "clinical_note", "patient_id": "P1"}})
 
 
 if __name__ == "__main__":

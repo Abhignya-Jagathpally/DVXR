@@ -58,12 +58,21 @@ def _generate(bundle: Dict, client: Optional[LLMClient], system: str, user_tmpl:
               offline_header: str) -> str:
     client = client or LLMClient()
     facts = build_grounded_facts(bundle)
+    offline = offline_header + "\n" + facts
     if client.is_offline:
-        return _ensure_caveat(offline_header + "\n" + facts)
+        return _ensure_caveat(offline)
     text = client.complete([{"role": "user", "content": user_tmpl.format(facts=facts)}],
                            system=system)
     if not text.strip():
-        text = offline_header + "\n" + facts
+        text = offline
+    else:
+        # defense-in-depth: a hosted model must not introduce diagnosis language; if it does, fall
+        # back to the deterministic grounded facts rather than surface unvalidated prose (spec §8, §16).
+        from dvxr.safety.validators import GroundingError, validate_no_diagnosis_language
+        try:
+            validate_no_diagnosis_language(text)
+        except GroundingError:
+            text = offline
     return _ensure_caveat(text)
 
 
