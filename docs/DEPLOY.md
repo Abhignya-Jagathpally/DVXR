@@ -39,6 +39,17 @@ artifact is provisioned.
 | `DVXR_API_KEY` | — | `X-API-Key` for a researcher principal; **unset ⇒ `/v1` fails closed (401)** |
 | `DVXR_UNSAFE_DEV` | — | `1` disables auth — demo only, NEVER in production |
 | `DVXR_REQUIRE_CONSENT` | `1` | consent enforcement (default ON) |
+| `DVXR_UI_ORIGINS` | `https://claude.ai` | comma-separated exact origins allowed to call the API cross-origin |
+| `DVXR_UI_ORIGIN_REGEX` | `^https://([a-z0-9-]+\.)?(claude\.ai\|claudeusercontent\.com)$` | regex for allowed artifact origins (narrow to the exact origin once known) |
+| `DVXR_ARTIFACT_TOKEN_TTL_SECONDS` | `900` | lifetime of the origin-bound artifact bearer token (clamped 60–3600) |
+
+### Cross-origin artifact bridge
+
+The served UI at `/` is same-origin (bearer token via `POST /ui/token`, key never in JS). An **external**
+Claude-hosted artifact (`docs/claude-artifact.html`) is cross-origin: it exchanges the deployment access
+code at `/ui/token` for a short-lived, **origin-bound** bearer token, which the API translates into the
+`X-API-Key` contract. CORS uses `allow_credentials=False` (bearer, not cookies). Inspect the real `Origin`
+header after the first call and narrow `DVXR_UI_ORIGINS` / `DVXR_UI_ORIGIN_REGEX` to it.
 
 ## Provisioning the CGM artifact (to serve real predictions, not just abstain)
 

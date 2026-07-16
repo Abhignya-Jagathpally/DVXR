@@ -25,8 +25,20 @@ def test_home_is_a_user_facing_page(monkeypatch, tmp_path):
     client = TestClient(_load_app(monkeypatch, tmp_path, unsafe_dev=True))
     response = client.get("/")
     assert response.status_code == 200
-    assert "DVXR NeuroGlycemic Sentinel" in response.text
-    assert "Generate a risk review" in response.text
+    assert "NeuroGlycemic Sentinel" in response.text
+    assert "Check. Understand. Act." in response.text          # the product narrative is present
+    assert "DVXR" not in response.text                          # anonymized: no brand identifier
+    assert "UNT" not in response.text                           # anonymized: no institution identifier
+
+
+def test_predicted_targets_and_token_exchange_are_exposed(monkeypatch, tmp_path):
+    client = TestClient(_load_app(monkeypatch, tmp_path, key="secret-code"))
+    page = client.get("/").text
+    for target in ("Stress-associated glucose risk", "CGM excursion risk", "Glucose forecast"):
+        assert target in page                                  # every predicted target is named up front
+    cfg = client.get("/ui/config").json()
+    assert cfg["artifact_token_exchange"] is True              # cross-origin bridge is advertised
+    assert cfg["fused_report_status"] == "abstains_until_synchronized_artifact"
 
 
 def test_static_assets_are_served(monkeypatch, tmp_path):

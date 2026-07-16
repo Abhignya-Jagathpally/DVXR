@@ -355,12 +355,24 @@ class UserFacingWebAudit(unittest.TestCase):
         self.assertIn("abstains_until_synchronized_artifact", asgi,
                       "asgi /ui/config must report the fused report as abstaining")
 
+    def test_predicted_targets_are_named_up_front(self):
+        # interpretability: every predicted target is explicitly labeled in the review objective, so a
+        # user always knows WHAT is being predicted (not a generic "risk" number).
+        page = self._web("index.html")
+        for target in ("Stress-associated glucose risk", "CGM excursion risk", "Glucose forecast"):
+            self.assertIn(target, page, f"predicted target not named in the UI: {target}")
+
     def test_web_surface_loads_no_external_resource(self):
+        import re
         html = self._web("index.html")
-        for bad in ("http://", "https://", "//cdn", "<script src=\"http"):
-            self.assertNotIn(bad, html, f"landing page loads an external resource: {bad}")
-        css = self._web("assets/styles.css")
+        # Only actual resource-LOAD attributes count — a placeholder URL in an <input> is not a load.
+        external = re.findall(r'(?:src|href)\s*=\s*"(https?://[^"]+)"', html)
+        self.assertEqual(external, [], f"landing page loads external resources: {external}")
+        self.assertNotIn("@import", html)
+        self.assertNotIn("//cdn", html)
+        css = self._web("assets/styles.css").replace(" ", "")
         self.assertNotIn("url(http", css, "stylesheet loads an external resource")
+        self.assertNotIn("@importurl(http", css, "stylesheet imports an external resource")
 
 
 if __name__ == "__main__":

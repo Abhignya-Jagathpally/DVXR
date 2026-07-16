@@ -84,13 +84,14 @@ class DeployWrapperTest(unittest.TestCase):
         self.assertIn("not a diagnosis", json.dumps(r.json()).lower())
 
     def test_root_serves_the_user_facing_spa(self):
-        # The wrapper now serves the full product web app at "/" (superseding the old JSON landing);
-        # the machine-readable summary moved to /ui/config.
+        # The wrapper serves the redesigned Check->Understand->Act dashboard at "/"; the machine-readable
+        # summary is at /ui/config.
         r = self._client().get("/")
         self.assertEqual(r.status_code, 200)                      # not a 404 at the bare URL
         self.assertIn("text/html", r.headers.get("content-type", ""))
-        self.assertIn("DVXR NeuroGlycemic Sentinel", r.text)
-        self.assertIn("Generate a risk review", r.text)           # the risk-review workspace is present
+        self.assertIn("NeuroGlycemic Sentinel", r.text)
+        self.assertIn("Check. Understand. Act.", r.text)          # the product narrative is present
+        self.assertNotIn("DVXR", r.text)                          # anonymized user-facing surface
 
     def test_ui_config_reports_fused_abstains(self):
         cfg = self._client().get("/ui/config")

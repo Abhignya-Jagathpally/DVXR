@@ -33,6 +33,8 @@ outputs/product/glassbox/trace_*.json
 # Built model artifacts (produced by scripts/build_cgm_artifact.py; not committed — fail-closed on clean checkout)
 artifacts/
 
-# Frontend patch working directory (its files are applied into src/ + tests/ and committed there;
-# the staging copy is not part of the repo and must not ship in the FastAPI Cloud upload).
+# Frontend / integration patch working directories (their files are applied into src/ + tests/ and
+# committed there; the staging copies are not part of the repo and must not ship in the cloud upload).
 dvxr-user-facing-patch/
+neuroglycemic-sentinel-claude-integration/
+src/dvxr/serve/asgi.py.before-*

@@ -3,58 +3,69 @@
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 
+// Served same-origin by the FastAPI app: default the engine to this deployment's own origin, so the
+// UI calls /ui/token, /v1, /health on the same host with no hard-coded deployment URL. A different
+// engine can still be entered under Engine settings for a cross-origin artifact host.
+const DEFAULT_API = (typeof window !== "undefined" && window.location && window.location.origin) || "";
+const STORAGE_KEY = "ngs_artifact_settings_v1";
+const TOKEN_KEY = "ngs_artifact_token_v1";
+const memoryStorage = new Map();
+
+function storageGet(area, key) {
+  try { return window[area]?.getItem(key); } catch { return memoryStorage.get(`${area}:${key}`) || null; }
+}
+
+function storageSet(area, key, value) {
+  try { window[area]?.setItem(key, value); } catch { memoryStorage.set(`${area}:${key}`, value); }
+}
+
+function storageRemove(area, key) {
+  try { window[area]?.removeItem(key); } catch { memoryStorage.delete(`${area}:${key}`); }
+}
+
 const state = {
-  config: null,
-  authenticated: false,
+  view: "overview",
+  mode: "live",
+  apiBase: DEFAULT_API,
+  timeout: 30000,
+  autoDemo: true,
+  token: storageGet("sessionStorage", TOKEN_KEY) || "",
+  connected: false,
   report: null,
   lastRequest: null,
+  loadingTimer: null,
 };
 
-const elements = {
-  form: $("#riskForm"),
-  reportShell: $("#reportShell"),
-  reportEmpty: $("#reportEmpty"),
-  loading: $("#loadingState"),
-  reportView: $("#reportView"),
-  error: $("#errorState"),
-  accessDialog: $("#accessDialog"),
-  accessForm: $("#accessForm"),
-  signOut: $("#signOutButton"),
-  connection: $("#connectionState"),
-  toast: $("#toast"),
+const reportHints = {
+  stress_glucose_risk: "Requires synchronized same-subject evidence and a registered fusion artifact.",
+  glucose_risk: "Requires an approved CGM risk artifact and admissible recent glucose history.",
+  cgm_glucose_forecast: "Requires an approved forecasting artifact and a valid causal CGM window.",
 };
 
-const modalityLabels = {
+const modalityNames = {
   cgm: "Continuous glucose monitoring",
   eeg: "EEG / neural state",
-  wearable_phys: "Wearable physiology",
   wearable: "Wearable physiology",
+  wearable_phys: "Wearable physiology",
   ehr: "Clinical context",
   behavior: "Behavioral context",
   omics: "Multi-omics context",
 };
 
-const reportHints = {
-  stress_glucose_risk: "Research fusion is expected to abstain until synchronized same-subject data and a validated artifact exist.",
-  glucose_risk: "Returns a calibrated CGM excursion risk only when an approved, registered CGM artifact and admissible patient history are available.",
-  cgm_glucose_forecast: "Returns a CGM-only point forecast and interval only when a registered forecasting artifact is provisioned.",
-};
-
-const illustrativeReport = {
+const demoReport = {
   illustrative: true,
-  request_id: "req_illustrative_ui_only",
-  prediction_id: "pred_illustrative_ui_only",
+  request_id: "req_illustrative_ngs_2026",
+  prediction_id: "pred_illustrative_ngs_2026",
   status: "completed",
-  reused: false,
   grounding_complete: true,
   retrieval_status: "complete",
   protocol_grounding_complete: true,
   model_version: "illustrative-interface/no-model-executed",
   feature_version: "illustrative-interface",
-  disclaimer: "Illustrative interface data. No live model was executed. Research-grade decision support, not a diagnosis.",
+  disclaimer: "Illustrative interface data. No patient data or live model inference was used.",
   prediction: {
     patient_id: "PSEUDO-DEMO",
-    report_type: "glucose_risk",
+    report_type: "stress_glucose_risk",
     risk: { excursion_30m: 0.38, excursion_60m: 0.57 },
     risk_category: "elevated",
     confidence: 0.81,
@@ -66,9 +77,9 @@ const illustrativeReport = {
     model_version: "illustrative-interface/no-model-executed",
     feature_version: "illustrative-interface",
     calibration_version: "illustrative-only",
-    data_cutoff_at: "2026-07-16T09:00:00+00:00",
-    snapshot_id: "snap_illustrative_ui_only",
-    prediction_id: "pred_illustrative_ui_only",
+    data_cutoff_at: "2026-07-16T09:00:00-05:00",
+    snapshot_id: "snap_illustrative_ngs_2026",
+    prediction_id: "pred_illustrative_ngs_2026",
     forecast: {
       glucose_30m: { point: 142, lower: 124, upper: 161 },
       glucose_60m: { point: 158, lower: 129, upper: 188 },
@@ -77,318 +88,454 @@ const illustrativeReport = {
   evidence: {
     contributions: { cgm: 0.44, wearable_phys: 0.17, ehr: 0.08 },
     modality_quality: { cgm: 0.94, wearable_phys: 0.82, ehr: 0.71 },
-    missing_data_effects: ["EEG was unavailable; the report does not make a neural-state claim."],
+    missing_data_effects: ["EEG was unavailable; no neural-state claim was made."],
     uncertainty: 0.19,
     evidence_records: [
-      { evidence_id: "ev_demo_1", feature: "recent CGM slope", value: 0.44, method: "illustrative" },
-      { evidence_id: "ev_demo_2", feature: "autonomic stress representation", value: 0.17, method: "illustrative" },
+      { evidence_id: "ev_demo_cgm_slope", feature: "recent CGM slope", value: 0.44, method: "illustrative" },
+      { evidence_id: "ev_demo_autonomic", feature: "autonomic stress representation", value: 0.17, method: "illustrative" },
     ],
   },
   action: {
     action_id: "VERIFY_AND_CONTINUE_MONITORING",
     policy_id: "neuroglycemic-policy",
-    policy_version: "illustrative",
-    reason_codes: ["ELEVATED_RISK", "ACCEPTABLE_DATA", "RESEARCH_REVIEW"],
+    policy_version: "illustrative-v1",
+    reason_codes: ["ELEVATED_RISK", "ACCEPTABLE_DATA", "EEG_UNAVAILABLE"],
     requires_clinician_review: false,
     system_action_id: "CONTINUE_MONITORING",
   },
   explanation: {
-    risk_summary: "Illustrative glucose-excursion risk — 30 minutes: 38%; 60 minutes: 57%.",
+    risk_summary: "Illustrative glucose-excursion risk is 38% at 30 minutes and 57% at 60 minutes.",
     prediction_horizon_minutes: [30, 60],
     supporting_factors: [
-      { statement: "Recent CGM dynamics contribute most strongly to the illustrative result.", source_id: "ev_demo_1" },
-      { statement: "Wearable physiology adds contextual evidence, but EEG is unavailable.", source_id: "ev_demo_2" },
+      { statement: "The recent glucose trajectory is the largest contributor to the illustrative result.", source_id: "ev_demo_cgm_slope" },
+      { statement: "Wearable physiology adds autonomic context, while EEG is explicitly marked unavailable.", source_id: "ev_demo_autonomic" },
+      { statement: "The 60-minute forecast interval widens, indicating increasing uncertainty with horizon.", source_id: "pred_illustrative_ngs_2026" },
     ],
     missing_or_stale_data: ["eeg"],
-    uncertainty_statement: "Illustrative confidence 0.81. This value was created only to demonstrate the interface.",
+    uncertainty_statement: "Illustrative confidence is 81%. The wider 60-minute interval and missing EEG reduce certainty.",
     action_id: "VERIFY_AND_CONTINUE_MONITORING",
-    action_explanation: "Verify current data quality and continue the approved monitoring workflow. This interface does not prescribe treatment.",
+    action_explanation: "Verify current sensor status and continue the approved monitoring workflow. This interface does not prescribe medication or treatment.",
     citations: [],
     limitations: [
-      "Illustrative data only; no patient data or model inference was used.",
-      "Research-grade decision support, not a diagnosis.",
+      "Illustrative data only; no patient data or live model was used.",
+      "The multimodal fusion claim requires synchronized same-subject validation.",
+      "Research-stage decision support, not a diagnosis or treatment recommendation.",
     ],
   },
 };
 
-function setVisible(active) {
-  for (const [name, node] of Object.entries({ empty: elements.reportEmpty, loading: elements.loading, report: elements.reportView, error: elements.error })) {
-    node.hidden = name !== active;
-  }
-  elements.reportShell.setAttribute("aria-busy", active === "loading" ? "true" : "false");
+function safeJsonParse(value, fallback) {
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === "object" ? parsed : fallback;
+  } catch { return fallback; }
 }
 
-function showToast(message) {
-  elements.toast.textContent = message;
-  elements.toast.classList.add("show");
-  clearTimeout(showToast.timer);
-  showToast.timer = setTimeout(() => elements.toast.classList.remove("show"), 2400);
+function loadSettings() {
+  const saved = safeJsonParse(storageGet("localStorage", STORAGE_KEY), {});
+  state.apiBase = String(saved.apiBase || DEFAULT_API).replace(/\/$/, "");
+  state.timeout = Number(saved.timeout || 30000);
+  state.autoDemo = saved.autoDemo !== false;
+  $("#apiEndpoint").value = state.apiBase;
+  $("#settingsEndpoint").value = state.apiBase;
+  $("#requestTimeout").value = String(state.timeout);
+  $("#autoDemo").checked = state.autoDemo;
 }
 
-function setConnection(label, kind = "ok") {
-  elements.connection.className = `connection-state ${kind === "ok" ? "" : kind}`.trim();
-  $("b", elements.connection).textContent = label;
+function saveSettings() {
+  storageSet("localStorage", STORAGE_KEY, JSON.stringify({
+    apiBase: state.apiBase,
+    timeout: state.timeout,
+    autoDemo: state.autoDemo,
+  }));
+}
+
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>'"]/g, (character) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;",
+  }[character]));
+}
+
+function humanize(value) {
+  return String(value || "").replaceAll("_", " ").replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
 function formatPercent(value) {
   return Number.isFinite(Number(value)) ? `${Math.round(Number(value) * 100)}%` : "—";
 }
 
-function formatNumber(value, digits = 2) {
-  return Number.isFinite(Number(value)) ? Number(value).toFixed(digits) : "—";
-}
-
-function humanize(value) {
-  return String(value || "").replaceAll("_", " ").replace(/\b\w/g, (c) => c.toUpperCase());
-}
-
 function formatDate(value) {
   if (!value) return "Not reported";
   const date = new Date(value);
-  return Number.isNaN(date.valueOf()) ? value : new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(date);
+  if (Number.isNaN(date.valueOf())) return String(value);
+  return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(date);
 }
 
-async function jsonFetch(url, options = {}) {
-  const response = await fetch(url, {
-    credentials: "same-origin",
-    ...options,
-    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
-  });
+function showToast(message) {
+  const node = $("#toast");
+  node.textContent = message;
+  node.classList.add("show");
+  clearTimeout(showToast.timer);
+  showToast.timer = setTimeout(() => node.classList.remove("show"), 2600);
+}
+
+function setService(stateName, label) {
+  const pill = $("#servicePill");
+  pill.dataset.state = stateName;
+  $("#serviceLabel").textContent = label;
+  $("#openAccess").textContent = state.connected ? "Connected" : "Connect";
+}
+
+function navigate(view) {
+  state.view = view;
+  $$("[data-view-panel]").forEach((panel) => panel.classList.toggle("active", panel.dataset.viewPanel === view));
+  $$(".nav-link").forEach((button) => button.classList.toggle("active", button.dataset.view === view));
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function setMode(mode) {
+  state.mode = mode;
+  $$("[data-mode]").forEach((button) => button.classList.toggle("active", button.dataset.mode === mode));
+  if (mode === "demo") setService("demo", "Guided demonstration");
+  else checkHealth();
+}
+
+function timeoutFetch(url, options = {}) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), state.timeout);
+  return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(timer));
+}
+
+async function requestJson(path, options = {}) {
+  const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
+  if (state.token) headers.Authorization = `Bearer ${state.token}`;
+  const response = await timeoutFetch(`${state.apiBase}${path}`, { mode: "cors", ...options, headers });
   let payload = {};
   try { payload = await response.json(); } catch { payload = {}; }
   if (!response.ok) {
-    const error = new Error(payload.error || payload.detail || `Request failed (${response.status})`);
+    const error = new Error(payload.detail || payload.error || `Request failed (${response.status})`);
     error.status = response.status;
     throw error;
   }
   return payload;
 }
 
-async function bootstrap() {
+async function checkHealth() {
+  if (state.mode === "demo") return;
+  setService("checking", "Checking engine");
   try {
-    const [config, session] = await Promise.all([
-      jsonFetch("/ui/config", { headers: {} }),
-      jsonFetch("/ui/session", { headers: {} }),
-    ]);
-    state.config = config;
-    state.authenticated = Boolean(session.authenticated);
-    setConnection("Service available");
-    elements.signOut.hidden = !state.authenticated || config.unsafe_dev;
+    const response = await timeoutFetch(`${state.apiBase}/health`, { mode: "cors", headers: { Accept: "application/json" } });
+    if (!response.ok) throw new Error("Health endpoint unavailable");
+    state.connected = Boolean(state.token);
+    setService("online", state.token ? "Engine connected" : "Engine available");
   } catch (error) {
-    setConnection("Service unavailable", "error");
-    console.error(error);
-  }
-
-  try {
-    const health = await fetch("/health", { credentials: "same-origin" });
-    if (!health.ok) throw new Error("health check failed");
-  } catch {
-    setConnection("API health unavailable", "offline");
+    state.connected = false;
+    setService("offline", "Engine unavailable");
   }
 }
 
-function ensureAccess() {
-  if (!state.config?.auth_required || state.authenticated) return true;
-  elements.accessDialog.showModal();
-  setTimeout(() => $("#accessCode").focus(), 50);
-  return false;
-}
-
-async function submitAccess(event) {
+async function connectEngine(event) {
   event.preventDefault();
-  const errorNode = $("#dialogError");
-  const button = $("#accessButton");
-  errorNode.hidden = true;
+  const endpoint = $("#apiEndpoint").value.trim().replace(/\/$/, "");
+  const accessCode = $("#accessCode").value;
+  const button = $("#connectButton");
+  const message = $("#accessMessage");
+  message.hidden = true;
   button.disabled = true;
+  button.textContent = "Establishing session…";
+
   try {
-    await jsonFetch("/ui/session", { method: "POST", body: JSON.stringify({ access_code: $("#accessCode").value }) });
-    state.authenticated = true;
-    elements.signOut.hidden = false;
-    elements.accessDialog.close();
+    state.apiBase = endpoint;
+    const response = await timeoutFetch(`${state.apiBase}/ui/token`, {
+      method: "POST",
+      mode: "cors",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ access_code: accessCode }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.detail || payload.error || `Connection failed (${response.status})`);
+    if (!payload.access_token) throw new Error("The engine did not return a session token. Apply the included FastAPI artifact bridge.");
+
+    state.token = payload.access_token;
+    state.connected = true;
+    storageSet("sessionStorage", TOKEN_KEY, state.token);
+    saveSettings();
     $("#accessCode").value = "";
-    showToast("Research workspace unlocked");
-    if (state.lastRequest === "generate") elements.form.requestSubmit();
+    $("#accessDialog").close();
+    setMode("live");
+    setService("online", "Engine connected");
+    showToast(`Secure session established for ${Math.round((payload.expires_in || 900) / 60)} minutes`);
   } catch (error) {
-    errorNode.textContent = error.message;
-    errorNode.hidden = false;
+    message.textContent = error.name === "AbortError" ? "The engine did not respond before the timeout." : error.message;
+    message.hidden = false;
   } finally {
     button.disabled = false;
+    button.innerHTML = 'Establish secure session <span>→</span>';
   }
 }
 
-async function signOut() {
-  try { await jsonFetch("/ui/session", { method: "DELETE" }); } catch { /* local state still clears */ }
-  state.authenticated = false;
-  elements.signOut.hidden = true;
-  showToast("Signed out");
+function clearSecureSession() {
+  state.token = "";
+  state.connected = false;
+  storageRemove("sessionStorage", TOKEN_KEY);
+  $("#settingsDialog").close();
+  setService("checking", "Checking engine");
+  checkHealth();
+  showToast("Secure session cleared");
 }
 
-function requestPayload() {
-  const horizons = $$('input[name="horizon"]:checked').map((node) => Number(node.value));
-  if (!horizons.length) throw new Error("Select at least one prediction horizon.");
-  const patient = $("#patientId").value.trim();
-  if (!patient) throw new Error("Enter a pseudonymous patient identifier.");
+function updateReportHint() {
+  $("#reportHint").textContent = reportHints[$("#reportType").value] || "";
+}
+
+function buildRequest() {
+  const patientId = $("#patientId").value.trim();
+  const horizons = $$("input[name='horizon']:checked").map((node) => Number(node.value));
+  if (!patientId) throw new Error("Enter a pseudonymous participant identifier.");
+  if (!horizons.length) throw new Error("Select at least one forecast horizon.");
   const nonce = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
   return {
-    patient_id: patient,
+    patient_id: patientId,
     report_type: $("#reportType").value,
     prediction_horizons_minutes: horizons,
     question: $("#question").value.trim() || null,
-    idempotency_key: `web-${nonce}`,
+    idempotency_key: `artifact-${nonce}`,
   };
 }
 
-async function generateReport(event) {
+function setStage(name) {
+  const mapping = {
+    empty: $("#emptyStage"),
+    loading: $("#loadingStage"),
+    error: $("#errorStage"),
+    report: $("#report"),
+  };
+  Object.entries(mapping).forEach(([key, node]) => { node.hidden = key !== name; });
+  $("#reviewStage").setAttribute("aria-busy", name === "loading" ? "true" : "false");
+}
+
+function animateLoading() {
+  const headlines = [
+    "Verifying authorization and signal readiness.",
+    "Aligning authorized evidence at one causal cutoff.",
+    "Resolving the registered model or abstention contract.",
+    "Validating explanation, provenance, and policy action.",
+  ];
+  let step = 0;
+  clearInterval(state.loadingTimer);
+  const advance = () => {
+    $("#loadingHeadline").textContent = headlines[step];
+    $$("#loadingSteps li").forEach((item, index) => item.classList.toggle("active", index === step));
+    step = (step + 1) % headlines.length;
+  };
+  advance();
+  state.loadingTimer = setInterval(advance, 900);
+}
+
+function stopLoading() {
+  clearInterval(state.loadingTimer);
+  state.loadingTimer = null;
+}
+
+async function generateReview(event) {
   event.preventDefault();
-  state.lastRequest = "generate";
-  if (!ensureAccess()) return;
-
   let payload;
-  try { payload = requestPayload(); }
-  catch (error) { showError("Review the request", error.message); return; }
+  try { payload = buildRequest(); } catch (error) { return showError("Review the request", error.message); }
+  state.lastRequest = payload;
+  navigate("review");
 
-  setVisible("loading");
-  $("#generateButton").disabled = true;
+  if (state.mode === "demo") {
+    loadDemoReport(payload.patient_id, payload.report_type);
+    return;
+  }
+
+  if (!state.token) {
+    $("#accessDialog").showModal();
+    setTimeout(() => $("#accessCode").focus(), 40);
+    return;
+  }
+
+  setStage("loading");
+  animateLoading();
+  $("#generateReview").disabled = true;
   try {
-    const report = await jsonFetch("/v1/risk-reports", { method: "POST", body: JSON.stringify(payload) });
+    const report = await requestJson("/v1/risk-reports", { method: "POST", body: JSON.stringify(payload) });
     state.report = report;
     renderReport(report);
+    setService("online", "Engine connected");
   } catch (error) {
     if (error.status === 401) {
-      state.authenticated = false;
-      elements.signOut.hidden = true;
-      setVisible("empty");
-      ensureAccess();
-      return;
+      state.token = "";
+      state.connected = false;
+      storageRemove("sessionStorage", TOKEN_KEY);
     }
-    const titles = {
-      403: "Authorization or consent was not verified",
-      409: "This request conflicts with an earlier review",
-      500: "The report service did not complete the request",
-    };
-    showError(titles[error.status] || "The review could not be generated", error.message);
+    showError(
+      error.status === 403 ? "Authorization or consent was not verified" : "The live review did not complete",
+      error.name === "AbortError" ? "The engine did not respond before the configured timeout." : error.message,
+    );
   } finally {
-    $("#generateButton").disabled = false;
+    stopLoading();
+    $("#generateReview").disabled = false;
   }
 }
 
 function showError(title, message) {
+  stopLoading();
   $("#errorTitle").textContent = title;
   $("#errorMessage").textContent = message;
-  setVisible("error");
+  setStage("error");
+}
+
+function loadDemoReport(patientId = "PSEUDO-DEMO", reportType = "stress_glucose_risk") {
+  const report = typeof structuredClone === "function" ? structuredClone(demoReport) : JSON.parse(JSON.stringify(demoReport));
+  report.prediction.patient_id = patientId || "PSEUDO-DEMO";
+  report.prediction.report_type = reportType;
+  state.report = report;
+  state.mode = "demo";
+  $$("[data-mode]").forEach((button) => button.classList.toggle("active", button.dataset.mode === "demo"));
+  setService("demo", "Guided demonstration");
+  navigate("review");
+  renderReport(report);
 }
 
 function renderReport(report) {
-  const pred = report.prediction || {};
-  const explanation = report.explanation || {};
+  const prediction = report.prediction || {};
   const evidence = report.evidence || {};
+  const explanation = report.explanation || {};
   const action = report.action || {};
-  const abstained = Boolean(pred.abstained || report.status === "abstained");
-  const category = pred.risk_category || (abstained ? "abstained" : "not reported");
+  const abstained = Boolean(prediction.abstained || report.status === "abstained");
+  const category = prediction.risk_category || (abstained ? "abstained" : "not reported");
+  const risks = prediction.risk || {};
+  const selectedRisk = Number(risks.excursion_60m ?? risks.excursion_30m);
+  const riskPercent = Number.isFinite(selectedRisk) && !abstained ? Math.round(selectedRisk * 100) : 0;
 
-  $("#illustrativeBanner").hidden = !report.illustrative;
-  $("#reportStatusChip").textContent = abstained ? "Abstained safely" : humanize(category);
-  $("#reportTitle").textContent = `${humanize(pred.report_type || "risk review")} · ${pred.patient_id || "Unknown patient"}`;
-  $("#reportSubtitle").textContent = `Data cutoff ${formatDate(pred.data_cutoff_at)}`;
-
-  const statusPanel = $("#statusPanel");
-  statusPanel.className = `status-panel ${abstained ? "abstained" : category === "high" ? "high" : ""}`.trim();
-  $("#statusEyebrow").textContent = abstained ? "SAFE ABSTENTION" : "CURRENT MODEL STATE";
-  $("#statusHeadline").textContent = abstained ? "No risk estimate was issued." : `${humanize(category)} risk`;
+  $("#demoRibbon").hidden = !report.illustrative;
+  $("#stageContext").textContent = `${humanize(prediction.report_type || "risk review")} · ${prediction.patient_id || "Unknown participant"}`;
+  $("#statusChip").textContent = abstained ? "Abstained safely" : humanize(category);
+  $("#statusChip").className = `status-chip ${category === "high" ? "high" : abstained ? "abstained" : ""}`.trim();
+  $("#reportTypeLabel").textContent = humanize(prediction.report_type || "risk review").toUpperCase();
+  $("#reportPatient").textContent = prediction.patient_id || "Unknown participant";
+  $("#reportCutoff").textContent = `Data cutoff ${formatDate(prediction.data_cutoff_at)}`;
+  $("#riskDial").style.setProperty("--risk", String(riskPercent));
+  $("#riskValue").textContent = abstained ? "—" : `${riskPercent}%`;
+  $("#riskHorizon").textContent = abstained ? "no estimate issued" : risks.excursion_60m != null ? "60-minute risk" : "30-minute risk";
+  $("#statusHeadline").textContent = abstained ? "No risk estimate was issued" : `${humanize(category)} near-term risk`;
   $("#statusSummary").textContent = abstained
-    ? (pred.abstain_reason || explanation.risk_summary || "The available evidence did not satisfy the requirements for a reliable estimate.")
-    : (explanation.risk_summary || "A calibrated prediction is available.");
+    ? (prediction.abstain_reason || explanation.risk_summary || "The available evidence did not satisfy the requirements for a reliable estimate.")
+    : (explanation.risk_summary || "A calibrated model result is available.");
 
-  const confidence = pred.confidence;
-  $("#confidenceValue").textContent = confidence == null ? "—" : formatPercent(confidence);
-  $("#confidenceRing").style.setProperty("--confidence", `${Math.max(0, Math.min(100, Number(confidence || 0) * 100))}%`);
+  const confidence = Number(prediction.confidence);
+  const confidencePercent = Number.isFinite(confidence) ? Math.round(confidence * 100) : 0;
+  $("#confidenceValue").textContent = Number.isFinite(confidence) ? `${confidencePercent}%` : "—";
+  $("#confidenceBar").style.width = `${confidencePercent}%`;
 
-  renderMetrics(pred, abstained);
-  renderModalities(pred, evidence);
-  renderSupporting(explanation, evidence);
+  renderMetrics(prediction, abstained);
+  renderForecast(prediction, abstained);
+  renderModalities(prediction, evidence);
+  renderEvidence(explanation, evidence);
   renderAction(report, action, explanation);
-  renderProvenance(report, pred, action, explanation);
-  setVisible("report");
-  elements.reportShell.scrollIntoView({ behavior: "smooth", block: "start" });
+  renderProvenance(report, prediction, action, explanation);
+  setStage("report");
 }
 
-function renderMetrics(pred, abstained) {
-  const cards = [];
-  const risks = pred.risk || {};
-  for (const [key, value] of Object.entries(risks)) {
+function renderMetrics(prediction, abstained) {
+  const metrics = [];
+  const risk = prediction.risk || {};
+  Object.entries(risk).forEach(([key, value]) => {
     const horizon = key.match(/(\d+)m/)?.[1];
-    cards.push({ label: horizon ? `${horizon}-minute excursion risk` : humanize(key), value: abstained ? "—" : formatPercent(value), note: "Calibrated probability" });
-  }
-  for (const [key, value] of Object.entries(pred.forecast || {})) {
-    const horizon = key.match(/(\d+)m/)?.[1];
-    const point = value?.point;
-    const lower = value?.lower;
-    const upper = value?.upper;
-    cards.push({ label: horizon ? `${horizon}-minute glucose forecast` : humanize(key), value: point == null ? "—" : `${Math.round(point)} mg/dL`, note: lower != null && upper != null ? `Interval ${Math.round(lower)}–${Math.round(upper)} mg/dL` : "Interval not reported" });
-  }
-  if (!cards.length) {
-    cards.push(
-      { label: "Risk estimate", value: "Not issued", note: abstained ? "The model abstained" : "No numerical output" },
-      { label: "Data quality", value: humanize(pred.data_quality || "unknown"), note: "Input readiness" },
-      { label: "Missing modalities", value: String((pred.missing_modalities || []).length), note: "Explicitly represented" },
-    );
-  }
-  $("#metricGrid").innerHTML = cards.slice(0, 6).map((card) => `
-    <article class="metric-card"><span>${escapeHtml(card.label)}</span><strong>${escapeHtml(card.value)}</strong><small>${escapeHtml(card.note)}</small></article>
+    metrics.push({
+      label: horizon ? `${horizon}-minute excursion risk` : humanize(key),
+      value: abstained ? "Not issued" : formatPercent(value),
+      note: abstained ? "Formal abstention" : "Calibrated probability",
+    });
+  });
+  metrics.push({ label: "Model confidence", value: prediction.confidence == null ? "—" : formatPercent(prediction.confidence), note: "Reported confidence" });
+  metrics.push({ label: "Data quality", value: humanize(prediction.data_quality || "unknown"), note: "Input readiness" });
+  metrics.push({ label: "Unavailable inputs", value: String((prediction.missing_modalities || []).length), note: "Explicitly represented" });
+  $("#metricLedger").innerHTML = metrics.slice(0, 4).map((metric) => `
+    <div class="metric"><span>${escapeHtml(metric.label)}</span><strong>${escapeHtml(metric.value)}</strong><small>${escapeHtml(metric.note)}</small></div>
   `).join("");
 }
 
-function renderModalities(pred, evidence) {
-  const missing = new Set(pred.missing_modalities || []);
-  const stale = new Set(pred.stale_modalities || []);
-  const quality = evidence.modality_quality || {};
-  const keys = new Set(["cgm", "wearable_phys", "eeg", "ehr", ...Object.keys(quality), ...missing, ...stale]);
-  $("#modalityList").innerHTML = [...keys].map((key) => {
-    const status = missing.has(key) ? "missing" : stale.has(key) ? "stale" : "available";
-    const detail = quality[key] == null ? humanize(status) : `${formatPercent(quality[key])} quality`;
-    return `<div class="modality-row ${status}"><span><i></i>${escapeHtml(modalityLabels[key] || humanize(key))}</span><b>${escapeHtml(detail)}</b></div>`;
+function renderForecast(prediction, abstained) {
+  const forecast = prediction.forecast || {};
+  const entries = Object.entries(forecast);
+  $("#trendBadge").textContent = abstained ? "No forecast" : state.report?.illustrative ? "Illustrative" : "Model output";
+  if (!entries.length || abstained) {
+    $("#forecastReadouts").innerHTML = '<div><span>Forecast</span><b>Not issued</b></div><div><span>Reason</span><b>Model abstention</b></div>';
+    $("#forecastLine").style.opacity = ".18";
+    $("#forecastBand").style.opacity = ".08";
+    $("#point30").style.opacity = "0";
+    $("#point60").style.opacity = "0";
+    return;
+  }
+  $("#forecastLine").style.opacity = "1";
+  $("#forecastBand").style.opacity = "1";
+  $("#point30").style.opacity = "1";
+  $("#point60").style.opacity = "1";
+  $("#forecastReadouts").innerHTML = entries.slice(0, 2).map(([key, value]) => {
+    const horizon = key.match(/(\d+)m/)?.[1] || humanize(key);
+    const point = value?.point;
+    const interval = value?.lower != null && value?.upper != null ? `${Math.round(value.lower)}–${Math.round(value.upper)} mg/dL interval` : "Interval not reported";
+    return `<div><span>${escapeHtml(horizon)} minute forecast</span><b>${point == null ? "—" : `${Math.round(point)} mg/dL`}</b><small>${escapeHtml(interval)}</small></div>`;
   }).join("");
-  $("#dataQualityNote").textContent = `Overall data quality: ${humanize(pred.data_quality || "unknown")}. Missing and stale inputs are not silently imputed by the interface.`;
 }
 
-function renderSupporting(explanation, evidence) {
+function renderModalities(prediction, evidence) {
+  const missing = new Set(prediction.missing_modalities || []);
+  const stale = new Set(prediction.stale_modalities || []);
+  const quality = evidence.modality_quality || {};
+  const keys = new Set(["cgm", "wearable_phys", "eeg", "ehr", ...Object.keys(quality), ...missing, ...stale]);
+  $("#modalityLedger").innerHTML = [...keys].map((key) => {
+    const status = missing.has(key) ? "missing" : stale.has(key) ? "stale" : "available";
+    const detail = quality[key] == null ? humanize(status) : `${formatPercent(quality[key])} quality`;
+    return `<div class="modality-row ${status}"><span><i></i>${escapeHtml(modalityNames[key] || humanize(key))}</span><b>${escapeHtml(detail)}</b></div>`;
+  }).join("");
+  $("#dataQualityNote").textContent = `Overall data quality: ${humanize(prediction.data_quality || "unknown")}. Missing and stale inputs remain explicit in the review.`;
+}
+
+function renderEvidence(explanation, evidence) {
   const factors = explanation.supporting_factors || [];
-  const fallback = Object.entries(evidence.contributions || {}).map(([key, value]) => ({ statement: `${humanize(key)} contribution: ${formatNumber(value, 2)}.` }));
-  const displayed = factors.length ? factors : fallback;
-  $("#supportingFactors").innerHTML = displayed.length
-    ? displayed.map((factor) => `<div class="support-item">${escapeHtml(typeof factor === "string" ? factor : factor.statement || JSON.stringify(factor))}</div>`).join("")
-    : '<div class="support-item">No contribution narrative was issued.</div>';
+  const fallback = Object.entries(evidence.contributions || {}).map(([key, value]) => ({
+    statement: `${humanize(key)} contribution: ${Number(value).toFixed(2)}.`,
+    source_id: "model-evidence",
+  }));
+  const items = factors.length ? factors : fallback;
+  $("#factorList").innerHTML = items.length
+    ? items.map((factor) => `<div class="factor">${escapeHtml(typeof factor === "string" ? factor : factor.statement || JSON.stringify(factor))}<small>${escapeHtml(factor.source_id || "Structured model evidence")}</small></div>`).join("")
+    : '<div class="factor">No contribution narrative was issued.<small>Explanation unavailable</small></div>';
   $("#uncertaintyStatement").textContent = explanation.uncertainty_statement || "Uncertainty was not reported.";
 }
 
 function renderAction(report, action, explanation) {
-  $("#actionHeadline").textContent = humanize(action.action_id || "No action issued");
-  $("#actionExplanation").textContent = explanation.action_explanation || "The policy engine did not return explanatory action text.";
+  $("#actionTitle").textContent = humanize(action.action_id || "No action issued");
+  $("#actionExplanation").textContent = explanation.action_explanation || "The policy engine did not return an explanatory action statement.";
   $("#reasonCodes").innerHTML = (action.reason_codes || []).map((code) => `<span>${escapeHtml(humanize(code))}</span>`).join("");
-
-  const buttonWrap = $("#actionButtons");
-  buttonWrap.innerHTML = "";
-  if (report.illustrative || !report.prediction_id) return;
-  const actions = [
-    ["Acknowledge", "acknowledge", "button-secondary"],
-    ["Escalate", "escalate", "button-primary"],
-    ["Dismiss", "dismiss", "button-ghost"],
-  ];
-  for (const [label, operation, style] of actions) {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = `button ${style}`;
-    button.textContent = label;
-    button.addEventListener("click", () => updateAlert(report.prediction_id, operation, button));
-    buttonWrap.append(button);
+  const wrap = $("#actionButtons");
+  wrap.innerHTML = "";
+  if (report.illustrative || !report.prediction_id) {
+    wrap.innerHTML = '<button class="secondary-button" type="button" disabled>Illustrative action only</button>';
+    return;
   }
+  [["Acknowledge", "acknowledge", "secondary-button"], ["Escalate", "escalate", "primary-button"], ["Dismiss", "dismiss", "secondary-button"]]
+    .forEach(([label, operation, className]) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = className;
+      button.textContent = label;
+      button.addEventListener("click", () => updateAlert(report.prediction_id, operation, button));
+      wrap.append(button);
+    });
 }
 
 async function updateAlert(predictionId, operation, button) {
   button.disabled = true;
   try {
-    const payload = await jsonFetch(`/v1/alerts/${encodeURIComponent(predictionId)}/${operation}`, { method: "POST", body: JSON.stringify({ note: "Updated from Sentinel web interface" }) });
-    showToast(`Alert ${payload.alert?.state || operation}`);
+    const response = await requestJson(`/v1/alerts/${encodeURIComponent(predictionId)}/${operation}`, {
+      method: "POST",
+      body: JSON.stringify({ note: "Updated from the NeuroGlycemic Sentinel artifact" }),
+    });
+    showToast(`Alert ${response.alert?.state || operation}`);
   } catch (error) {
     showToast(error.message);
   } finally {
@@ -396,50 +543,90 @@ async function updateAlert(predictionId, operation, button) {
   }
 }
 
-function renderProvenance(report, pred, action, explanation) {
+function renderProvenance(report, prediction, action, explanation) {
   const items = [
-    ["Request ID", report.request_id],
-    ["Prediction ID", report.prediction_id],
-    ["Snapshot ID", pred.snapshot_id],
-    ["Model", report.model_version || pred.model_version],
-    ["Feature version", report.feature_version || pred.feature_version],
-    ["Calibration", pred.calibration_version],
+    ["Request", report.request_id],
+    ["Prediction", report.prediction_id],
+    ["Snapshot", prediction.snapshot_id],
+    ["Model", report.model_version || prediction.model_version],
+    ["Features", report.feature_version || prediction.feature_version],
+    ["Calibration", prediction.calibration_version],
     ["Policy", `${action.policy_id || "—"} ${action.policy_version || ""}`.trim()],
     ["Retrieval", report.retrieval_status || "disabled"],
-    ["Grounding complete", String(Boolean(report.grounding_complete))],
-    ["Data cutoff", pred.data_cutoff_at],
+    ["Grounding", String(Boolean(report.grounding_complete))],
   ];
   $("#provenanceGrid").innerHTML = items.map(([label, value]) => `<div class="provenance-item"><span>${escapeHtml(label)}</span><code title="${escapeHtml(value || "Not reported")}">${escapeHtml(value || "Not reported")}</code></div>`).join("");
   const limitations = [...(explanation.limitations || []), report.disclaimer].filter(Boolean);
-  $("#limitations").innerHTML = limitations.map((item) => `<p>• ${escapeHtml(item)}</p>`).join("");
+  $("#limitations").innerHTML = limitations.length ? limitations.map((item) => `<p>• ${escapeHtml(item)}</p>`).join("") : "<p>• No limitations were supplied.</p>";
 }
 
-function escapeHtml(value) {
-  return String(value ?? "").replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[character]));
-}
-
-function openIllustrativeReport() {
-  state.report = structuredClone(illustrativeReport);
-  renderReport(state.report);
+function toggleProvenance() {
+  const button = $("#provenanceToggle");
+  const body = $("#provenanceBody");
+  const open = button.getAttribute("aria-expanded") === "true";
+  button.setAttribute("aria-expanded", String(!open));
+  body.hidden = open;
+  $("i", button).textContent = open ? "＋" : "−";
 }
 
 function copyPredictionId() {
   const id = state.report?.prediction_id;
-  if (!id) return;
-  navigator.clipboard?.writeText(id).then(() => showToast("Prediction ID copied"), () => showToast(id));
+  if (!id) return showToast("No prediction identifier is available");
+  navigator.clipboard?.writeText(id).then(() => showToast("Prediction identifier copied"), () => showToast(id));
 }
 
-function updateReportHint() {
-  $("#reportTypeHint").textContent = reportHints[$("#reportType").value] || "";
+function openSettings() {
+  $("#settingsEndpoint").value = state.apiBase;
+  $("#requestTimeout").value = String(state.timeout);
+  $("#autoDemo").checked = state.autoDemo;
+  $("#settingsDialog").showModal();
 }
 
-elements.form.addEventListener("submit", generateReport);
-elements.accessForm.addEventListener("submit", submitAccess);
-elements.signOut.addEventListener("click", signOut);
-$("#sampleReportButton").addEventListener("click", openIllustrativeReport);
-$("#copyReportId").addEventListener("click", copyPredictionId);
-$("#reportType").addEventListener("change", updateReportHint);
-$("#retryButton").addEventListener("click", () => setVisible("empty"));
-elements.accessDialog.addEventListener("close", () => { if (!state.authenticated) state.lastRequest = null; });
+function saveSettingsFromDialog(event) {
+  event.preventDefault();
+  state.apiBase = $("#settingsEndpoint").value.trim().replace(/\/$/, "") || DEFAULT_API;
+  state.timeout = Number($("#requestTimeout").value || 30000);
+  state.autoDemo = $("#autoDemo").checked;
+  $("#apiEndpoint").value = state.apiBase;
+  saveSettings();
+  $("#settingsDialog").close();
+  checkHealth();
+  showToast("Engine settings saved");
+}
 
-bootstrap();
+function initializeEvents() {
+  $$(".nav-link").forEach((button) => button.addEventListener("click", () => navigate(button.dataset.view)));
+  $$('[data-go]').forEach((button) => button.addEventListener("click", () => navigate(button.dataset.go)));
+  $$("[data-mode]").forEach((button) => button.addEventListener("click", () => setMode(button.dataset.mode)));
+  $("#openDemo").addEventListener("click", () => loadDemoReport());
+  $("#emptyDemo").addEventListener("click", () => loadDemoReport($("#patientId").value, $("#reportType").value));
+  $("#fallbackDemo").addEventListener("click", () => loadDemoReport($("#patientId").value, $("#reportType").value));
+  $("#reviewForm").addEventListener("submit", generateReview);
+  $("#reportType").addEventListener("change", updateReportHint);
+  $("#openAccess").addEventListener("click", () => $("#accessDialog").showModal());
+  $("#accessForm").addEventListener("submit", connectEngine);
+  $("#configureEndpoint").addEventListener("click", openSettings);
+  $("#settingsForm").addEventListener("submit", saveSettingsFromDialog);
+  $("#clearSession").addEventListener("click", clearSecureSession);
+  $("#retryReview").addEventListener("click", () => setStage("empty"));
+  $("#printReview").addEventListener("click", () => window.print());
+  $("#copyReviewId").addEventListener("click", copyPredictionId);
+  $("#provenanceToggle").addEventListener("click", toggleProvenance);
+}
+
+function bootstrap() {
+  loadSettings();
+  initializeEvents();
+  updateReportHint();
+  if (state.token) {
+    state.connected = true;
+    setService("online", "Session restored");
+  }
+  checkHealth();
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", bootstrap, { once: true });
+} else {
+  bootstrap();
+}
