@@ -214,11 +214,28 @@ def latest_stress_feature_row(events: pd.DataFrame, window_seconds: int = 30) ->
 MISSING_MASK_SUFFIX = "__present"
 
 
-def feature_columns(frame: pd.DataFrame) -> list[str]:
+def feature_columns(frame: pd.DataFrame, include_masks: bool = False) -> list[str]:
+    """Numeric model-feature columns. By default the `<feature>__present` masks are excluded (legacy
+    behaviour, so callers with fixed input dims are unchanged). Pass ``include_masks=True`` on the
+    reportable/mask-native path so a MISSING value (mask 0.0) is fed to the model as a distinct signal
+    from a genuine 0.0 (mask 1.0) — spec §8 "missing != zero"."""
     blocked = {"subject_id", "session_id", "window_start", "window_end", "timestamp_utc", "target", "target_glucose"}
     return [col for col in frame.columns
-            if col not in blocked and not col.endswith(MISSING_MASK_SUFFIX)
+            if col not in blocked
+            and (include_masks or not col.endswith(MISSING_MASK_SUFFIX))
             and pd.api.types.is_numeric_dtype(frame[col])]
+
+
+def build_reportable_features(frame: pd.DataFrame, feature_cols: list[str] | None = None) -> pd.DataFrame:
+    """The mask-native feature frame for reportable prediction: attach a `<feature>__present` mask for
+    every feature (computed from NaN-ness BEFORE any fill), THEN zero-fill the values. The model that
+    consumes ``feature_columns(out, include_masks=True)`` therefore sees both the (filled) value and an
+    explicit availability bit, so a missing sensor is never silently equated with a real zero reading
+    (spec §8, §9). Returns a copy; the original frame is untouched."""
+    cols = feature_cols if feature_cols is not None else feature_columns(frame)
+    masked = add_missingness_masks(frame, cols)         # masks reflect pre-fill NaN-ness
+    masked[cols] = masked[cols].astype(float).fillna(0.0)
+    return masked
 
 
 def missingness_columns(frame: pd.DataFrame) -> list[str]:

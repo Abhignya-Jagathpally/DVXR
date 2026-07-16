@@ -155,6 +155,7 @@ def generate_risk_report(
         snapshot=snapshot,
         cgm_history=_cgm_history_from_events(events, req.data_cutoff_at),
         requested_modalities=_REPORT_MODALITIES.get(req.report_type, tuple(sorted(GLUCOSE_FUSION_MODALITIES))),
+        cutoff=req.data_cutoff_at or None,
     )
     bundle = service.predict(inputs)
     prediction = _prediction_from_bundle(req, bundle, snapshot)

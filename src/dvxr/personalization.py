@@ -10,7 +10,8 @@ PersonalizedCalibrator
 """
 from __future__ import annotations
 
-from typing import Sequence
+import warnings
+from typing import Optional, Sequence
 
 import numpy as np
 import pandas as pd
@@ -22,7 +23,10 @@ def per_subject_normalize(
     feature_cols: list[str],
     subject_col: str = "subject_id",
 ) -> pd.DataFrame:
-    """Z-score each feature WITHIN each subject.
+    """DEPRECATED (leak-prone): z-score each feature WITHIN each subject using ALL of that subject's
+    rows. Because it draws on a subject's future rows to normalize the present, it must NOT be used in
+    any reportable evaluation — use :class:`SubjectBaselineNormalizer` with an explicit baseline cutoff
+    instead (spec §7). Retained only for legacy callers; emits a DeprecationWarning.
 
     For each (subject, feature) pair the mean and std are computed from the
     rows that belong to that subject. Constant features (std == 0) are set to
@@ -44,6 +48,10 @@ def per_subject_normalize(
         A copy of *frame* with the feature columns replaced by their
         per-subject z-scores.  All other columns are preserved unchanged.
     """
+    warnings.warn(
+        "per_subject_normalize uses a subject's full history (future-leaking); use "
+        "SubjectBaselineNormalizer with an explicit baseline cutoff for reportable runs.",
+        DeprecationWarning, stacklevel=2)
     if subject_col not in frame.columns:
         raise ValueError(f"subject_col '{subject_col}' not found in frame")
     missing = [c for c in feature_cols if c not in frame.columns]
@@ -79,6 +87,9 @@ class SubjectBaselineNormalizer:
         self._pooled: dict = {}                   # col -> (mean, std)
         self._cols: list[str] = []
         self.baseline_cutoff = None
+        self._baseline_samples: dict = {}         # subject -> count of baseline rows
+        self._baseline_period = None              # (min_time, max_time) of the baseline slice
+        self._min_baseline_samples = 1
 
     def fit(
         self,
@@ -87,26 +98,65 @@ class SubjectBaselineNormalizer:
         subject_col: str = "subject_id",
         time_col: str | None = None,
         baseline_cutoff=None,
+        *,
+        strict: bool = False,
+        min_baseline_samples: int = 1,
     ) -> "SubjectBaselineNormalizer":
         """Fit per-subject mean/std on the baseline slice ONLY.
 
         If ``time_col`` and ``baseline_cutoff`` are given, only rows with ``time_col <= cutoff`` are
         used (the causal baseline). Otherwise the whole frame is treated as the baseline — callers
         that pass an already-past-only frame get the same guarantee.
-        """
+
+        ``strict=True`` (reportable mode) REQUIRES an explicit ``time_col`` + ``baseline_cutoff`` so a
+        leak cannot slip in via an implicit whole-frame baseline. ``min_baseline_samples`` is the floor
+        below which a subject is not personalized (it falls back to the pooled baseline and is flagged
+        via :meth:`personalization_status`)."""
+        if strict and (time_col is None or baseline_cutoff is None):
+            raise ValueError(
+                "strict personalization requires an explicit time_col and baseline_cutoff "
+                "(no implicit whole-frame baseline in a reportable run)")
         self._cols = list(feature_cols)
+        self._min_baseline_samples = int(min_baseline_samples)
         base = frame
         if time_col is not None and baseline_cutoff is not None:
             base = frame[frame[time_col] <= baseline_cutoff]
             self.baseline_cutoff = baseline_cutoff
         if base.empty:
             raise ValueError("baseline slice is empty — cannot fit a subject baseline")
+        if time_col is not None and time_col in base.columns and len(base):
+            self._baseline_period = (base[time_col].min(), base[time_col].max())
+        self._baseline_samples = {str(sid): int(len(g)) for sid, g in base.groupby(subject_col)}
         for col in self._cols:
             vals = base[col].astype(float)
             self._pooled[col] = (float(vals.mean()), float(vals.std() or 0.0))
             for sid, g in vals.groupby(base[subject_col]):
-                self._stats.setdefault(sid, {})[col] = (float(g.mean()), float(g.std() or 0.0))
+                if len(g) < self._min_baseline_samples:
+                    continue                       # too little baseline → pooled fallback, flagged
+                self._stats.setdefault(str(sid), {})[col] = (float(g.mean()), float(g.std() or 0.0))
         return self
+
+    def personalization_status(self, subject_id=None) -> dict:
+        """Report whether a subject is genuinely personalized or fell back to the pooled baseline.
+
+        Honest surfacing (spec §7): a subject with too few baseline samples is NOT personalized, and
+        the report says so via ``fallback_used=True`` rather than silently pooling."""
+        if subject_id is None:
+            return {
+                "personalization_status": "fitted" if self._stats else "pooled_only",
+                "n_subjects_personalized": len(self._stats),
+                "baseline_period": self._baseline_period,
+                "min_baseline_samples": self._min_baseline_samples,
+            }
+        sid = str(subject_id)
+        n = self._baseline_samples.get(sid, 0)
+        personalized = sid in self._stats
+        return {
+            "personalization_status": "subject_specific" if personalized else "pooled_fallback",
+            "baseline_samples": n,
+            "baseline_period": self._baseline_period,
+            "fallback_used": not personalized,
+        }
 
     def transform(
         self,
@@ -123,7 +173,7 @@ class SubjectBaselineNormalizer:
             pooled_std = self._pooled[col][1]
             means, scales = [], []
             for sid in out[subject_col]:
-                m, s = self._stats.get(sid, {}).get(col, self._pooled[col])
+                m, s = self._stats.get(str(sid), {}).get(col, self._pooled[col])
                 # constant baseline (std==0) ⇒ fall back to the pooled std, then to 1.0, so a
                 # departure from a flat baseline stays visible instead of being zeroed out.
                 scale = s if s > 0 else (pooled_std if pooled_std > 0 else 1.0)

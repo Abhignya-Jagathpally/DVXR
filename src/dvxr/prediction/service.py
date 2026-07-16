@@ -40,6 +40,7 @@ class PredictionInputs:
     requested_modalities: Sequence[str] = ()
     time_col: str = "timestamp"
     glucose_col: str = "glucose"
+    cutoff: object = None                 # request cutoff t; used to gate on CGM freshness
 
 
 @dataclass(frozen=True)
@@ -148,12 +149,14 @@ class CgmOnlyExcursionService:
 
     def __init__(self, models: Dict[int, Tuple[object, BinaryCalibrator]], *,
                  model_version: str, calibration_version: str,
-                 thresholds: ExcursionThresholds, feature_names: Sequence[str] = CGM_FEATURE_NAMES):
+                 thresholds: ExcursionThresholds, feature_names: Sequence[str] = CGM_FEATURE_NAMES,
+                 max_staleness_minutes: float = 30.0):
         self._models = models                       # horizon -> (sklearn clf, calibrator)
         self.model_version = model_version
         self.calibration_version = calibration_version
         self._thr = thresholds
         self._features = list(feature_names)
+        self._max_staleness = float(max_staleness_minutes)
 
     # ---- offline training ----
     @classmethod
@@ -161,7 +164,8 @@ class CgmOnlyExcursionService:
             thresholds: ExcursionThresholds = ExcursionThresholds(),
             time_col: str = "timestamp", glucose_col: str = "glucose",
             subject_col: str = "subject_id", model_version: str = "cgm-only/pilot-v1",
-            calibration_frac: float = 0.25, seed: int = 7) -> "CgmOnlyExcursionService":
+            calibration_frac: float = 0.25, seed: int = 7,
+            max_staleness_minutes: float = 30.0) -> "CgmOnlyExcursionService":
         """Fit one calibrated classifier per horizon on the reportable (uncensored) examples. A
         held-out CALIBRATION slice (by subject) fits the Platt layer — never the training rows."""
         from sklearn.ensemble import GradientBoostingClassifier
@@ -189,7 +193,8 @@ class CgmOnlyExcursionService:
             calib = fit_platt_calibrator(raw_cal, y[cal])
             models[h] = (clf, calib)
         return cls(models, model_version=model_version,
-                   calibration_version=f"platt/{thresholds.version}", thresholds=thresholds)
+                   calibration_version=f"platt/{thresholds.version}", thresholds=thresholds,
+                   max_staleness_minutes=max_staleness_minutes)
 
     # ---- request-time inference ----
     def predict(self, inputs: PredictionInputs) -> PredictionBundle:
@@ -203,6 +208,16 @@ class CgmOnlyExcursionService:
         if any(np.isnan(v) for v in feats.values()) or feats["cgm_n_samples"] < 1:
             return AbstainingPredictionService(
                 "CGM-only service abstains: no usable CGM history at the cutoff.").predict(inputs)
+        # freshness gate (spec §5, §9): a stale CGM feed cannot support a live prediction
+        if inputs.cutoff is not None and inputs.cgm_history is not None and len(inputs.cgm_history):
+            last_t = pd.to_datetime(inputs.cgm_history[inputs.time_col], errors="coerce").max()
+            cutoff = pd.to_datetime(inputs.cutoff, errors="coerce")
+            if pd.notna(last_t) and pd.notna(cutoff):
+                staleness = (cutoff - last_t) / pd.Timedelta(minutes=1)
+                if staleness > self._max_staleness:
+                    return AbstainingPredictionService(
+                        f"CGM-only service abstains: CGM feed is stale "
+                        f"({staleness:.0f} min > {self._max_staleness:.0f} min at the cutoff).").predict(inputs)
         x = np.array([[feats[k] for k in CGM_FEATURE_NAMES]], dtype=float)
         risk: Dict[str, float] = {}
         for h in inputs.horizons_minutes:
