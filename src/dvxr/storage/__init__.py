@@ -20,7 +20,9 @@ from dvxr.storage.base import (  # noqa: F401
 from dvxr.storage.local import (  # noqa: F401
     LocalAuditStore,
     LocalConsentStore,
+    LocalEventStore,
     LocalModelRegistry,
     LocalPredictionStore,
+    LocalStores,
     open_local_stores,
 )

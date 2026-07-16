@@ -43,7 +43,9 @@ def create_app(screener_root: str | Path = _SCREENER_ROOT,
     _tasks: dict = {}
     # process-local stateful stores (spec §6). ":memory:" for the default single-process research
     # deployment; pass a file path to persist predictions/audit across restarts.
-    pred_store, audit_store, consent_store, _model_registry = open_local_stores(db_path)
+    _stores = open_local_stores(db_path)
+    pred_store, audit_store, consent_store, model_registry = _stores
+    event_store = _stores.events
 
     def _get_screener(task: str):
         """Load a COMMITTED screener. Generate/serving never trains during a request (spec §2): a
@@ -158,7 +160,8 @@ def create_app(screener_root: str | Path = _SCREENER_ROOT,
                                   user_role=principal.role, tenant_id=principal.tenant_id)
         try:
             out = generate_risk_report(req, prediction_store=pred_store, audit_store=audit_store,
-                                       consent_store=consent_store, require_consent=require_consent)
+                                       consent_store=consent_store, require_consent=require_consent,
+                                       event_repository=event_store, model_registry=model_registry)
         except ConsentError as e:
             return JSONResponse({"error": str(e)}, status_code=403)
         except Exception:  # noqa: BLE001 — never leak internals to the client
@@ -184,7 +187,12 @@ def create_app(screener_root: str | Path = _SCREENER_ROOT,
                       record_tenant=rec.get("tenant_id"))
         except AuthorizationError as e:
             return JSONResponse({"error": str(e)}, status_code=403)
-        return JSONResponse({"prediction": rec, "disclaimer": DISCLAIMER})
+        # return the FULL persisted report (prediction + evidence + action + explanation), rebuilt
+        # deterministically — the same shape POST produced, not a bare prediction row.
+        from dvxr.serve.orchestrate import assemble_persisted_report
+        out = assemble_persisted_report(rec, user_role=principal.role)
+        out["disclaimer"] = DISCLAIMER
+        return JSONResponse(out)
 
     return Starlette(routes=[
         Route("/health", health),

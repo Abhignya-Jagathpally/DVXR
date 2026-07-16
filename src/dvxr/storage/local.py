@@ -43,6 +43,16 @@ CREATE TABLE IF NOT EXISTS models (
     name TEXT, version TEXT, active INTEGER DEFAULT 0, meta TEXT NOT NULL,
     UNIQUE(name, version)
 );
+CREATE TABLE IF NOT EXISTS events (
+    seq INTEGER PRIMARY KEY AUTOINCREMENT,
+    tenant_id TEXT NOT NULL,
+    patient_id TEXT NOT NULL,
+    event_id TEXT,
+    observed_at_utc TEXT,
+    payload TEXT NOT NULL,
+    UNIQUE(tenant_id, event_id)
+);
+CREATE INDEX IF NOT EXISTS idx_events_scope ON events(tenant_id, patient_id, observed_at_utc);
 """
 
 
@@ -185,9 +195,68 @@ class LocalModelRegistry:
         return {"name": row["name"], "version": row["version"], "meta": json.loads(row["meta"])}
 
 
-def open_local_stores(path: str = ":memory:") -> Tuple[
-        LocalPredictionStore, LocalAuditStore, LocalConsentStore, LocalModelRegistry]:
-    """Open all local stores on one sqlite connection (a file path, or in-memory for tests)."""
+class LocalEventStore:
+    """Tenant+patient-scoped normalized events (spec §6 EventStore). ``window`` returns ONLY events for
+    the given (tenant, patient) in ``[start, end]`` — the deterministic range query the snapshot builder
+    consumes. Identity is stored explicitly and every read is filtered by it (Gate A)."""
+
+    def __init__(self, conn: sqlite3.Connection):
+        self._c = conn
+
+    def append_events(self, events: List[Dict[str, Any]]) -> int:
+        n = 0
+        for ev in events or []:
+            tenant = ev.get("tenant_id")
+            patient = ev.get("patient_id")
+            eid = ev.get("event_id")
+            if not tenant or not patient or not eid:
+                continue                              # reject identity-less events (never store them)
+            obs = ev.get("observed_at_utc") or ev.get("timestamp_utc") or ev.get("timestamp")
+            self._c.execute(
+                "INSERT OR IGNORE INTO events(tenant_id, patient_id, event_id, observed_at_utc, payload) "
+                "VALUES (?,?,?,?,?)",
+                (str(tenant), str(patient), str(eid), obs, json.dumps(ev)))
+            n += 1
+        self._c.commit()
+        return n
+
+    def window(self, patient_id: str, start: Optional[str], end: Optional[str], *,
+               tenant_id: str = "default") -> List[Dict[str, Any]]:
+        """Deterministic range query, TENANT+PATIENT scoped. ``start``/``end`` are ISO strings (or None
+        for open-ended). Rows are ordered by observed time then insertion order for reproducibility."""
+        clauses = ["tenant_id=?", "patient_id=?"]
+        params: List[Any] = [str(tenant_id), str(patient_id)]
+        if start is not None:
+            clauses.append("(observed_at_utc IS NULL OR observed_at_utc >= ?)")
+            params.append(str(start))
+        if end is not None:
+            clauses.append("(observed_at_utc IS NULL OR observed_at_utc <= ?)")
+            params.append(str(end))
+        rows = self._c.execute(
+            f"SELECT payload FROM events WHERE {' AND '.join(clauses)} ORDER BY observed_at_utc, seq",
+            params).fetchall()
+        return [json.loads(r["payload"]) for r in rows]
+
+
+class LocalStores(tuple):
+    """Backward-compatible: unpacks as the historical 4-tuple (predictions, audit, consent, models) but
+    also exposes ``.events`` (and named fields) for callers that want the full stack."""
+    def __new__(cls, predictions, audit, consent, models, events):
+        self = super().__new__(cls, (predictions, audit, consent, models))
+        self.predictions = predictions
+        self.audit = audit
+        self.consent = consent
+        self.models = models
+        self.events = events
+        return self
+
+
+def open_local_stores(path: str = ":memory:") -> "LocalStores":
+    """Open all local stores on one sqlite connection (a file path, or in-memory for tests).
+
+    Returns a :class:`LocalStores` that still unpacks as the historical 4-tuple
+    ``(predictions, audit, consent, models)`` — existing call sites are unchanged — while also exposing
+    ``.events`` (a :class:`LocalEventStore` on the same connection) and named attributes."""
     conn = _connect(path)
-    return (LocalPredictionStore(conn), LocalAuditStore(conn),
-            LocalConsentStore(conn), LocalModelRegistry(conn))
+    return LocalStores(LocalPredictionStore(conn), LocalAuditStore(conn),
+                       LocalConsentStore(conn), LocalModelRegistry(conn), LocalEventStore(conn))

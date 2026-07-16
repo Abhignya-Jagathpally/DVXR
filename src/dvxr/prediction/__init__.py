@@ -6,6 +6,7 @@ baseline (``CgmOnlyExcursionService``) are interchangeable. The FUSED EEG+CGM+we
 synchronized dataset, so it stays behind the abstaining default; only a single-cohort CGM-only forecast
 ever returns a number, and it is labelled ``modality_scope="cgm_only"`` — never the fused headline.
 """
+from dvxr.prediction.evidence import build_model_evidence  # noqa: F401
 from dvxr.prediction.service import (  # noqa: F401
     AbstainingPredictionService,
     AdequacyConfig,

@@ -19,7 +19,7 @@ from typing import Optional
 from dvxr.cohort import GLUCOSE_FUSION_MODALITIES
 from dvxr.contracts import GenerateRequest, RiskPrediction
 from dvxr.llm.grounded import grounded_explanation
-from dvxr.prediction import AbstainingPredictionService, PredictionInputs
+from dvxr.prediction import AbstainingPredictionService, PredictionInputs, build_model_evidence
 from dvxr.safety.policy import select_action
 from dvxr.serve.snapshot import build_patient_snapshot
 
@@ -125,6 +125,9 @@ def generate_risk_report(
     require_consent: bool = True,
     events=None,
     predictor=None,
+    event_repository=None,
+    model_registry=None,
+    retrieval=None,
 ) -> dict:
     """Run the Generate lifecycle and return the persisted report. Never trains a model.
 
@@ -132,8 +135,12 @@ def generate_risk_report(
     fail-closed when ``require_consent`` (default) — an unknown/insufficient scope raises ConsentError
     and is audited. Every step appends to the audit store under the request id.
 
-    ``events`` (optional) is the provenance-enriched event stream the snapshot is built from; when
-    omitted an empty (but still reproducible) snapshot is recorded, tying the prediction to its cutoff.
+    The reproducible snapshot is built from ``events``; when ``events`` is omitted and an
+    ``event_repository`` is supplied, the orchestrator FETCHES this (tenant, patient)'s events at/before
+    the cutoff from the repository (so the API path produces a real snapshot, not an empty one). A
+    ``model_registry`` (optional) records the active model version; ``retrieval`` (optional) supplies
+    grounded citation sources for the explanation. Model-derived ``ModelEvidence`` is assembled and
+    persisted with the prediction, so the retrieved report carries the same evidence a fresh one does.
     """
     req = request.with_request_id()
     audit_store.append({"request_id": req.request_id, "event": "generate.requested",
@@ -159,9 +166,17 @@ def generate_risk_report(
             audit_store.append({"request_id": req.request_id, "event": "generate.reused",
                                 "prediction_id": existing.get("prediction_id")})
             # Reconstruct the (deterministic) action + explanation from the stored prediction so a
-            # reused report has the SAME shape as a fresh one. The prediction itself is not recomputed.
+            # reused report has the SAME shape as a fresh one. The prediction itself is not recomputed;
+            # the persisted ModelEvidence rides along so the reused report is byte-for-byte comparable.
             return _assemble_report(req, RiskPrediction.from_dict(existing),
-                                    existing.get("prediction_id"), reused=True)
+                                    existing.get("prediction_id"), reused=True,
+                                    evidence=existing.get("evidence"))
+
+    # fetch this (tenant, patient)'s events at/before the cutoff from the repository when the caller did
+    # not pass them inline — this is what makes the API's snapshot real rather than always empty.
+    if events is None and event_repository is not None:
+        events = event_repository.window(req.patient_id, None, req.data_cutoff_at or None,
+                                         tenant_id=req.tenant_id)
 
     # assemble the reproducible cutoff-bound snapshot (Gate 2) — only events <= cutoff are admitted
     snapshot = build_patient_snapshot(
@@ -186,27 +201,69 @@ def generate_risk_report(
     )
     bundle = service.predict(inputs)
     prediction = _prediction_from_bundle(req, bundle, snapshot)
-    pid = prediction_store.put(prediction.to_dict(), idempotency_key=scoped_key)
-    report = _assemble_report(req, prediction, pid, reused=False)
+
+    # model-derived evidence (spec §2 step 7) — from the snapshot + predictor signals, never the LLM
+    evidence = build_model_evidence(prediction, snapshot, bundle)
+
+    # record the active model version for traceability (spec §6, §10), when a registry is provided
+    if model_registry is not None:
+        active = model_registry.active(prediction.model_version.split("/")[0])
+        if active:
+            audit_store.append({"request_id": req.request_id, "event": "model.resolved",
+                                "name": active.get("name"), "version": active.get("version")})
+
+    # persist the prediction WITH its evidence so the retrieved report carries the same evidence
+    persisted = {**prediction.to_dict(), "evidence": evidence.to_dict()}
+    pid = prediction_store.put(persisted, idempotency_key=scoped_key)
+
+    sources = _retrieve_sources(req, retrieval)
+    report = _assemble_report(req, prediction, pid, reused=False,
+                              evidence=evidence.to_dict(), sources=sources)
     audit_store.append({"request_id": req.request_id, "event": "generate.completed",
                         "prediction_id": pid, "abstained": prediction.abstained,
                         "action_id": report["action"]["action_id"]})
     return report
 
 
+def _retrieve_sources(req: GenerateRequest, retrieval) -> list:
+    """Fetch grounded citation sources for the explanation, tenant+patient scoped (never cross-patient).
+    Returns [] when no retrieval backend or no question is supplied."""
+    if retrieval is None or not req.question:
+        return []
+    try:
+        return retrieval.search_patient(req.question, patient_id=req.patient_id,
+                                        tenant_id=req.tenant_id, k=3)
+    except Exception:  # noqa: BLE001 — retrieval is best-effort; a failure must not break Generate
+        return []
+
+
+def assemble_persisted_report(rec: dict, *, user_role: str) -> dict:
+    """Rebuild the COMPLETE report (prediction + evidence + action + grounded explanation) from a stored
+    prediction record, so GET /v1/predictions/{id} returns the same shape POST produced — not a bare
+    prediction row. Deterministic: action + explanation are a pure function of the immutable prediction
+    and its persisted evidence."""
+    prediction = RiskPrediction.from_dict(rec)
+    req = GenerateRequest(patient_id=prediction.patient_id, report_type=prediction.report_type,
+                          tenant_id=prediction.tenant_id, user_role=user_role,
+                          data_cutoff_at=prediction.data_cutoff_at, request_id=prediction.request_id)
+    return _assemble_report(req, prediction, prediction.prediction_id, reused=True,
+                            evidence=rec.get("evidence"))
+
+
 def _assemble_report(req: GenerateRequest, prediction: RiskPrediction, prediction_id,
-                     *, reused: bool) -> dict:
+                     *, reused: bool, evidence=None, sources=None) -> dict:
     """Build the complete report dict from a prediction. Deterministic (action + explanation are a
-    pure function of the immutable prediction), so the fresh and idempotent-reuse paths return the
-    identical shape — no key is present in one path and absent in the other (spec §2, §8)."""
+    pure function of the immutable prediction + persisted evidence), so the fresh and idempotent-reuse
+    paths return the identical shape — no key is present in one path and absent in the other."""
     action = _action_for(prediction, req.user_role)
-    explanation = grounded_explanation(prediction.to_dict(), evidence=None, action=action.to_dict(),
-                                       sources=[])
+    explanation = grounded_explanation(prediction.to_dict(), evidence=evidence,
+                                       action=action.to_dict(), sources=sources or [])
     return {
         "request_id": req.request_id,
         "prediction_id": prediction_id,
         "status": "abstained" if prediction.abstained else "completed",
         "prediction": prediction.to_dict(),
+        "evidence": evidence,
         "action": action.to_dict(),
         "explanation": explanation,
         "model_version": prediction.model_version,
