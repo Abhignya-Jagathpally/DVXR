@@ -56,6 +56,22 @@ class QualityGatedFusionTest(unittest.TestCase):
         self.assertIsNone(res.fused)
         self.assertEqual(res.abstain_reason, "all_modality_gates_zero")
 
+    def test_strict_unknown_fails_closed_on_unrated_modality(self):
+        # PR26: a quality map that RATES cgm but omits eeg. Non-strict keeps eeg neutral (perfect);
+        # strict treats eeg's unknown quality as unusable (gate 0), so eeg gets ~zero weight.
+        probs = _confident_probs(0.9)
+        _f, w_lax = quality_gated(probs, quality={"cgm": 1.0}, return_weights=True)
+        self.assertGreater(w_lax["eeg"], 0.0)                  # legacy fail-open: unknown ⇒ perfect
+        _f, w_strict = quality_gated(probs, quality={"cgm": 1.0}, return_weights=True,
+                                     strict_unknown=True)
+        self.assertAlmostEqual(w_strict["eeg"], 0.0, places=6)  # fail-closed: unknown ⇒ unusable
+
+    def test_strict_unknown_abstains_when_all_modalities_unrated(self):
+        from dvxr.fusion.aggregate import gated_fusion
+        # a partial quality map that rates NEITHER modality ⇒ every gate fails closed ⇒ abstain
+        res = gated_fusion(_confident_probs(0.9), quality={"other": 0.9}, strict_unknown=True)
+        self.assertTrue(res.all_abstained)
+
     def test_gated_fusion_predicts_when_a_modality_is_reliable(self):
         from dvxr.fusion.aggregate import gated_fusion
         res = gated_fusion(_confident_probs(0.9), availability={"eeg": 0.0, "cgm": 1.0})

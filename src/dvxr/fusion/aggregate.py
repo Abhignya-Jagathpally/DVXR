@@ -81,15 +81,18 @@ def quality_gated(probs: Dict[str, np.ndarray],
                   freshness: Optional[Dict[str, float]] = None,
                   availability: Optional[Dict[str, float]] = None,
                   ood: Optional[Dict[str, float]] = None,
-                  return_weights: bool = False):
+                  return_weights: bool = False,
+                  strict_unknown: bool = False):
     """Quality-aware gated late fusion (spec §5 "confidence-aware fusion", §11).
 
     Each modality's gate multiplies signal reliability factors, all in [0, 1]:
 
         g_m = availability_m · quality_m · freshness_m · confidence_m · (1 - ood_m)
 
-    where confidence is the per-sample normalized-entropy confidence and the other factors default
-    to 1.0 (fully available/clean/fresh/in-distribution) when not supplied. The fused probability is
+    where confidence is the per-sample normalized-entropy confidence. A reliability map that is not
+    supplied at all leaves that factor neutral (1.0). With ``strict_unknown=True`` a map that IS
+    supplied but omits a modality fails CLOSED for that modality (gate 0) — unknown quality/freshness/
+    availability is never treated as perfect. The fused probability is
     the gate-weighted average over modalities, per sample. Unlike ``confidence_weighted``, this lets a
     STALE or LOW-QUALITY or OUT-OF-DISTRIBUTION modality be down-weighted even when it is confident —
     the failure modes spec §9 calls out (noisy EEG, stale CGM feed, clock drift, OOD participant).
@@ -102,16 +105,25 @@ def quality_gated(probs: Dict[str, np.ndarray],
     mods, arr = _stack(probs)                                   # (M, B, C)
     M, B, _C = arr.shape
 
-    def _scalar(d, m, default=1.0):
-        return float(d.get(m, default)) if d else default
+    def _factor(d, m, *, neutral, unknown_penalty):
+        # dict not supplied at all ⇒ neutral (that signal simply isn't being gated on).
+        # dict supplied but THIS modality absent ⇒ UNKNOWN: under strict_unknown, treat as the
+        # fail-CLOSED penalty (unknown quality ≠ perfect); otherwise keep the legacy neutral default.
+        if not d:
+            return neutral
+        if m in d:
+            return float(d[m])
+        return unknown_penalty if strict_unknown else neutral
 
     conf = np.stack([normalized_entropy_confidence(arr[i]) for i in range(M)], axis=0)  # (M, B)
     gate = np.empty((M, B), dtype=np.float64)
     for i, m in enumerate(mods):
-        # availability/quality/freshness default to 1.0 (fully reliable); ood defaults to 0.0
-        # (in-distribution) so an unsupplied ood does not zero the gate.
-        static = (_scalar(availability, m) * _scalar(quality, m) * _scalar(freshness, m)
-                  * (1.0 - _scalar(ood, m, default=0.0)))
+        # availability/quality/freshness: neutral 1.0, unknown-penalty 0.0 (fail closed → zero the gate).
+        # ood: neutral 0.0 (in-distribution), unknown-penalty 1.0 (treat as fully OOD ⇒ (1-1)=0).
+        static = (_factor(availability, m, neutral=1.0, unknown_penalty=0.0)
+                  * _factor(quality, m, neutral=1.0, unknown_penalty=0.0)
+                  * _factor(freshness, m, neutral=1.0, unknown_penalty=0.0)
+                  * (1.0 - _factor(ood, m, neutral=0.0, unknown_penalty=1.0)))
         gate[i] = np.clip(static, 0.0, 1.0) * conf[i]
 
     denom = gate.sum(axis=0)                                    # (B,)
@@ -133,12 +145,18 @@ def gated_fusion(probs: Dict[str, np.ndarray],
                  quality: Optional[Dict[str, float]] = None,
                  freshness: Optional[Dict[str, float]] = None,
                  availability: Optional[Dict[str, float]] = None,
-                 ood: Optional[Dict[str, float]] = None) -> GatedFusionResult:
+                 ood: Optional[Dict[str, float]] = None,
+                 strict_unknown: bool = False) -> GatedFusionResult:
     """Quality-aware gated fusion that abstains when all gates collapse (spec §11). Returns a typed
     :class:`GatedFusionResult`: samples whose every modality gate is ~0 are marked ``abstained`` and
-    their fused row is NaN; ``all_abstained`` is True when no sample could be fused."""
+    their fused row is NaN; ``all_abstained`` is True when no sample could be fused.
+
+    ``strict_unknown`` (recommended for any safety-critical deployment) fails CLOSED: when a reliability
+    map is supplied but omits a modality, that modality's quality/freshness/availability is treated as
+    unknown-and-therefore-unusable (gate 0) rather than perfect — unknown quality ≠ current ≠ present."""
     fused, weights = quality_gated(probs, quality=quality, freshness=freshness,
-                                   availability=availability, ood=ood, return_weights=True)
+                                   availability=availability, ood=ood, return_weights=True,
+                                   strict_unknown=strict_unknown)
     abstained = np.isnan(fused).any(axis=1)                    # (B,)
     all_abstained = bool(abstained.all())
     reason = "all_modality_gates_zero" if abstained.any() else None
