@@ -97,13 +97,18 @@ class RiskPrediction:
 
 @dataclass(frozen=True)
 class ModelEvidence:
-    """Model-derived contribution evidence (spec §2 step 7) — NOT an LLM guess."""
+    """Model-derived contribution evidence (spec §2 step 7) — NOT an LLM guess.
+
+    ``evidence_records`` gives every contribution an IMMUTABLE identifier so an explanation's supporting
+    factor can cite it (spec §8.6: every claim resolves to a source). Each record is
+    ``{evidence_id, evidence_type, feature, value, method, model_version, snapshot_id}``."""
     prediction_id: str
     contributions: Dict[str, float] = field(default_factory=dict)   # modality -> signed contribution
     modality_quality: Dict[str, float] = field(default_factory=dict)
     missing_data_effects: List[str] = field(default_factory=list)
     uncertainty: Optional[float] = None
     ood_indicators: Dict[str, float] = field(default_factory=dict)
+    evidence_records: List[Dict[str, Any]] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)

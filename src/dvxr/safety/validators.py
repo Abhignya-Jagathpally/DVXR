@@ -62,11 +62,17 @@ def validate_numbers(text: str, prediction: Dict, evidence: Optional[Dict] = Non
 
 
 def validate_citations(claims: Iterable[Dict], source_ids: Iterable[str]) -> None:
-    """Every claim carrying a source_id must resolve to an existing retrieved/evidence source (spec §8.6)."""
+    """Every claim must resolve to an existing evidence/retrieved source (spec §8.6).
+
+    A claim with a MISSING or None ``source_id`` is rejected outright — a supporting factor that cites
+    nothing is not grounded. A claim carrying a source_id that is not in the valid set is also rejected."""
     valid = set(source_ids)
     for c in claims:
         sid = c.get("source_id")
-        if sid is not None and sid not in valid:
+        if not sid:
+            raise GroundingError(
+                f"ungrounded claim (no source_id): {c.get('statement', c)!r}")
+        if sid not in valid:
             raise GroundingError(f"claim cites a non-existent source: {sid!r}")
 
 

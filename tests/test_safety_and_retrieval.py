@@ -67,6 +67,13 @@ class NumericAndCitationGroundingTest(unittest.TestCase):
         with self.assertRaises(GroundingError):
             validate_citations([{"statement": "x", "source_id": "ghost"}], {"chk_real"})
 
+    def test_claim_with_no_source_id_is_rejected(self):
+        # a supporting factor that cites NOTHING (source_id missing or None) is ungrounded — rejected
+        with self.assertRaises(GroundingError):
+            validate_citations([{"statement": "cgm decline raised risk", "source_id": None}], {"ev_1"})
+        with self.assertRaises(GroundingError):
+            validate_citations([{"statement": "no source key at all"}], {"ev_1"})
+
     def test_diagnostic_language_is_rejected(self):
         with self.assertRaises(GroundingError):
             validate_no_diagnosis_language("You have diabetes and should increase your insulin.")
@@ -83,12 +90,25 @@ class GroundedExplanationTest(unittest.TestCase):
         self.assertEqual(exp["action_id"], "INSUFFICIENT_DATA")
         self.assertIn("not a diagnosis", " ".join(exp["limitations"]).lower())
 
-    def test_supporting_factors_cite_only_real_sources(self):
+    def test_supporting_factors_each_cite_an_evidence_record(self):
         pred = {"report_type": "stress_glucose_risk", "risk": {"excursion_30m": 0.58},
                 "prediction_horizons_minutes": [30], "confidence": 0.81, "missing_modalities": []}
-        ev = {"contributions": {"cgm": 0.6, "eeg": 0.1}}
+        ev = {"contributions": {"cgm": 0.6, "eeg": 0.1},
+              "evidence_records": [
+                  {"evidence_id": "ev_cgm", "feature": "cgm"},
+                  {"evidence_id": "ev_eeg", "feature": "eeg"}]}
         exp = grounded_explanation(pred, ev, {"action_id": "REVIEW_ELEVATED_RISK"}, sources=[])
         self.assertEqual(len(exp["supporting_factors"]), 2)
+        # every supporting factor resolves to a real evidence_id — none is source-free
+        self.assertEqual({f["source_id"] for f in exp["supporting_factors"]}, {"ev_cgm", "ev_eeg"})
+
+    def test_contribution_without_an_evidence_record_is_rejected(self):
+        # a contribution with no matching evidence record would be a source-free claim ⇒ GroundingError
+        pred = {"report_type": "stress_glucose_risk", "risk": {"excursion_30m": 0.58},
+                "prediction_horizons_minutes": [30], "confidence": 0.81, "missing_modalities": []}
+        ev = {"contributions": {"cgm": 0.6}}          # no evidence_records
+        with self.assertRaises(GroundingError):
+            grounded_explanation(pred, ev, {"action_id": "REVIEW_ELEVATED_RISK"}, sources=[])
 
 
 class RetrievalFilterTest(unittest.TestCase):

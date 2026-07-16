@@ -39,11 +39,17 @@ def grounded_explanation(prediction: Dict, evidence: Optional[Dict], action: Dic
     horizons = prediction.get("prediction_horizons_minutes") or []
     abstained = bool(prediction.get("abstained"))
 
+    # each supporting factor cites the immutable evidence_id of its contribution (spec §8.6). The
+    # evidence records ARE the source for model-derived factors; a contribution with no matching record
+    # yields source_id=None, which the citation validator rejects (never a source-free claim).
+    evidence_records = evidence.get("evidence_records") or []
+    ev_by_feature = {r["feature"]: r["evidence_id"] for r in evidence_records}
     supporting: List[Dict] = []
     for m, contrib in (evidence.get("contributions") or {}).items():
         supporting.append({
             "statement": f"{m} contributed to the prediction",
-            "source_type": "model_evidence", "source_id": None, "value": float(contrib)})
+            "source_type": "model_evidence", "source_id": ev_by_feature.get(m),
+            "value": float(contrib)})
 
     citations = [{"source_id": s["chunk_id"],
                   "document_type": s["metadata"].get("document_type"),
@@ -79,7 +85,9 @@ def grounded_explanation(prediction: Dict, evidence: Optional[Dict], action: Dic
     text_blob = " ".join([risk_summary, uncertainty, explanation["action_explanation"],
                           *(s["statement"] for s in supporting)])
     validate_numbers(text_blob, prediction, evidence)
-    validate_citations(supporting + citations, {s["chunk_id"] for s in sources})
+    # valid sources = the immutable evidence records AND the retrieved chunks
+    valid_sources = {r["evidence_id"] for r in evidence_records} | {s["chunk_id"] for s in sources}
+    validate_citations(supporting + citations, valid_sources)
     validate_action_id(action_id, action.get("action_id", ""))
     validate_no_diagnosis_language(text_blob + " " + _DISCLAIMER)
     return explanation

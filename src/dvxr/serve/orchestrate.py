@@ -19,6 +19,7 @@ from typing import Optional
 from dvxr.cohort import GLUCOSE_FUSION_MODALITIES
 from dvxr.contracts import GenerateRequest, RiskPrediction
 from dvxr.llm.grounded import grounded_explanation
+from dvxr.safety.validators import GroundingError
 from dvxr.prediction import AbstainingPredictionService, PredictionInputs, build_model_evidence
 from dvxr.safety.policy import select_action
 from dvxr.serve.snapshot import build_patient_snapshot
@@ -275,8 +276,15 @@ def _assemble_report(req: GenerateRequest, prediction: RiskPrediction, predictio
     pure function of the immutable prediction + persisted evidence), so the fresh and idempotent-reuse
     paths return the identical shape — no key is present in one path and absent in the other."""
     action = _action_for(prediction, req.user_role)
-    explanation = grounded_explanation(prediction.to_dict(), evidence=evidence,
-                                       action=action.to_dict(), sources=sources or [])
+    # a grounding failure must NEVER surface ungrounded prose or a 500 — fall back to a deterministic
+    # safe explanation that shows no risk narrative and flags that grounding failed (spec §8).
+    try:
+        explanation = grounded_explanation(prediction.to_dict(), evidence=evidence,
+                                           action=action.to_dict(), sources=sources or [])
+        grounding_ok = True
+    except GroundingError:
+        explanation = _safe_fallback_explanation(action.to_dict())
+        grounding_ok = False
     return {
         "request_id": req.request_id,
         "prediction_id": prediction_id,
@@ -285,8 +293,27 @@ def _assemble_report(req: GenerateRequest, prediction: RiskPrediction, predictio
         "evidence": evidence,
         "action": action.to_dict(),
         "explanation": explanation,
+        "grounding_complete": grounding_ok,
         "model_version": prediction.model_version,
         "feature_version": prediction.feature_version,
         "reused": reused,
         "disclaimer": "Research-grade decision-support, not a diagnosis.",
+    }
+
+
+def _safe_fallback_explanation(action: dict) -> dict:
+    """A minimal, fully-grounded explanation used when `grounded_explanation` raises. It surfaces the
+    (policy-chosen) action and an abstention-style note — no risk numbers, no ungrounded prose."""
+    from dvxr.safety.policy import action_text
+    action_id = action.get("action_id", "")
+    return {
+        "risk_summary": "A grounded explanation could not be produced; no risk narrative is shown.",
+        "prediction_horizon_minutes": [],
+        "supporting_factors": [],
+        "missing_or_stale_data": [],
+        "uncertainty_statement": "The explanation layer abstained (grounding check failed).",
+        "action_id": action_id,
+        "action_explanation": action_text(action_id) if action_id else "",
+        "citations": [],
+        "limitations": ["This is research-grade decision-support, not a diagnosis."],
     }

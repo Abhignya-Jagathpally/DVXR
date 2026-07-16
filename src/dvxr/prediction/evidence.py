@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from dvxr.contracts import ModelEvidence, PatientSnapshot, RiskPrediction
+from dvxr.contracts import ModelEvidence, PatientSnapshot, RiskPrediction, _stable_id
 from dvxr.prediction.service import PredictionBundle
 
 
@@ -29,6 +29,7 @@ def build_model_evidence(prediction: RiskPrediction, snapshot: PatientSnapshot,
     ood_indicators = {}
     uncertainty = None
     contributions = {}
+    method = "none"
     if bundle is not None:
         if bundle.ood_score is not None:
             ood_indicators["cgm_window"] = float(bundle.ood_score)
@@ -37,6 +38,22 @@ def build_model_evidence(prediction: RiskPrediction, snapshot: PatientSnapshot,
         # a real single-modality prediction attributes to the modality it actually used
         if not prediction.abstained and bundle.modality_scope == "cgm_only":
             contributions = {"cgm": round(float(bundle.decision_margin or 0.0), 6)}
+            method = "decision_margin"
+
+    # every contribution gets an immutable evidence_id so an explanation's supporting factor cites it
+    # (never source-free). The id hashes the prediction + feature, so it is reproducible.
+    evidence_records = [
+        {
+            "evidence_id": _stable_id("ev", prediction.prediction_id, feature),
+            "evidence_type": "model_evidence",
+            "feature": feature,
+            "value": float(value),
+            "method": method,
+            "model_version": prediction.model_version,
+            "snapshot_id": prediction.snapshot_id,
+        }
+        for feature, value in contributions.items()
+    ]
 
     return ModelEvidence(
         prediction_id=prediction.prediction_id,
@@ -45,4 +62,5 @@ def build_model_evidence(prediction: RiskPrediction, snapshot: PatientSnapshot,
         missing_data_effects=missing_effects,
         uncertainty=uncertainty,
         ood_indicators=ood_indicators,
+        evidence_records=evidence_records,
     )
