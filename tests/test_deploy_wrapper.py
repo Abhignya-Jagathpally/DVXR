@@ -83,6 +83,19 @@ class DeployWrapperTest(unittest.TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertIn("not a diagnosis", json.dumps(r.json()).lower())
 
+    def test_root_serves_html_to_browsers_utf8(self):
+        r = self._client().get("/", headers={"accept": "text/html,application/xhtml+xml"})
+        self.assertEqual(r.status_code, 200)                      # not a 404 at the bare URL
+        self.assertIn("charset=utf-8", r.headers.get("content-type", ""))
+        self.assertIn("<html", r.text)
+        self.assertIn("—", r.content.decode("utf-8"))            # em dash, not mojibake
+        self.assertIn("abstains by construction", r.text)         # honesty note is on the page
+
+    def test_root_serves_json_to_api_clients(self):
+        r = self._client().get("/", headers={"accept": "application/json"})
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json()["product"], "DVXR NeuroGlycemic Sentinel")
+
     def test_cgm_report_serves_a_real_prediction(self):
         c = self._client()
         r = c.post("/v1/risk-reports", json={"patient_id": "P1", "report_type": "cgm_glucose_risk",
