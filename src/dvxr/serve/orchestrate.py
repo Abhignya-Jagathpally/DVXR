@@ -19,9 +19,9 @@ from typing import Optional
 from dvxr.cohort import GLUCOSE_FUSION_MODALITIES
 from dvxr.contracts import GenerateRequest, RiskPrediction
 from dvxr.llm.grounded import grounded_explanation
+from dvxr.prediction import AbstainingPredictionService, PredictionInputs
 from dvxr.safety.policy import select_action
 from dvxr.serve.snapshot import build_patient_snapshot
-from dvxr.serve.vision import glucose_risk_report
 
 #: user role -> the consent purpose it exercises (spec §2 step 2).
 _ROLE_PURPOSE = {"researcher": "research", "clinician": "clinical", "participant": "participant"}
@@ -34,23 +34,57 @@ class ConsentError(PermissionError):
     """Raised when the patient has not consented to the requested purpose (fail-closed)."""
 
 
-def _abstaining_prediction(req: GenerateRequest, snapshot_id: str = "") -> RiskPrediction:
-    """The research-stage glucose product's prediction: an honest abstention, never a trained score."""
-    report = glucose_risk_report(patient_id=req.patient_id,
-                                 horizons_minutes=req.prediction_horizons_minutes)
+#: report_type -> the modalities a valid report of that type needs. Anything spanning >1 modality
+#: (the fused headline) needs synchronized data that does not exist ⇒ the default predictor abstains.
+_REPORT_MODALITIES = {
+    "stress_glucose_risk": tuple(sorted(GLUCOSE_FUSION_MODALITIES)),
+    "glucose_risk": ("cgm",),
+    "cgm_glucose_risk": ("cgm",),
+}
+
+
+def _cgm_history_from_events(events, cutoff: str):
+    """Assemble a causal CGM history frame (timestamp, glucose) from provenance events at/before the
+    cutoff. Returns None when no CGM values are present (⇒ the predictor abstains)."""
+    if not events:
+        return None
+    import pandas as pd
+    rows = []
+    for ev in events:
+        if str(ev.get("modality")) != "cgm":
+            continue
+        val = ev.get("value", ev.get("glucose"))
+        ts = ev.get("observed_at_utc") or ev.get("timestamp_utc") or ev.get("timestamp")
+        if val is None or ts is None:
+            continue
+        rows.append({"timestamp": ts, "glucose": val})
+    if not rows:
+        return None
+    df = pd.DataFrame(rows)
+    df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
+    if cutoff:
+        df = df[df["timestamp"] <= pd.to_datetime(cutoff, errors="coerce")]
+    return df.sort_values("timestamp").reset_index(drop=True) if len(df) else None
+
+
+def _prediction_from_bundle(req: GenerateRequest, bundle, snapshot) -> RiskPrediction:
+    """Map a predictor's immutable PredictionBundle onto the persisted RiskPrediction contract."""
     return RiskPrediction(
         request_id=req.request_id,
         patient_id=req.patient_id,
         report_type=req.report_type,
-        risk=None,
-        abstained=True,
-        abstain_reason=report["risk_summary"],
-        data_quality="unknown",
-        missing_modalities=list(report["missing_or_stale_data"]),
-        model_version=MODEL_VERSION,
+        risk=bundle.risk,
+        risk_category=bundle.risk_category,
+        confidence=bundle.confidence,
+        data_quality=bundle.data_quality,
+        missing_modalities=list(snapshot.missing_modalities),
+        abstained=bundle.abstained,
+        abstain_reason=bundle.abstain_reason,
+        model_version=bundle.model_version or MODEL_VERSION,
         feature_version=FEATURE_VERSION,
+        calibration_version=bundle.calibration_version,
         data_cutoff_at=req.data_cutoff_at,
-        snapshot_id=snapshot_id,
+        snapshot_id=snapshot.snapshot_id,
     ).with_prediction_id()
 
 
@@ -69,6 +103,7 @@ def generate_risk_report(
     consent_store=None,
     require_consent: bool = True,
     events=None,
+    predictor=None,
 ) -> dict:
     """Run the Generate lifecycle and return the persisted report. Never trains a model.
 
@@ -110,8 +145,19 @@ def generate_risk_report(
     audit_store.append({"request_id": req.request_id, "event": "snapshot.created",
                         "snapshot": snapshot.to_dict()})
 
-    # produce the prediction — NEVER trains; the research-stage glucose product abstains
-    prediction = _abstaining_prediction(req, snapshot_id=snapshot.snapshot_id)
+    # produce the prediction via the injected service (Gate 3) — NEVER trains. The default is the
+    # abstaining service; the fused headline always abstains (no synchronized data). A CGM-only
+    # service returns a number only for a single-modality CGM request with real history.
+    service = predictor if predictor is not None else AbstainingPredictionService()
+    inputs = PredictionInputs(
+        report_type=req.report_type,
+        horizons_minutes=req.prediction_horizons_minutes,
+        snapshot=snapshot,
+        cgm_history=_cgm_history_from_events(events, req.data_cutoff_at),
+        requested_modalities=_REPORT_MODALITIES.get(req.report_type, tuple(sorted(GLUCOSE_FUSION_MODALITIES))),
+    )
+    bundle = service.predict(inputs)
+    prediction = _prediction_from_bundle(req, bundle, snapshot)
     pid = prediction_store.put(prediction.to_dict(), idempotency_key=req.idempotency_key)
     report = _assemble_report(req, prediction, pid, reused=False)
     audit_store.append({"request_id": req.request_id, "event": "generate.completed",
