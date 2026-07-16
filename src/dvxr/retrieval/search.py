@@ -51,6 +51,26 @@ def _passes(md: Dict, filters: Dict) -> bool:
     return True
 
 
+#: access_scope values that admit any authenticated role.
+_ANY_SCOPE = frozenset({"all", "any", "*"})
+
+
+def _scope_admits(access_scope, role: Optional[str]) -> bool:
+    """Whether a document's ``access_scope`` admits the requesting ``role`` (spec §7). ``access_scope``
+    may be a list/set of roles, a single role string, or a comma-separated string; ``"all"/"any"/"*"``
+    admit everyone. A None/empty scope admits NO ONE (fail-closed). ``role=None`` (no role supplied)
+    skips the check for backward compatibility with non-role callers."""
+    if role is None:
+        return True
+    if not access_scope:
+        return False                                   # missing scope ⇒ deny
+    if isinstance(access_scope, (list, tuple, set)):
+        allowed = {str(x).strip() for x in access_scope}
+    else:
+        allowed = {p.strip() for p in str(access_scope).split(",")}
+    return bool(allowed & _ANY_SCOPE) or role in allowed
+
+
 @runtime_checkable
 class RetrievalRepository(Protocol):
     """The retrieval contract. General knowledge (protocols, model cards) is reachable via ``search``;
@@ -59,7 +79,8 @@ class RetrievalRepository(Protocol):
     def index(self, chunk: Dict) -> str: ...
     def search(self, query: str, *, filters: Optional[Dict] = None, k: int = 5) -> List[Dict]: ...
     def search_patient(self, query: str, *, patient_id: str, tenant_id: str,
-                       filters: Optional[Dict] = None, k: int = 5) -> List[Dict]: ...
+                       role: Optional[str] = None, filters: Optional[Dict] = None,
+                       k: int = 5) -> List[Dict]: ...
 
 
 class LocalKeywordTextIndex:
@@ -112,15 +133,19 @@ class LocalKeywordTextIndex:
         return self._rank(query, cands, k)
 
     def search_patient(self, query: str, *, patient_id: str, tenant_id: str,
-                       filters: Optional[Dict] = None, k: int = 5) -> List[Dict]:
+                       role: Optional[str] = None, filters: Optional[Dict] = None,
+                       k: int = 5) -> List[Dict]:
         """Search a SPECIFIC patient's notes. ``patient_id`` and ``tenant_id`` are MANDATORY and are
-        applied as filters BEFORE ranking, so cross-patient / cross-tenant leakage is impossible."""
+        applied as filters BEFORE ranking, so cross-patient / cross-tenant leakage is impossible. When
+        ``role`` is supplied, a chunk is also excluded unless its ``access_scope`` admits that role
+        (spec §7) — a note a role may not read is never a candidate, regardless of text match."""
         if not patient_id or not tenant_id:
             raise ValueError("search_patient requires both patient_id and tenant_id")
         scope = {"patient_id": patient_id, "tenant_id": tenant_id, **(filters or {})}
         cands = [c for c in self._chunks
                  if c["metadata"].get("document_type") in PATIENT_SCOPED_TYPES
-                 and _passes(c["metadata"], scope)]
+                 and _passes(c["metadata"], scope)
+                 and _scope_admits(c["metadata"].get("access_scope"), role)]
         return self._rank(query, cands, k)
 
     def source_ids(self) -> set:

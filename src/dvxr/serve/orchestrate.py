@@ -274,7 +274,7 @@ def _retrieve_context(req: GenerateRequest, retrieval, *, role: str):
         groups.append(("model card limitations", retrieval.search("model card limitations", k=2)))
         if req.question:
             groups.append((req.question, retrieval.search_patient(
-                req.question, patient_id=req.patient_id, tenant_id=req.tenant_id, k=3)))
+                req.question, patient_id=req.patient_id, tenant_id=req.tenant_id, role=role, k=3)))
         sources, manifest, seen = [], [], set()
         for query, results in groups:
             for rank, s in enumerate(results, 1):
