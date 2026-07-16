@@ -91,27 +91,38 @@ def generate_risk_report(
         if existing is not None:
             audit_store.append({"request_id": req.request_id, "event": "generate.reused",
                                 "prediction_id": existing.get("prediction_id")})
-            return {"request_id": req.request_id, "prediction": existing, "reused": True,
-                    "status": existing.get("abstained") and "abstained" or "completed"}
+            # Reconstruct the (deterministic) action + explanation from the stored prediction so a
+            # reused report has the SAME shape as a fresh one. The prediction itself is not recomputed.
+            return _assemble_report(req, RiskPrediction.from_dict(existing),
+                                    existing.get("prediction_id"), reused=True)
 
     # produce the prediction — NEVER trains; the research-stage glucose product abstains
     prediction = _abstaining_prediction(req)
+    pid = prediction_store.put(prediction.to_dict(), idempotency_key=req.idempotency_key)
+    report = _assemble_report(req, prediction, pid, reused=False)
+    audit_store.append({"request_id": req.request_id, "event": "generate.completed",
+                        "prediction_id": pid, "abstained": prediction.abstained,
+                        "action_id": report["action"]["action_id"]})
+    return report
+
+
+def _assemble_report(req: GenerateRequest, prediction: RiskPrediction, prediction_id,
+                     *, reused: bool) -> dict:
+    """Build the complete report dict from a prediction. Deterministic (action + explanation are a
+    pure function of the immutable prediction), so the fresh and idempotent-reuse paths return the
+    identical shape — no key is present in one path and absent in the other (spec §2, §8)."""
     action = _action_for(prediction, req.user_role)
     explanation = grounded_explanation(prediction.to_dict(), evidence=None, action=action.to_dict(),
                                        sources=[])
-    pid = prediction_store.put(prediction.to_dict(), idempotency_key=req.idempotency_key)
-    audit_store.append({"request_id": req.request_id, "event": "generate.completed",
-                        "prediction_id": pid, "abstained": prediction.abstained,
-                        "action_id": action.action_id})
     return {
         "request_id": req.request_id,
-        "prediction_id": pid,
+        "prediction_id": prediction_id,
         "status": "abstained" if prediction.abstained else "completed",
         "prediction": prediction.to_dict(),
         "action": action.to_dict(),
         "explanation": explanation,
         "model_version": prediction.model_version,
         "feature_version": prediction.feature_version,
-        "reused": False,
+        "reused": reused,
         "disclaimer": "Research-grade decision-support, not a diagnosis.",
     }

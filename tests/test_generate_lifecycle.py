@@ -47,6 +47,30 @@ class GenerateLifecycleTest(unittest.TestCase):
         self.assertEqual(r1["prediction"]["prediction_id"], r2["prediction"]["prediction_id"])
         self.assertTrue(r2["reused"])
 
+    def test_reused_report_has_the_same_shape_as_a_fresh_one(self):
+        # Regression: the idempotent-reuse path must return the SAME keys as the fresh path — a
+        # downstream consumer (e.g. build_report_panels) reads report["action"]/["explanation"]
+        # and must not KeyError just because the prediction was served from the idempotency cache.
+        fresh = generate_risk_report(self._req(idempotency_key="same"), prediction_store=self.pred,
+                                     audit_store=self.audit, consent_store=self.consent)
+        reused = generate_risk_report(self._req(idempotency_key="same"), prediction_store=self.pred,
+                                      audit_store=self.audit, consent_store=self.consent)
+        self.assertTrue(reused["reused"])
+        self.assertEqual(set(fresh.keys()), set(reused.keys()))
+        for key in ("action", "explanation", "prediction", "model_version", "status"):
+            self.assertIn(key, reused)
+        self.assertEqual(fresh["action"]["action_id"], reused["action"]["action_id"])
+
+    def test_panels_render_on_a_reused_idempotent_request(self):
+        from dvxr.serve.panels import build_report_panels
+        req = self._req(idempotency_key="dup")
+        generate_risk_report(req, prediction_store=self.pred, audit_store=self.audit,
+                             consent_store=self.consent)              # prime the idempotency cache
+        out = build_report_panels(req, prediction_store=self.pred, audit_store=self.audit,
+                                  consent_store=self.consent, require_consent=True)
+        self.assertEqual(out["status"], "abstained")
+        self.assertEqual(out["panels"]["next_action"]["action_id"], "INSUFFICIENT_DATA")
+
     def test_abstention_carries_no_risk_number(self):
         out = generate_risk_report(self._req(), prediction_store=self.pred,
                                    audit_store=self.audit, consent_store=self.consent)
