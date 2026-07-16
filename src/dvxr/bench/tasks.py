@@ -29,8 +29,10 @@ from dvxr.features import (
     feature_columns,
 )
 from dvxr.loaders import (
+    CLINICAL_NOTES_SURGERY_LABEL,
     load_cgmacros_bio,
     load_cgmacros_dataset,
+    load_clinical_notes,
     load_deap_dataset,
     load_eegmat_dataset,
     load_mimic_demo_ehr,
@@ -420,8 +422,63 @@ def mumtaz_depression_task(data_dir: str = "data/real/mumtaz_mdd", subjects: Opt
         extra={"label": "MDD patients vs healthy controls (real diagnosis label)"})
 
 
+# ---------------------------------------------------- clinical notes (free text)
+def _notes_hashing_features(texts: List[str], n_features: int = 256):
+    """A STATELESS numeric floor for the notes modality (HashingVectorizer needs no fit,
+    so precomputing it over all rows introduces no train/test leak). The real ClinicalBERT
+    embedding is produced separately in the SOTA path from ``extra['notes_text']``."""
+    from sklearn.feature_extraction.text import HashingVectorizer
+    hv = HashingVectorizer(n_features=n_features, ngram_range=(1, 2),
+                           alternate_sign=False, norm="l2", stop_words="english")
+    X = hv.transform(texts).toarray().astype(float)
+    return X, [f"h{i}" for i in range(n_features)]
+
+
+def _clinical_notes_frame(max_notes: Optional[int]):
+    df = load_clinical_notes()
+    if max_notes is not None:
+        df = df.iloc[:max_notes].reset_index(drop=True)
+    texts = df["note_text"].astype(str).tolist()
+    X, names = _notes_hashing_features(texts)
+    extra = {
+        "notes_text": np.array(texts, dtype=object),
+        "n_notes": len(df),
+        "provenance": df.attrs.get("provenance", ""),
+    }
+    return df, texts, X, names, extra
+
+
+def clinical_notes_surgery_task(max_notes: Optional[int] = None) -> BenchTask:
+    """MTSamples surgical-vs-not — REAL free-text clinical notes, binary (drops into the
+    standard AUROC harness). Floor = HashingVectorizer+LR; SOTA = frozen Bio_ClinicalBERT
+    (chunk-pooled CLS) + LR. Each note is its own CV group (independent transcripts)."""
+    df, _texts, X, names, extra = _clinical_notes_frame(max_notes)
+    y = (df["specialty_name"] == CLINICAL_NOTES_SURGERY_LABEL).astype(int).to_numpy()
+    return BenchTask(
+        name="clinical_notes_surgery", kind="classification",
+        features={"ehr_notes": X}, feature_names={"ehr_notes": names}, y=y,
+        subject_ids=df["subject_id"].to_numpy(), metric="1-AUROC",
+        baseline_hint="majority", raw_windows=None, extra=extra)
+
+
+def clinical_notes_specialty_task(max_notes: Optional[int] = None) -> BenchTask:
+    """MTSamples 40-way specialty — REAL free-text clinical notes, multi-class. NOT
+    registered in TASK_BUILDERS (the shared AUROC harness is binary); it is evaluated by
+    scripts/run_clinical_notes_bench.py with macro-F1 / accuracy / macro-AUROC-OvR."""
+    df, _texts, X, names, extra = _clinical_notes_frame(max_notes)
+    extra["specialty_names"] = (df.drop_duplicates("specialty")
+                                .set_index("specialty")["specialty_name"].to_dict())
+    return BenchTask(
+        name="clinical_notes_specialty", kind="classification",
+        features={"ehr_notes": X}, feature_names={"ehr_notes": names},
+        y=df["specialty"].to_numpy(dtype=int),
+        subject_ids=df["subject_id"].to_numpy(), metric="macro_f1",
+        baseline_hint="majority", raw_windows=None, extra=extra)
+
+
 TASK_BUILDERS = {
     "stress": noneeg_stress_task,
+    "clinical_notes_surgery": clinical_notes_surgery_task,
     "glucose": shanghai_glucose_task,
     "mortality": mimic_mortality_task,
     "wesad_stress": wesad_stress_task,

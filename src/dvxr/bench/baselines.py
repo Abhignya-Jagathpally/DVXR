@@ -113,7 +113,10 @@ def _single_fn(modality: str) -> Callable:
 
 
 # --------------------------------------------------------------- SOTA (frozen)
-_FM_FOR_TASK = {"stress": "wearable_phys", "glucose": "cgm", "mortality": "ehr"}
+_FM_FOR_TASK = {
+    "stress": "wearable_phys", "glucose": "cgm", "mortality": "ehr",
+    "clinical_notes_surgery": "ehr_notes", "clinical_notes_specialty": "ehr_notes",
+}
 
 
 def _sota_embeddings(task: BenchTask) -> np.ndarray:
@@ -130,9 +133,15 @@ def _sota_embeddings(task: BenchTask) -> np.ndarray:
     from dvxr.encoders.base import make_primary_backend
 
     modality = _FM_FOR_TASK.get(task.name, "wearable_phys")
-    X = _concat(task)
-    cols = [f"f{i}" for i in range(X.shape[1])]
-    frame = pd.DataFrame(X, columns=cols)
+    if "notes_text" in task.extra:
+        # free-text path: embed the RAW note text with the clinical transformer, not the
+        # numeric hashing floor in task.features.
+        frame = pd.DataFrame({"note_text": task.extra["notes_text"]})
+        cols = ["note_text"]
+    else:
+        X = _concat(task)
+        cols = [f"f{i}" for i in range(X.shape[1])]
+        frame = pd.DataFrame(X, columns=cols)
     cfg = DEFAULTS.with_(d=16, use_real_weights=True, allow_download=True, seed=7)
     backend = make_primary_backend(modality, cfg)
     if backend is None or not hasattr(backend, "_embed"):

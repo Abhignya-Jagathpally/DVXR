@@ -18,7 +18,7 @@ from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-MODALITIES: List[str] = ["eeg", "wearable_phys", "cgm", "ehr", "omics", "behavior"]
+MODALITIES: List[str] = ["eeg", "wearable_phys", "cgm", "ehr", "ehr_notes", "omics", "behavior"]
 
 FUSION_STRATEGIES: List[str] = [
     "early", "intermediate", "late_weighted", "attention", "cross_modal",
@@ -75,6 +75,15 @@ FOUNDATION_MODELS: Dict[str, FoundationModel] = {
         "emilyalsentzer/Bio_ClinicalBERT", "transformers",
         "tokenized-code timeline features", "MIT", "train_local",
         "Med-BERT/BEHRT/CEHR-BERT", "CEHR-BERT has no public weights -> train locally on MIMIC code timelines; Bio_ClinicalBERT for notes"),
+    "ehr_notes": FoundationModel(
+        "ehr_notes", "emilyalsentzer/Bio_ClinicalBERT", "clinical_notes",
+        "emilyalsentzer/Bio_ClinicalBERT", "clinical_notes",
+        "TF-IDF + TruncatedSVD over note text", "MIT", "open",
+        "Bio_ClinicalBERT", "REAL free-text clinical-notes path (MTSamples corpus): "
+        "Bio_ClinicalBERT is cached and CPU-runnable here, so the frozen transformer "
+        "genuinely runs; chunk-pooled CLS over >512-token notes. Falls back to a "
+        "TF-IDF+SVD floor when torch/transformers are absent. Override the model via "
+        "env DVXR_EHR_NOTES_MODEL."),
     "omics": FoundationModel(
         "omics", "ctheodoris/Geneformer", "transformers",
         "ctheodoris/Geneformer", "transformers",

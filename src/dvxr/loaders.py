@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import gzip
+import json
+import logging
 import pickle
 from pathlib import Path
 
@@ -8,6 +10,8 @@ import numpy as np
 import pandas as pd
 
 from .schemas import validate_events
+
+logger = logging.getLogger("dvxr.loaders")
 
 
 # --- PhysioNet Non-EEG stress dataset (real wearable physiology + stress labels) ---
@@ -1064,3 +1068,93 @@ def load_single_eeg_edf(
         raw, subject_id, session_id, "upload_edf", "unknown_eeg",
         eeg_names, [], label_name, label_value, target_rate_hz, max_seconds, take="first")
     return validate_events(pd.concat(parts, ignore_index=True))
+
+
+# --- MTSamples clinical notes (real de-identified transcribed medical reports) ------
+#
+# Real UNSTRUCTURED clinical text for the EHR-notes pathway (POW Goal 2). MIMIC-IV's
+# own note module is credentialed and absent here (the demo ships structured labs only),
+# so the note corpus is MTSamples: ~4,499 genuine de-identified transcribed medical
+# reports scraped from mtsamples.com, public domain, mirrored on the HF Hub as
+# ``rungalileo/medical_transcription_40`` (free-text ``text`` + a 40-way clinical
+# ``label``/specialty). This is REAL clinical narrative — not synthesized from structured
+# fields. A small real excerpt is bundled at ``data/real/clinical_notes/sample.parquet``
+# so the offline test/CI path is deterministic; the full corpus is fetched + cached on
+# first use. Provenance is recorded on the returned frame's ``.attrs``.
+CLINICAL_NOTES_REPO = "rungalileo/medical_transcription_40"
+CLINICAL_NOTES_SURGERY_LABEL = "Surgery"
+
+
+def _clinical_notes_class_names() -> list[str]:
+    """The 40 MTSamples specialty names (stripped), index-aligned to the int label."""
+    from huggingface_hub import hf_hub_download
+
+    info_path = hf_hub_download(CLINICAL_NOTES_REPO, "dataset_infos.json", repo_type="dataset")
+    with open(info_path) as fh:
+        info = json.load(fh)
+    key = next(iter(info))
+    return [str(n).strip() for n in info[key]["features"]["label"]["names"]]
+
+
+def load_clinical_notes(
+    data_dir: str | Path = "data/real/clinical_notes",
+    split: str = "train",
+    allow_download: bool = True,
+) -> pd.DataFrame:
+    """Load the MTSamples clinical-notes corpus (real free-text + specialty label).
+
+    Returns a DataFrame with columns:
+      * ``note_text``     — the raw transcribed clinical report (free text)
+      * ``specialty``     — int label in [0, 40) (the MTSamples transcription type)
+      * ``specialty_name``— stripped human-readable specialty
+      * ``subject_id``    — ``mts_{id}`` (each note is its own group for grouped CV)
+
+    Resolution order: a cached parquet under ``data_dir``; else fetch the split from the
+    HF Hub mirror and cache it (when ``allow_download``); else the bundled real excerpt
+    ``sample.parquet``. Text is never synthesized — provenance is set on ``df.attrs``.
+    """
+    data_dir = Path(data_dir)
+    cached = data_dir / f"{split}.parquet"
+    sample = data_dir / "sample.parquet"
+    names: list[str] | None = None
+
+    df: pd.DataFrame | None = None
+    if cached.exists():
+        df = pd.read_parquet(cached)
+    elif allow_download:
+        try:
+            from huggingface_hub import hf_hub_download
+
+            pq = hf_hub_download(
+                CLINICAL_NOTES_REPO, f"data/{split}-00000-of-00001.parquet",
+                repo_type="dataset")
+            raw = pd.read_parquet(pq)
+            names = _clinical_notes_class_names()
+            df = pd.DataFrame({
+                "note_text": raw["text"].astype(str).values,
+                "specialty": raw["label"].astype(int).values,
+                "subject_id": [f"mts_{int(i)}" for i in raw["id"].values],
+            })
+            df["specialty_name"] = [names[c] for c in df["specialty"]]
+            data_dir.mkdir(parents=True, exist_ok=True)
+            df.to_parquet(cached, index=False)
+        except Exception as exc:  # network/dep unavailable -> bundled excerpt
+            logger.warning("clinical-notes fetch failed (%s); using bundled sample.", exc)
+            df = None
+
+    if df is None:
+        if not sample.exists():
+            raise FileNotFoundError(
+                f"no clinical-notes corpus at {cached} or bundled {sample}; "
+                f"run with network to fetch {CLINICAL_NOTES_REPO} or provision the sample.")
+        df = pd.read_parquet(sample)
+
+    if "specialty_name" not in df.columns:
+        names = names or _clinical_notes_class_names()
+        df["specialty_name"] = [names[int(c)] for c in df["specialty"]]
+
+    df = df.reset_index(drop=True)
+    df.attrs["provenance"] = (
+        "MTSamples (mtsamples.com), public domain, via HF mirror "
+        f"{CLINICAL_NOTES_REPO}; real de-identified transcribed medical reports.")
+    return df

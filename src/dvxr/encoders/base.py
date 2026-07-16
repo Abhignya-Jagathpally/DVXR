@@ -293,10 +293,153 @@ class _HFEmbedBackend:
         return obj
 
 
+class _ClinicalNotesBackend:
+    """REAL weights: a clinical transformer (Bio_ClinicalBERT) over UNSTRUCTURED note
+    text. Unlike ``_HFEmbedBackend`` — which synthesizes pseudo-text from numeric
+    column name/value pairs — this consumes an actual free-text notes column.
+
+    Clinical reports routinely exceed BERT's 512-token limit, so each note is tokenized
+    into <=512-token windows (capped at ``max_chunks``) and the per-window [CLS] vectors
+    are MEAN-POOLED into one note embedding, then projected to ``d`` via PCA. Loads from
+    the HF cache (offline-friendly: transformers honors HF_HUB_OFFLINE natively).
+    """
+    def __init__(self, model_id: str, d: int, max_chunks: int = 4, chunk_len: int = 512):
+        import torch
+        from transformers import AutoModel, AutoTokenizer
+        self.name = f"clinicalnotes:{model_id}"
+        self.model_id = model_id
+        self.d = d
+        self.max_chunks = max_chunks
+        self.chunk_len = chunk_len
+        self.torch = torch
+        self.tok = AutoTokenizer.from_pretrained(model_id)
+        self.model = AutoModel.from_pretrained(model_id)
+        self.model.eval()
+        self._proj = None
+        self.columns: List[str] = []
+
+    @staticmethod
+    def _text_column(columns: List[str]) -> str:
+        for cand in ("note_text", "text", "note", "notes"):
+            if cand in columns:
+                return cand
+        return columns[0]
+
+    def _texts(self, frame, columns) -> List[str]:
+        col = self._text_column(list(columns))
+        return frame[col].astype(str).tolist()
+
+    def _embed_one(self, text: str) -> np.ndarray:
+        # tokenize the whole note (no special tokens), then slice into <=chunk_len windows
+        ids = self.tok(text, add_special_tokens=False, truncation=False)["input_ids"]
+        cls_id, sep_id = self.tok.cls_token_id, self.tok.sep_token_id
+        body = self.chunk_len - 2
+        windows = [ids[i:i + body] for i in range(0, max(len(ids), 1), body)][: self.max_chunks]
+        input_ids, masks = [], []
+        for w in windows:
+            seq = [cls_id] + w + [sep_id]
+            pad = self.chunk_len - len(seq)
+            masks.append([1] * len(seq) + [0] * pad)
+            input_ids.append(seq + [self.tok.pad_token_id] * pad)
+        ii = self.torch.tensor(input_ids)
+        am = self.torch.tensor(masks)
+        with self.torch.no_grad():
+            out = self.model(input_ids=ii, attention_mask=am)
+        cls = out.last_hidden_state[:, 0, :]              # (n_windows, hidden)
+        return cls.mean(dim=0).detach().cpu().numpy()     # mean-pool windows
+
+    def _embed(self, frame, columns) -> np.ndarray:
+        texts = self._texts(frame, columns)
+        return np.vstack([self._embed_one(t) for t in texts]).astype(np.float32)
+
+    def fit_transform(self, frame, columns):
+        from sklearn.decomposition import PCA
+        self.columns = list(columns)
+        emb = self._embed(frame, columns)
+        k = min(self.d, emb.shape[1], max(1, emb.shape[0] - 1))
+        self._proj = PCA(n_components=k, random_state=7).fit(emb)
+        return self._proj.transform(emb).astype(np.float32)
+
+    def transform(self, frame):
+        emb = self._embed(frame, self.columns)
+        return self._proj.transform(emb).astype(np.float32)
+
+    def save(self, path):
+        import pickle
+        with open(path, "wb") as fh:
+            pickle.dump({"proj": self._proj, "columns": self.columns,
+                         "model_id": self.model_id}, fh)
+
+    @classmethod
+    def load(cls, path, d):
+        import pickle
+        with open(path, "rb") as fh:
+            st = pickle.load(fh)
+        obj = cls(st["model_id"], d)
+        obj._proj, obj.columns = st["proj"], st["columns"]
+        return obj
+
+
+class _TfidfSvdBackend:
+    """Always-runnable notes FLOOR (sklearn TF-IDF + TruncatedSVD; no torch/transformers,
+    no network). Fit on TRAIN only via ``fit_transform``/``transform`` (leak-free per fold).
+    """
+    def __init__(self, d: int, tag: str = "tfidf_svd"):
+        from sklearn.decomposition import TruncatedSVD
+        from sklearn.feature_extraction.text import TfidfVectorizer
+        self.name = tag
+        self.d = d
+        self.vec = TfidfVectorizer(max_features=20000, ngram_range=(1, 2),
+                                   sublinear_tf=True, stop_words="english")
+        self.svd = TruncatedSVD(n_components=d, random_state=7)
+        self.columns: List[str] = []
+
+    def _texts(self, frame, columns):
+        col = _ClinicalNotesBackend._text_column(list(columns))
+        return frame[col].astype(str).tolist()
+
+    def fit_transform(self, frame, columns):
+        self.columns = list(columns)
+        X = self.vec.fit_transform(self._texts(frame, columns))
+        k = min(self.d, X.shape[1] - 1, max(1, X.shape[0] - 1))
+        self.svd.set_params(n_components=k)
+        return self.svd.fit_transform(X).astype(np.float32)
+
+    def transform(self, frame):
+        X = self.vec.transform(self._texts(frame, self.columns))
+        return self.svd.transform(X).astype(np.float32)
+
+    # convenience for a one-shot embed (fits on the given frame); callers that need a
+    # leak-free split should use fit_transform/transform per fold instead.
+    def _embed(self, frame, columns):
+        return self.fit_transform(frame, columns)
+
+    def save(self, path):
+        import pickle
+        with open(path, "wb") as fh:
+            pickle.dump({"vec": self.vec, "svd": self.svd, "columns": self.columns}, fh)
+
+    @classmethod
+    def load(cls, path, d):
+        import pickle
+        obj = cls(d)
+        with open(path, "rb") as fh:
+            st = pickle.load(fh)
+        obj.vec, obj.svd, obj.columns = st["vec"], st["svd"], st["columns"]
+        return obj
+
+
+def clinical_notes_available() -> bool:
+    """True when a real clinical-notes transformer can be constructed (torch+transformers)."""
+    import importlib.util
+    return all(importlib.util.find_spec(m) for m in ("torch", "transformers"))
+
+
 _BACKEND_LOADERS = {
     "_PCABackend": _PCABackend, "_VQBackend": _VQBackend,
     "_CGMSummaryBackend": _CGMSummaryBackend,
     "_MomentBackend": _MomentBackend, "_HFEmbedBackend": _HFEmbedBackend,
+    "_ClinicalNotesBackend": _ClinicalNotesBackend, "_TfidfSvdBackend": _TfidfSvdBackend,
 }
 
 
@@ -316,6 +459,10 @@ def make_primary_backend(modality: str, cfg: CACMFConfig):
             return _MomentBackend(fm.primary_id, cfg.d)
         if loader == "transformers":
             return _HFEmbedBackend(fm.primary_id, cfg.d)
+        if loader == "clinical_notes":
+            import os
+            return _ClinicalNotesBackend(
+                os.environ.get("DVXR_EHR_NOTES_MODEL", fm.primary_id), cfg.d)
         if loader in ("braindecode", "chronos", "repo", "local"):
             # These need extra packages/checkpoints not guaranteed here; try fallback id.
             if fm.fallback_loader == "transformers":

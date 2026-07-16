@@ -15,6 +15,7 @@ from .eeg_adapter import EEGAdapter  # noqa: F401
 from .biosignal_adapter import BiosignalAdapter  # noqa: F401
 from .cgm_adapter import CGMAdapter  # noqa: F401
 from .ehr_adapter import EHRAdapter  # noqa: F401
+from .notes_adapter import NotesEHRAdapter  # noqa: F401
 from .omics_adapter import OmicsAdapter  # noqa: F401
 from .behavior_adapter import BehaviorAdapter  # noqa: F401
 
@@ -24,6 +25,7 @@ ADAPTERS = {
     "wearable_phys": BiosignalAdapter,
     "cgm": CGMAdapter,
     "ehr": EHRAdapter,
+    "ehr_notes": NotesEHRAdapter,
     "omics": OmicsAdapter,
     "behavior": BehaviorAdapter,
 }
