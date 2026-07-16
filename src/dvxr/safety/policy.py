@@ -45,6 +45,22 @@ ACTION_REGISTRY: Dict[str, ActionSpec] = {
     "INSUFFICIENT_DATA": ActionSpec(
         "INSUFFICIENT_DATA", "Abstain — request the missing inputs",
         frozenset({"researcher", "clinician", "participant"}), False),
+    # participant-/researcher-safe URGENT actions: shown when a clinician-only action is chosen, so
+    # urgency is preserved (never downgraded to "continue monitoring"). Both flag clinician review.
+    "CONTACT_APPROVED_CARE_CHANNEL": ActionSpec(
+        "CONTACT_APPROVED_CARE_CHANNEL", "Contact your approved care channel now",
+        frozenset({"researcher", "clinician", "participant"}), True),
+    "AWAIT_CLINICIAN_REVIEW": ActionSpec(
+        "AWAIT_CLINICIAN_REVIEW", "Awaiting clinician review — follow your existing safety plan",
+        frozenset({"researcher", "clinician", "participant"}), True),
+}
+
+#: When a role may not receive the chosen (urgent) action, route to a role-permitted action that
+#: PRESERVES urgency — never a benign monitoring action. The original action still fires internally as
+#: the decision's ``system_action_id``.
+_ROLE_SAFE_FALLBACK = {
+    "ESCALATE_PER_APPROVED_PROTOCOL": "CONTACT_APPROVED_CARE_CHANNEL",
+    "REVIEW_ELEVATED_RISK": "AWAIT_CLINICIAN_REVIEW",
 }
 
 
@@ -89,11 +105,17 @@ def select_action(
 
 
 def _decision(action_id: str, reasons: List[str], role: str) -> ActionDecision:
-    spec = ACTION_REGISTRY[action_id]
-    if role not in spec.permitted_roles:
-        # fall back to the safest role-permitted action rather than exposing a disallowed one
+    original = ACTION_REGISTRY[action_id]
+    system_action_id = action_id                      # what the system does internally
+    view_id = action_id                               # what this role's viewer is shown
+    requires_review = original.requires_clinician_review
+    if role not in original.permitted_roles:
+        # DO NOT downgrade urgency. Route to a role-permitted action that preserves urgency and keep the
+        # clinician-review flag from the ORIGINAL action; the original still fires as system_action_id.
         reasons = reasons + [f"role_{role}_not_permitted_for_{action_id}"]
-        action_id = "VERIFY_SENSOR_AND_CGM" if role != "participant" else "CONTINUE_MONITORING"
-        spec = ACTION_REGISTRY[action_id]
+        view_id = _ROLE_SAFE_FALLBACK.get(action_id, "AWAIT_CLINICIAN_REVIEW")
+        requires_review = requires_review or ACTION_REGISTRY[view_id].requires_clinician_review
+    spec = ACTION_REGISTRY[view_id]
     return ActionDecision(action_id=spec.action_id, policy_id=POLICY_ID, policy_version=POLICY_VERSION,
-                          reason_codes=reasons, requires_clinician_review=spec.requires_clinician_review)
+                          reason_codes=reasons, requires_clinician_review=requires_review,
+                          system_action_id=system_action_id)

@@ -121,12 +121,18 @@ class ModelEvidence:
 @dataclass(frozen=True)
 class ActionDecision:
     """A protocol-controlled next action chosen by the policy engine (spec §14) — the LLM may explain
-    it but never selects a different action."""
+    it but never selects a different action.
+
+    ``action_id`` is what THIS role's viewer should do. ``system_action_id`` is the action the SYSTEM
+    takes internally (e.g. a clinician escalation) — so a role restriction changes who-sees-what and
+    who-is-notified WITHOUT silently lowering urgency: a participant's high-risk state routes to an
+    urgent participant-safe action while the clinician escalation still fires under ``system_action_id``."""
     action_id: str
     policy_id: str = ""
     policy_version: str = ""
     reason_codes: List[str] = field(default_factory=list)
     requires_clinician_review: bool = False
+    system_action_id: str = ""
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
