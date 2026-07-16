@@ -87,7 +87,8 @@ def _prediction_from_bundle(req: GenerateRequest, bundle, snapshot) -> RiskPredi
         tenant_id=req.tenant_id,
         risk=bundle.risk,
         risk_category=bundle.risk_category,
-        confidence=bundle.confidence,
+        confidence=bundle.confidence,               # == reliability (trust), NOT the decision margin
+        ood_score=bundle.ood_score,
         data_quality=bundle.data_quality,
         missing_modalities=list(snapshot.missing_modalities),
         abstained=bundle.abstained,

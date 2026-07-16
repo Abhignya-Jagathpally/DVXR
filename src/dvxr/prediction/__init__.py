@@ -8,10 +8,12 @@ ever returns a number, and it is labelled ``modality_scope="cgm_only"`` — neve
 """
 from dvxr.prediction.service import (  # noqa: F401
     AbstainingPredictionService,
+    AdequacyConfig,
     CgmOnlyExcursionService,
     PredictionBundle,
     PredictionInputs,
     RiskPredictionService,
+    ScientificValidityError,
     build_cgm_feature_matrix,
     cgm_history_features,
 )
