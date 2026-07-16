@@ -189,7 +189,9 @@ def generate_risk_report(
             # the persisted ModelEvidence rides along so the reused report is byte-for-byte comparable.
             return _assemble_report(req, RiskPrediction.from_dict(existing),
                                     existing.get("prediction_id"), reused=True,
-                                    evidence=existing.get("evidence"))
+                                    evidence=existing.get("evidence"),
+                                    retrieval_manifest=existing.get("retrieval_manifest"),
+                                    retrieval_status=existing.get("retrieval_status", "disabled"))
 
     # fetch this (tenant, patient)'s events at/before the cutoff from the repository when the caller did
     # not pass them inline — this is what makes the API's snapshot real rather than always empty.
@@ -232,12 +234,16 @@ def generate_risk_report(
                                 "name": active.get("name"), "version": active.get("version")})
 
     # persist the prediction WITH its evidence so the retrieved report carries the same evidence
-    persisted = {**prediction.to_dict(), "evidence": evidence.to_dict()}
+    # grounding sources + a reproducible manifest, persisted WITH the prediction so a GET/reuse rebuilds
+    # the identical citations (a report never silently loses its sources).
+    sources, manifest, retrieval_status = _retrieve_context(req, retrieval, role=req.user_role)
+    persisted = {**prediction.to_dict(), "evidence": evidence.to_dict(),
+                 "retrieval_manifest": manifest, "retrieval_status": retrieval_status}
     pid = prediction_store.put(persisted, idempotency_key=scoped_key)
 
-    sources = _retrieve_sources(req, retrieval)
-    report = _assemble_report(req, prediction, pid, reused=False,
-                              evidence=evidence.to_dict(), sources=sources)
+    report = _assemble_report(req, prediction, pid, reused=False, evidence=evidence.to_dict(),
+                              sources=sources, retrieval_manifest=manifest,
+                              retrieval_status=retrieval_status)
     audit_store.append({"request_id": req.request_id, "event": "generate.completed",
                         "actor_id": req.actor_id, "prediction_id": pid,
                         "abstained": prediction.abstained,
@@ -245,16 +251,57 @@ def generate_risk_report(
     return report
 
 
-def _retrieve_sources(req: GenerateRequest, retrieval) -> list:
-    """Fetch grounded citation sources for the explanation, tenant+patient scoped (never cross-patient).
-    Returns [] when no retrieval backend or no question is supplied."""
-    if retrieval is None or not req.question:
-        return []
+def _chunk_content_hash(chunk) -> str:
+    import hashlib
+    return hashlib.sha1(str(chunk.get("text", "")).encode("utf-8")).hexdigest()[:16]
+
+
+def _retrieve_context(req: GenerateRequest, retrieval, *, role: str):
+    """Retrieve grounding sources for the explanation and a REPRODUCIBLE manifest of them.
+
+    Routine Generate always attempts general grounding — the active action protocol + model card +
+    limitations (via ``search``) — plus this patient's notes when a question is supplied (via
+    ``search_patient``, tenant+patient scoped). Returns ``(sources, manifest, status)`` where status is
+    ``"disabled"`` (no backend), ``"unavailable"`` (backend errored — an explicit outage, not silent),
+    or ``"complete"``. The manifest ({chunk_id, document_id, document_version, document_type, section,
+    content_hash, query, rank}) is persisted so a GET/reuse reconstructs the SAME citations."""
+    if retrieval is None:
+        return [], [], "disabled"
     try:
-        return retrieval.search_patient(req.question, patient_id=req.patient_id,
-                                        tenant_id=req.tenant_id, k=3)
-    except Exception:  # noqa: BLE001 — retrieval is best-effort; a failure must not break Generate
-        return []
+        groups = []
+        q_general = req.report_type.replace("_", " ")
+        groups.append((q_general, retrieval.search(q_general, filters={"active": True}, k=2)))
+        groups.append(("model card limitations", retrieval.search("model card limitations", k=2)))
+        if req.question:
+            groups.append((req.question, retrieval.search_patient(
+                req.question, patient_id=req.patient_id, tenant_id=req.tenant_id, k=3)))
+        sources, manifest, seen = [], [], set()
+        for query, results in groups:
+            for rank, s in enumerate(results, 1):
+                cid = s.get("chunk_id")
+                if cid in seen:
+                    continue
+                seen.add(cid)
+                sources.append(s)
+                md = s.get("metadata", {})
+                manifest.append({
+                    "chunk_id": cid, "document_id": md.get("document_id"),
+                    "document_version": md.get("protocol_version") or md.get("document_version"),
+                    "document_type": md.get("document_type"), "section": md.get("section"),
+                    "content_hash": _chunk_content_hash(s), "query": query, "rank": rank})
+        return sources, manifest, "complete"
+    except Exception:  # noqa: BLE001 — a retrieval outage must not break Generate, but is surfaced
+        return [], [], "unavailable"
+
+
+def _sources_from_manifest(manifest) -> list:
+    """Rebuild minimal citation-source dicts from a persisted manifest — enough for
+    ``grounded_explanation`` to reconstruct identical citations and for the citation validator to
+    resolve them (the source TEXT is not needed for validation)."""
+    return [{"chunk_id": m.get("chunk_id"), "text": "",
+             "metadata": {"document_type": m.get("document_type"), "section": m.get("section"),
+                          "document_id": m.get("document_id")}}
+            for m in (manifest or [])]
 
 
 def assemble_persisted_report(rec: dict, *, user_role: str) -> dict:
@@ -267,15 +314,21 @@ def assemble_persisted_report(rec: dict, *, user_role: str) -> dict:
                           tenant_id=prediction.tenant_id, user_role=user_role,
                           data_cutoff_at=prediction.data_cutoff_at, request_id=prediction.request_id)
     return _assemble_report(req, prediction, prediction.prediction_id, reused=True,
-                            evidence=rec.get("evidence"))
+                            evidence=rec.get("evidence"),
+                            retrieval_manifest=rec.get("retrieval_manifest"),
+                            retrieval_status=rec.get("retrieval_status", "disabled"))
 
 
 def _assemble_report(req: GenerateRequest, prediction: RiskPrediction, prediction_id,
-                     *, reused: bool, evidence=None, sources=None) -> dict:
+                     *, reused: bool, evidence=None, sources=None,
+                     retrieval_manifest=None, retrieval_status: str = "disabled") -> dict:
     """Build the complete report dict from a prediction. Deterministic (action + explanation are a
-    pure function of the immutable prediction + persisted evidence), so the fresh and idempotent-reuse
-    paths return the identical shape — no key is present in one path and absent in the other."""
+    pure function of the immutable prediction + persisted evidence + retrieval manifest), so the fresh
+    and idempotent-reuse/GET paths return the identical shape AND the identical citations."""
     action = _action_for(prediction, req.user_role)
+    # on reuse/GET the full source chunks are gone — rebuild citation sources from the persisted manifest
+    if sources is None:
+        sources = _sources_from_manifest(retrieval_manifest)
     # a grounding failure must NEVER surface ungrounded prose or a 500 — fall back to a deterministic
     # safe explanation that shows no risk narrative and flags that grounding failed (spec §8).
     try:
@@ -285,6 +338,9 @@ def _assemble_report(req: GenerateRequest, prediction: RiskPrediction, predictio
     except GroundingError:
         explanation = _safe_fallback_explanation(action.to_dict())
         grounding_ok = False
+    # a retrieval OUTAGE (backend errored) means protocol grounding is incomplete; when the action
+    # depends on an approved protocol, that gap is surfaced (never silently treated as grounded).
+    protocol_grounding_complete = retrieval_status != "unavailable"
     return {
         "request_id": req.request_id,
         "prediction_id": prediction_id,
@@ -294,6 +350,9 @@ def _assemble_report(req: GenerateRequest, prediction: RiskPrediction, predictio
         "action": action.to_dict(),
         "explanation": explanation,
         "grounding_complete": grounding_ok,
+        "retrieval_manifest": retrieval_manifest or [],
+        "retrieval_status": retrieval_status,
+        "protocol_grounding_complete": protocol_grounding_complete,
         "model_version": prediction.model_version,
         "feature_version": prediction.feature_version,
         "reused": reused,
