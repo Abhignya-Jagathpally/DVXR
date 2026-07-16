@@ -16,9 +16,11 @@ from __future__ import annotations
 
 from typing import Optional
 
+from dvxr.cohort import GLUCOSE_FUSION_MODALITIES
 from dvxr.contracts import GenerateRequest, RiskPrediction
 from dvxr.llm.grounded import grounded_explanation
 from dvxr.safety.policy import select_action
+from dvxr.serve.snapshot import build_patient_snapshot
 from dvxr.serve.vision import glucose_risk_report
 
 #: user role -> the consent purpose it exercises (spec §2 step 2).
@@ -32,7 +34,7 @@ class ConsentError(PermissionError):
     """Raised when the patient has not consented to the requested purpose (fail-closed)."""
 
 
-def _abstaining_prediction(req: GenerateRequest) -> RiskPrediction:
+def _abstaining_prediction(req: GenerateRequest, snapshot_id: str = "") -> RiskPrediction:
     """The research-stage glucose product's prediction: an honest abstention, never a trained score."""
     report = glucose_risk_report(patient_id=req.patient_id,
                                  horizons_minutes=req.prediction_horizons_minutes)
@@ -48,6 +50,7 @@ def _abstaining_prediction(req: GenerateRequest) -> RiskPrediction:
         model_version=MODEL_VERSION,
         feature_version=FEATURE_VERSION,
         data_cutoff_at=req.data_cutoff_at,
+        snapshot_id=snapshot_id,
     ).with_prediction_id()
 
 
@@ -65,12 +68,16 @@ def generate_risk_report(
     audit_store,
     consent_store=None,
     require_consent: bool = True,
+    events=None,
 ) -> dict:
     """Run the Generate lifecycle and return the persisted report. Never trains a model.
 
     Idempotent: a repeated ``idempotency_key`` returns the already-stored prediction. Consent is
     fail-closed when ``require_consent`` (default) — an unknown/insufficient scope raises ConsentError
     and is audited. Every step appends to the audit store under the request id.
+
+    ``events`` (optional) is the provenance-enriched event stream the snapshot is built from; when
+    omitted an empty (but still reproducible) snapshot is recorded, tying the prediction to its cutoff.
     """
     req = request.with_request_id()
     audit_store.append({"request_id": req.request_id, "event": "generate.requested",
@@ -96,8 +103,15 @@ def generate_risk_report(
             return _assemble_report(req, RiskPrediction.from_dict(existing),
                                     existing.get("prediction_id"), reused=True)
 
+    # assemble the reproducible cutoff-bound snapshot (Gate 2) — only events <= cutoff are admitted
+    snapshot = build_patient_snapshot(
+        events or [], patient_id=req.patient_id, data_cutoff_at=req.data_cutoff_at,
+        feature_version=FEATURE_VERSION, expected_modalities=GLUCOSE_FUSION_MODALITIES)
+    audit_store.append({"request_id": req.request_id, "event": "snapshot.created",
+                        "snapshot": snapshot.to_dict()})
+
     # produce the prediction — NEVER trains; the research-stage glucose product abstains
-    prediction = _abstaining_prediction(req)
+    prediction = _abstaining_prediction(req, snapshot_id=snapshot.snapshot_id)
     pid = prediction_store.put(prediction.to_dict(), idempotency_key=req.idempotency_key)
     report = _assemble_report(req, prediction, pid, reused=False)
     audit_store.append({"request_id": req.request_id, "event": "generate.completed",

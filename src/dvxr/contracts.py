@@ -74,6 +74,7 @@ class RiskPrediction:
     feature_version: str = ""
     calibration_version: str = ""
     data_cutoff_at: str = ""
+    snapshot_id: str = ""                          # links to the reproducible PatientSnapshot (Gate 2)
     prediction_id: str = ""
 
     def with_prediction_id(self) -> "RiskPrediction":
