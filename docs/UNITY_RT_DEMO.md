@@ -15,20 +15,29 @@ translates per the decoded BCI command, tints by the stress index, and shows the
 ## Files
 
 ```
-Assets/Scenes/DVXR_RT_Demo.unity     Camera + directional light + an "Avatar" cube
-Assets/Scripts/RTStreamClient.cs     WebSocket client → parses rt-demo-v1 frames
-Assets/Scripts/AvatarController.cs   Drives the avatar from the latest frame
+Assets/Scenes/DVXR_RT_Demo.unity        Camera + light + Avatar cube + Ground + GlucoseHalo ring
+Assets/Scripts/RTStreamClient.cs        WebSocket client → parses rt-demo-v1 frames
+Assets/Scripts/AvatarController.cs      Minimal command→movement controller
+Assets/Scripts/DigitalTwinController.cs Avatar as a physiological twin: stress→tint+breathing, glucose→halo
+Assets/Scripts/SkillSystem.cs           Decoded EEG command → BCI skills (Focus/Ward/Surge/Recover), cooldowns
+Assets/Scripts/PhysiologyHUD.cs         In-Editor IMGUI readout of the fused EEG+PHR+PPG prediction (no Canvas wiring)
 ```
+
+The prediction the twin visualises is the framework's fused read from **EEG (Galea/EMOTIV)
++ PHR (wearable) + PPG (pulse)** — decoded command, stress, and the glucose forecast (which
+abstains rather than inventing a value).
 
 ## Setup (in the Unity Editor)
 
 1. Copy `Assets/` into a Unity project (2021 LTS or newer; Built-in or URP). Open
-   `Assets/Scenes/DVXR_RT_Demo.unity`.
-2. Select the **Avatar** GameObject and **Add Component → RT Stream Client**. Set
-   `Base Url` to your DVXR backend (e.g. `http://localhost:8000`).
-3. **Add Component → Avatar Controller** on the same GameObject. Drag the Avatar's
-   `RT Stream Client` into the controller's `Client` field. (Optional) create a UI Text
-   and assign it to `Status Label` for the glucose/abstention readout.
+   `Assets/Scenes/DVXR_RT_Demo.unity` — you get the Avatar, a Ground plane, and a flat
+   GlucoseHalo ring under the avatar.
+2. On the **Avatar**: **Add Component → RT Stream Client** (set `Base Url`, e.g.
+   `http://localhost:8000`), **→ Digital Twin Controller** (drag the Avatar's RT Stream
+   Client into `Client`; drag the **GlucoseHalo** into `Glucose Halo`), and **→ Skill System**
+   (drag in the same client).
+3. On any GameObject: **Add Component → Physiology HUD**, and drag in the client + skill
+   system. The HUD draws itself via IMGUI — no Canvas/UI setup needed.
 4. Start the backend so the stream is live:
 
    ```bash
@@ -36,8 +45,10 @@ Assets/Scripts/AvatarController.cs   Drives the avatar from the latest frame
    # frames at ws://localhost:8000/v1/realtime/stream
    ```
 
-5. Press **Play**. The cube moves Left/Right/Push/Pull with the decoded command, reddens
-   with stress, and the label reads "Glucose: insufficient data (abstained)".
+5. Press **Play**. The twin translates with the decoded EEG command, **breathes and reddens**
+   with PHR stress, its **glucose halo greys and stills** when the model abstains, decoded
+   commands fire **skills** with cooldowns, and the HUD shows the live EEG/PHR/glucose/skill
+   read-out with the EXPERIMENTAL caveat.
 
 ## Notes
 
