@@ -46,9 +46,14 @@ def _load_split(run_dir: Path) -> tuple[list[str], list[str]]:
     id_col = "patient_id" if "patient_id" in split.columns else split.columns[0]
     # Fit classical models on every non-test patient (they need no early-stopping
     # holdout); the test partition is held out identically to the neural model.
+    # The split records ``{cohort}::{patient_id}``; the window table uses the bare
+    # patient_id. Normalise to the suffix after the last "::" so they match.
+    def _bare(value: str) -> str:
+        return str(value).split("::")[-1]
+
     is_test = split[col].astype(str).eq("test")
-    test = split.loc[is_test, id_col].astype(str).tolist()
-    non_test = split.loc[~is_test, id_col].astype(str).tolist()
+    test = [_bare(v) for v in split.loc[is_test, id_col]]
+    non_test = [_bare(v) for v in split.loc[~is_test, id_col]]
     return non_test, test
 
 

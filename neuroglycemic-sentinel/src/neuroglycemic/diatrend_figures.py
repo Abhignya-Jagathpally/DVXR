@@ -297,6 +297,13 @@ def build_overview_suite(
 ) -> dict[str, Path]:
     """Write all five DiaTrend-style overview figures; return {name: path}."""
     figure_dir = Path(figure_dir)
+    # Normalise audit column naming across cohorts (BIG-IDEAS uses start_utc/stop_utc;
+    # DiaTrend/CGMacros use cgm_start_utc/cgm_stop_utc) so one figure code path serves all.
+    audit = audit.copy()
+    if "start_utc" not in audit.columns and "cgm_start_utc" in audit.columns:
+        audit["start_utc"] = audit["cgm_start_utc"]
+    if "stop_utc" not in audit.columns and "cgm_stop_utc" in audit.columns:
+        audit["stop_utc"] = audit["cgm_stop_utc"]
     outputs = {
         "cgm_traces": save_cgm_trace_figure(
             windows, figure_dir / "diatrend_cgm_traces.png",
