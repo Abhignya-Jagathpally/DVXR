@@ -1,0 +1,260 @@
+<title>DVXR Multimodal Prediction — Model Flow</title>
+<style>
+  :root {
+    --bg: #0a0e1a; --panel: #111726; --panel-2: #0e1422;
+    --line: rgba(148,163,184,.14); --line-strong: rgba(148,163,184,.28);
+    --ink: #eaf1fa; --ink-2: #c3ccdb; --muted: #8b97ab;
+    --eeg: #a78bfa; --phr: #2dd4bf; --ppg: #fb7185; --glucose: #34d399;
+    --good: #34d399; --warn: #fbbf24; --crit: #fb7185;
+    --spine: linear-gradient(180deg, var(--eeg), var(--phr));
+    --shadow: 0 1px 0 rgba(255,255,255,.03) inset, 0 18px 40px -24px rgba(0,0,0,.8);
+    --radius: 16px;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: "SF Pro Display", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #eef2f8; --panel: #ffffff; --panel-2: #f4f7fb;
+      --line: rgba(15,23,42,.10); --line-strong: rgba(15,23,42,.20);
+      --ink: #0a0e1a; --ink-2: #29344a; --muted: #5a6678;
+      --eeg: #7c3aed; --phr: #0d9488; --ppg: #e11d48; --glucose: #059669;
+      --good: #059669; --warn: #b45309; --crit: #e11d48;
+      --shadow: 0 1px 0 rgba(255,255,255,.6) inset, 0 20px 40px -28px rgba(15,23,42,.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0a0e1a; --panel: #111726; --panel-2: #0e1422;
+    --line: rgba(148,163,184,.14); --line-strong: rgba(148,163,184,.28);
+    --ink: #eaf1fa; --ink-2: #c3ccdb; --muted: #8b97ab;
+    --eeg: #a78bfa; --phr: #2dd4bf; --ppg: #fb7185; --glucose: #34d399;
+    --good: #34d399; --warn: #fbbf24; --crit: #fb7185;
+    --shadow: 0 1px 0 rgba(255,255,255,.03) inset, 0 18px 40px -24px rgba(0,0,0,.8);
+  }
+  :root[data-theme="light"] {
+    --bg: #eef2f8; --panel: #ffffff; --panel-2: #f4f7fb;
+    --line: rgba(15,23,42,.10); --line-strong: rgba(15,23,42,.20);
+    --ink: #0a0e1a; --ink-2: #29344a; --muted: #5a6678;
+    --eeg: #7c3aed; --phr: #0d9488; --ppg: #e11d48; --glucose: #059669;
+    --good: #059669; --warn: #b45309; --crit: #e11d48;
+    --shadow: 0 1px 0 rgba(255,255,255,.6) inset, 0 20px 40px -28px rgba(15,23,42,.35);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background:
+      radial-gradient(1200px 500px at 82% -10%, color-mix(in srgb, var(--eeg) 11%, transparent), transparent 60%),
+      radial-gradient(900px 500px at 0% 8%, color-mix(in srgb, var(--phr) 10%, transparent), transparent 55%),
+      var(--bg);
+    color: var(--ink); font-family: var(--sans);
+    -webkit-font-smoothing: antialiased; line-height: 1.5;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: clamp(28px, 5vw, 72px) clamp(18px, 4vw, 40px) 80px; }
+
+  .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .22em; text-transform: uppercase;
+    color: var(--phr); display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+  .eyebrow::before { content: ""; width: 26px; height: 1px; background: var(--phr); opacity: .7; }
+  h1 { font-size: clamp(30px, 5.4vw, 52px); line-height: 1.03; letter-spacing: -.02em;
+    font-weight: 800; margin: 0 0 16px; text-wrap: balance; max-width: 20ch; }
+  h1 .a { color: var(--eeg); } h1 .b { color: var(--phr); } h1 .c { color: var(--ppg); }
+  .lede { color: var(--ink-2); font-size: clamp(15px, 2vw, 18px); max-width: 64ch; margin: 0; }
+
+  /* inputs */
+  .devices { display: flex; flex-wrap: wrap; gap: 12px; margin: 34px 0 4px; }
+  .chip { font-family: var(--mono); font-size: 12.5px; letter-spacing: .02em; display: inline-flex;
+    align-items: center; gap: 9px; padding: 11px 15px; border-radius: 12px; border: 1px solid var(--line-strong);
+    background: color-mix(in srgb, var(--panel) 72%, transparent); color: var(--ink); }
+  .chip .dot { width: 9px; height: 9px; border-radius: 50%; box-shadow: 0 0 0 4px color-mix(in srgb, currentColor 16%, transparent); }
+  .chip.eeg { color: var(--eeg); } .chip.phr { color: var(--phr); } .chip.ppg { color: var(--ppg); }
+  .chip small { color: var(--muted); font-size: 11px; }
+  .plus { align-self: center; color: var(--muted); font-family: var(--mono); font-size: 18px; }
+
+  /* pipeline spine */
+  .pipe { position: relative; margin-top: 30px; padding-left: 62px; }
+  .pipe::before { content: ""; position: absolute; left: 26px; top: 6px; bottom: 26px; width: 3px;
+    border-radius: 3px; background: var(--spine); opacity: .55; }
+  .pulse-dot { position: absolute; left: 22px; width: 11px; height: 11px; border-radius: 50%;
+    background: var(--phr); box-shadow: 0 0 14px 3px color-mix(in srgb, var(--phr) 70%, transparent);
+    animation: travel 5.4s cubic-bezier(.5,0,.5,1) infinite; }
+  @keyframes travel { 0% { top: 6px; opacity: 0; } 8% { opacity: 1; } 92% { opacity: 1; } 100% { top: calc(100% - 40px); opacity: 0; } }
+
+  .stage { position: relative; margin-bottom: 16px; }
+  .node { position: absolute; left: -49px; top: 20px; width: 26px; height: 26px; border-radius: 50%;
+    background: var(--panel); border: 2px solid var(--line-strong); display: grid; place-items: center;
+    font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--muted); z-index: 2; }
+  .stage.accent .node { border-color: var(--phr); color: var(--phr); }
+  .stage.warnnode .node { border-color: var(--warn); color: var(--warn); }
+  .card { border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 20px;
+    background: linear-gradient(180deg, var(--panel), var(--panel-2)); box-shadow: var(--shadow);
+    transition: border-color .25s ease, transform .25s ease; }
+  .card:hover { border-color: var(--line-strong); transform: translateY(-2px); }
+  .card .top { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+  .card h3 { margin: 0; font-size: 17px; letter-spacing: -.01em; font-weight: 700; }
+  .tag { font-family: var(--mono); font-size: 11px; letter-spacing: .05em; text-transform: uppercase;
+    color: var(--muted); white-space: nowrap; }
+  .card p { margin: 9px 0 0; color: var(--ink-2); font-size: 14.5px; max-width: 66ch; }
+  .flowin { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
+  .flowin span { font-family: var(--mono); font-size: 10.5px; letter-spacing: .04em; padding: 3px 8px;
+    border-radius: 6px; border: 1px solid var(--line); color: var(--muted); }
+  .flowin span.eeg { color: var(--eeg); border-color: color-mix(in srgb, var(--eeg) 40%, var(--line)); }
+  .flowin span.phr { color: var(--phr); border-color: color-mix(in srgb, var(--phr) 40%, var(--line)); }
+  .flowin span.ppg { color: var(--ppg); border-color: color-mix(in srgb, var(--ppg) 40%, var(--line)); }
+  .metric { font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 12.5px;
+    color: var(--phr); background: color-mix(in srgb, var(--phr) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--phr) 30%, var(--line)); padding: 4px 10px; border-radius: 8px; }
+  .metric.warn { color: var(--warn); background: color-mix(in srgb, var(--warn) 12%, transparent);
+    border-color: color-mix(in srgb, var(--warn) 30%, var(--line)); }
+
+  /* outputs */
+  .outs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 14px; }
+  @media (max-width: 720px) { .outs { grid-template-columns: repeat(2, 1fr); } }
+  .out { text-align: center; border: 1px solid var(--line); border-radius: 12px; padding: 13px 8px;
+    background: color-mix(in srgb, var(--panel) 60%, transparent); }
+  .out .n { font-family: var(--mono); font-size: 12px; color: var(--ink); font-weight: 600; }
+  .out .s { font-family: var(--mono); font-size: 10.5px; color: var(--muted); margin-top: 3px; }
+  .out.tgt { border-color: color-mix(in srgb, var(--glucose) 45%, var(--line)); }
+  .out.tgt .n { color: var(--glucose); }
+
+  /* mapping panel */
+  .panel { border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; margin-top: 40px;
+    background: linear-gradient(180deg, var(--panel), var(--panel-2)); box-shadow: var(--shadow); }
+  .panel h4 { margin: 0 0 4px; font-size: 15px; letter-spacing: -.01em; }
+  .panel .sub { font-family: var(--mono); font-size: 11px; letter-spacing: .04em; color: var(--muted);
+    text-transform: uppercase; margin-bottom: 16px; }
+  .map { display: grid; grid-template-columns: 150px 1fr auto; align-items: center; gap: 14px; padding: 10px 0;
+    border-top: 1px solid var(--line); }
+  .map:first-of-type { border-top: 0; }
+  .map .from { font-family: var(--mono); font-size: 12.5px; }
+  .map .arrow { color: var(--muted); font-family: var(--mono); }
+  .map .to { color: var(--ink-2); font-size: 13.5px; }
+  .map .stat { font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 12px; color: var(--muted);
+    white-space: nowrap; }
+  .from.eeg { color: var(--eeg); } .from.phr { color: var(--phr); } .from.ppg { color: var(--ppg); }
+  .stat.ok { color: var(--good); } .stat.tgt { color: var(--warn); }
+
+  .honesty { margin-top: 34px; border: 1px solid color-mix(in srgb, var(--warn) 34%, var(--line));
+    border-radius: var(--radius); padding: 16px 20px; background: color-mix(in srgb, var(--warn) 8%, var(--panel));
+    font-size: 13px; color: var(--ink-2); }
+  .honesty b { color: var(--ink); }
+  footer { margin-top: 32px; font-family: var(--mono); font-size: 11.5px; color: var(--muted);
+    letter-spacing: .04em; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    border-top: 1px solid var(--line); padding-top: 18px; }
+  @media (prefers-reduced-motion: reduce) { .pulse-dot { animation: none; opacity: .9; top: 40%; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">DVXR · multimodal prediction · model flow</div>
+    <h1>Predicting glucose &amp; mind-state from
+      <span class="a">EEG</span> + <span class="b">PHR</span> + <span class="c">PPG</span>.</h1>
+    <p class="lede">The framework ingests the DVXR lab's own device streams — Galea/EMOTIV brain signals,
+      the wearable personal-health record, and the pulse photoplethysmograph — and fuses them into one
+      set of calibrated clinical predictions, explained without inventing a number.</p>
+  </header>
+
+  <div class="devices">
+    <span class="chip eeg"><i class="dot" style="background:var(--eeg)"></i> EEG · BCI <small>Galea · EMOTIV</small></span>
+    <span class="plus">+</span>
+    <span class="chip phr"><i class="dot" style="background:var(--phr)"></i> PHR · wearable <small>iHealth watch — HR/HRV/SpO₂/EDA</small></span>
+    <span class="plus">+</span>
+    <span class="chip ppg"><i class="dot" style="background:var(--ppg)"></i> PPG · pulse <small>photoplethysmography</small></span>
+  </div>
+
+  <section class="pipe">
+    <div class="pulse-dot" aria-hidden="true"></div>
+
+    <div class="stage accent">
+      <div class="node">01</div>
+      <div class="card">
+        <div class="top"><h3>Device streams in</h3><span class="tag">LSL · time-aligned</span></div>
+        <p>The three device streams arrive over Lab Streaming Layer, time-synchronised per subject.
+          Whatever is present is used; the framework degrades gracefully as devices connect or drop.</p>
+        <div class="flowin"><span class="eeg">EEG</span><span class="phr">PHR</span><span class="ppg">PPG</span></div>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="node">02</div>
+      <div class="card">
+        <div class="top"><h3>Per-modality encoders</h3><span class="tag">causal · past-only</span></div>
+        <p>Each stream is embedded by an encoder that understands it: a real <b>LaBraM</b> EEG
+          foundation model for the brain signal, and causal physiology features (rolling HR/HRV,
+          pulse morphology) for the wearable PHR and the pulse PPG. No feature reads the future.</p>
+        <div class="flowin"><span class="eeg">EEG → LaBraM embedding</span><span class="phr">PHR → physiology</span><span class="ppg">PPG → pulse features</span></div>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="node">03</div>
+      <div class="card">
+        <div class="top"><h3>Per-modality experts</h3><span class="tag">estimate + uncertainty</span></div>
+        <p>Every modality becomes an expert that outputs an estimate <em>and</em> its confidence.
+          A modality the model trusts less — noisy EEG, a stale pulse read — contributes less.</p>
+      </div>
+    </div>
+
+    <div class="stage warnnode">
+      <div class="node">04</div>
+      <div class="card">
+        <div class="top"><h3>Availability-aware fusion</h3><span class="metric warn">abstains if no modality usable</span></div>
+        <p>Experts are combined by weighting each device on its current quality and staleness. If none is
+          usable, the model <b>abstains</b> rather than guessing — the safeguard that keeps it honest.</p>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="node">05</div>
+      <div class="card">
+        <div class="top"><h3>Multi-task calibrated heads</h3><span class="metric">split-conformal intervals</span></div>
+        <p>The fused representation feeds one head per clinical target, each calibrated so its
+          probability or interval is trustworthy — not just a raw score.</p>
+      </div>
+    </div>
+
+    <div class="stage accent">
+      <div class="node">06</div>
+      <div class="card">
+        <div class="top"><h3>Predictions</h3><span class="tag">from EEG + PHR + PPG</span></div>
+        <p>One multimodal read-out — the metabolic and mental-health targets the POW calls for.</p>
+        <div class="outs">
+          <div class="out tgt"><div class="n">Glucose</div><div class="s">instability</div></div>
+          <div class="out"><div class="n">Stress</div><div class="s">detection</div></div>
+          <div class="out"><div class="n">Anxiety</div><div class="s">risk</div></div>
+          <div class="out"><div class="n">Depression</div><div class="s">screening</div></div>
+          <div class="out"><div class="n">Workload</div><div class="s">cognitive</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="node">07</div>
+      <div class="card">
+        <div class="top"><h3>Explanation layer</h3><span class="tag">grounded · never predicts</span></div>
+        <p>Each prediction is explained in plain language — restating the model's own numbers and drivers.
+          The explainer is gated so it can phrase, never compute: it cannot introduce a value the model
+          didn't produce.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="panel">
+    <h4>Which signal drives which prediction</h4>
+    <div class="sub">modality → target · honest status (subject-held-out)</div>
+    <div class="map"><span class="from eeg">EEG (Galea/EMOTIV)</span><span class="arrow">→</span><span class="to">Depression screening</span><span class="stat ok">AUROC 0.961 ✓</span></div>
+    <div class="map"><span class="from phr">PHR (wearable)</span><span class="arrow">→</span><span class="to">Stress detection</span><span class="stat ok">AUROC 0.955 ✓</span></div>
+    <div class="map"><span class="from ppg">PPG (pulse) + PHR</span><span class="arrow">→</span><span class="to">Autonomic arousal / anxiety</span><span class="stat">physiology-driven</span></div>
+    <div class="map"><span class="from eeg">EEG + PHR + PPG</span><span class="arrow">→</span><span class="to">Glucose instability (fused)</span><span class="stat tgt">target · lab-collection</span></div>
+  </div>
+
+  <div class="honesty">
+    <b>Status, honestly:</b> the mental-health predictions from EEG and PHR are validated today
+    (depression 0.961, stress 0.955, subject-held-out). Glucose instability from the fused
+    EEG + PHR + PPG stream is the framework's target: it is wired end-to-end and abstains until the lab
+    captures co-registered EEG + PHR + PPG with reference glucose (the LSL contract is ready). Nothing here
+    is a validated clinical claim — every output carries <b>validated_for_clinical_use = false</b>.
+  </div>
+
+  <footer>
+    <span>DVXR Lab · UNT — multimodal health intelligence</span>
+    <span>ingest → encode → fuse → predict → explain · availability-aware · abstaining</span>
+  </footer>
+</div>
