@@ -97,15 +97,27 @@ def fig_model_ladder():
     labels = {"persistence": "persistence", "decision_tree": "decision tree", "random_forest": "random forest",
               "linear_ridge": "linear ridge", "mlp": "MLP", "neuroglycemic_net": "deep net (ours)", "gradient_boosting": "gradient boosting"}
     vals = [(labels[m], next(r["rmse_mg_dl"] for r in rows if r["model"] == m)) for m in order]
-    fig, ax = plt.subplots(figsize=(9.5, 5.2))
-    colors = [CRIT if m == "persistence" else (GLU if m in ("neuroglycemic_net", "gradient_boosting") else MUTED) for m in order]
+    # honest addition: the 3-seed deep ensemble we trained to try to beat GBM (it did not)
+    ens_csv = REPO / "outputs/_r2/ensemble_result.csv"
+    if ens_csv.is_file():
+        er = [row for row in csv.DictReader(open(ens_csv)) if int(row["horizon_minutes"]) == 30]
+        if er:
+            vals.append(("deep ensemble (3-seed)", round(float(er[0]["ensemble_rmse"]), 2)))
+    model_names = order + (["deep ensemble (3-seed)"] if len(vals) > len(order) else [])
+    fig, ax = plt.subplots(figsize=(9.5, 5.4))
+    def _c(m):
+        if m == "persistence": return CRIT
+        if m in ("neuroglycemic_net", "gradient_boosting", "deep ensemble (3-seed)"): return GLU
+        return MUTED
+    colors = [_c(m) for m in model_names]
     bars = ax.barh([v[0] for v in vals], [v[1] for v in vals], color=colors)
     ax.bar_label(bars, fmt="%.2f", padding=4, fontsize=11.5, fontweight="bold")
     ax.invert_yaxis()
-    ax.set(xlabel="RMSE @30 min (mg/dL)", title="Why not just a bigger model? The representation is the win")
+    ax.set(xlabel="RMSE @30 min (mg/dL)", title="Gradient boosting wins on point accuracy — reported honestly")
     ax.grid(axis="y", visible=False)
-    ax.text(0.99, -0.14, "same patient-disjoint split · gradient boosting ties/wins on point accuracy · "
-            "all beat persistence ~25%", transform=ax.transAxes, ha="right", fontsize=10.5, color=MUTED, style="italic")
+    ax.text(0.99, -0.15, "same patient-disjoint split · a 3-seed deep ensemble was trained to beat GBM and did "
+            "NOT (13.06 vs 12.48) · the causal representation is the win, not depth · all beat persistence ~25%",
+            transform=ax.transAxes, ha="right", fontsize=9.5, color=MUTED, style="italic")
     fig.savefig(FIGS / "fig_model_ladder.png", dpi=170, bbox_inches="tight"); plt.close(fig)
 
 
