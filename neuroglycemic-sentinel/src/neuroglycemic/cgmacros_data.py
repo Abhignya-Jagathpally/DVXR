@@ -45,6 +45,19 @@ CGMACROS_EVENT_FEATURES = (
     "events_minutes_since_meal",
 )
 
+# The wearable/pulse device stream (iHealth-watch-class): heart rate + activity.
+# This is the "predict glucose from the wearable device" modality of POW Goal 1.
+CGMACROS_WEARABLE_FEATURES = (
+    "wearable_hr_mean_30m_bpm",
+    "wearable_hr_std_30m_bpm",
+    "wearable_hr_min_30m_bpm",
+    "wearable_hr_max_30m_bpm",
+    "wearable_hr_slope_30m_bpm_per_min",
+    "wearable_hr_mean_60m_bpm",
+    "wearable_mets_mean_30m",
+    "wearable_activity_kcal_60m",
+)
+
 _MEAL_COLUMNS = {
     "Carbs": "carbohydrate_g",
     "Protein": "protein_g",
@@ -101,8 +114,8 @@ class CGMacrosPatientAudit:
 
 def read_cgmacros_subject(
     path: Path, *, source_timezone: str, glucose_source: str = "libre"
-) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Read one CGMacros CSV into (cgm[date, mg/dL], meals[date, macros])."""
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Read one CGMacros CSV into (cgm[date, mg/dL], meals[date, macros], wearable[date, hr...])."""
     path = Path(path)
     frame = pd.read_csv(path)
     if "Timestamp" not in frame.columns:
@@ -126,17 +139,27 @@ def read_cgmacros_subject(
         else:
             meal_frame[canonical] = np.nan
     meals = meal_frame.loc[has_meal.to_numpy()].reset_index(drop=True)
-    return cgm, meals
+
+    # Wearable/pulse device stream: heart rate + activity (from the watch).
+    wearable = pd.DataFrame({"date": timestamps})
+    wearable["hr_bpm"] = pd.to_numeric(frame.get("HR"), errors="coerce")
+    wearable["mets"] = pd.to_numeric(frame.get("METs"), errors="coerce")
+    wearable["activity_kcal"] = pd.to_numeric(frame.get("Calories (Activity)"), errors="coerce")
+    wearable = wearable.dropna(subset=["hr_bpm"]).reset_index(drop=True)
+    return cgm, meals, wearable
 
 
 def build_cgmacros_patient_windows(
     patient_id: str,
     cgm: pd.DataFrame,
     meals: pd.DataFrame,
+    wearable: pd.DataFrame | None = None,
     *,
     config: CGMacrosBuildConfig,
 ) -> pd.DataFrame:
     """Causal, multi-horizon CGM-autoregressive windows for one CGMacros participant."""
+    if wearable is None:
+        wearable = pd.DataFrame(columns=["date", "hr_bpm", "mets", "activity_kcal"])
     raw = cgm.dropna(subset=["date", "mg/dL"]).copy()
     raw = raw.loc[raw["mg/dL"].between(config.glucose_min_mg_dl, config.glucose_max_mg_dl)]
     if raw.empty:
@@ -214,6 +237,36 @@ def build_cgmacros_patient_windows(
         event_available_time.update(pd.Series(latest.to_numpy(), index=grid_index))
     event_available_time = event_available_time.where(event_available)
 
+    # --- Wearable/pulse device features (causal rolling HR + activity) ---
+    hr_on_grid = pd.Series(np.nan, index=grid_index, dtype=float)
+    mets_on_grid = pd.Series(np.nan, index=grid_index, dtype=float)
+    kcal_on_grid = pd.Series(np.nan, index=grid_index, dtype=float)
+    wearable_times = pd.Series(pd.NaT, index=grid_index, dtype="datetime64[ns, UTC]")
+    if not wearable.empty:
+        wl = wearable.dropna(subset=["date"]).copy()
+        wl["grid_time"] = wl["date"].dt.ceil(f"{config.grid_minutes}min")
+        grouped = wl.groupby("grid_time")
+        hr_on_grid.update(grouped["hr_bpm"].mean().reindex(grid_index))
+        mets_on_grid.update(grouped["mets"].mean().reindex(grid_index))
+        kcal_on_grid.update(grouped["activity_kcal"].sum().reindex(grid_index))
+        wearable_times.update(grouped["date"].max().reindex(grid_index))
+    p30 = 30 // config.grid_minutes + 1
+    p60 = 60 // config.grid_minutes + 1
+    feature["wearable_hr_mean_30m_bpm"] = hr_on_grid.rolling(p30, min_periods=1).mean()
+    feature["wearable_hr_std_30m_bpm"] = hr_on_grid.rolling(p30, min_periods=1).std(ddof=0)
+    feature["wearable_hr_min_30m_bpm"] = hr_on_grid.rolling(p30, min_periods=1).min()
+    feature["wearable_hr_max_30m_bpm"] = hr_on_grid.rolling(p30, min_periods=1).max()
+    feature["wearable_hr_slope_30m_bpm_per_min"] = _rolling_slope(
+        hr_on_grid, p30, config.grid_minutes
+    )
+    feature["wearable_hr_mean_60m_bpm"] = hr_on_grid.rolling(p60, min_periods=1).mean()
+    feature["wearable_mets_mean_30m"] = mets_on_grid.rolling(p30, min_periods=1).mean()
+    feature["wearable_activity_kcal_60m"] = kcal_on_grid.rolling(p60, min_periods=1).sum()
+    wearable_frame = feature[list(CGMACROS_WEARABLE_FEATURES)]
+    wearable_available = hr_on_grid.notna()
+    feature.loc[~wearable_available, list(CGMACROS_WEARABLE_FEATURES)] = np.nan
+    wearable_available_time = wearable_times.ffill().where(wearable_available)
+
     result = feature.copy()
     result.insert(0, "anchor_time", grid_index)
     result.insert(0, "cohort_id", config.cohort_id)
@@ -241,6 +294,19 @@ def build_cgmacros_patient_windows(
     result["events_cohort_id"] = np.where(event_available, config.cohort_id, None)
     result["events_anchor_time"] = result["anchor_time"].where(event_available)
     result["events_available_time"] = event_available_time.to_numpy()
+    result["wearable_available"] = wearable_available.to_numpy()
+    result["wearable_quality"] = (
+        wearable_frame.notna().mean(axis=1).where(wearable_available, 0.0).to_numpy()
+    )
+    result["wearable_staleness_minutes"] = (
+        (pd.Series(grid_index, index=grid_index) - wearable_available_time)
+        .dt.total_seconds().div(60.0).where(wearable_available, 0.0).to_numpy()
+    )
+    result["wearable_clock_uncertainty_ms"] = 0.0
+    result["wearable_patient_id"] = np.where(wearable_available, str(patient_id), None)
+    result["wearable_cohort_id"] = np.where(wearable_available, config.cohort_id, None)
+    result["wearable_anchor_time"] = result["anchor_time"].where(wearable_available)
+    result["wearable_available_time"] = wearable_available_time.to_numpy()
 
     for horizon in config.horizons_minutes:
         target, actual_time = _nearest_future_cgm(
@@ -262,10 +328,10 @@ def build_cgmacros_patient_windows(
 
     ordered = [
         "patient_id", "cohort_id", "session_id", "anchor_time",
-        *CGMACROS_CGM_FEATURES, *CGMACROS_EVENT_FEATURES,
+        *CGMACROS_CGM_FEATURES, *CGMACROS_EVENT_FEATURES, *CGMACROS_WEARABLE_FEATURES,
         *[
             value
-            for modality in ("cgm", "events")
+            for modality in ("cgm", "events", "wearable")
             for value in (
                 f"{modality}_available", f"{modality}_quality",
                 f"{modality}_staleness_minutes", f"{modality}_clock_uncertainty_ms",
@@ -306,11 +372,13 @@ def build_cgmacros_dataset(
     for path_value in subjects:
         path = Path(path_value)
         patient_id = path.stem  # e.g. CGMacros-001
-        cgm, meals = read_cgmacros_subject(
+        cgm, meals, wearable = read_cgmacros_subject(
             path, source_timezone=config.source_timezone, glucose_source=config.glucose_source
         )
         valid = cgm["mg/dL"].between(config.glucose_min_mg_dl, config.glucose_max_mg_dl)
-        patient_windows = build_cgmacros_patient_windows(patient_id, cgm, meals, config=config)
+        patient_windows = build_cgmacros_patient_windows(
+            patient_id, cgm, meals, wearable, config=config
+        )
         windows.append(patient_windows)
         valid_times = cgm.loc[valid, "date"]
         audits.append(
@@ -332,4 +400,8 @@ def build_cgmacros_dataset(
 
 
 def cgmacros_feature_registry() -> dict[str, tuple[str, ...]]:
-    return {"cgm": CGMACROS_CGM_FEATURES, "events": CGMACROS_EVENT_FEATURES}
+    return {
+        "cgm": CGMACROS_CGM_FEATURES,
+        "events": CGMACROS_EVENT_FEATURES,
+        "wearable": CGMACROS_WEARABLE_FEATURES,
+    }
