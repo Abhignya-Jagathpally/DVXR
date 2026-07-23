@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import numpy as np
+_np_trapz = getattr(np, 'trapezoid', getattr(np, 'trapz'))  # numpy 1.x/2.x compat
 import pandas as pd
 from scipy import signal, stats
 
@@ -311,7 +312,7 @@ def _eeg_bandpower(prefix: str, values: np.ndarray, rate: float) -> dict[str, fl
     out = {}
     for band, (low, high) in bands.items():
         mask = (freqs >= low) & (freqs < high)
-        out[f"{prefix}_{band}_power"] = float(np.trapezoid(psd[mask], freqs[mask])) if mask.any() else 0.0
+        out[f"{prefix}_{band}_power"] = float(_np_trapz(psd[mask], freqs[mask])) if mask.any() else 0.0
     return out
 
 

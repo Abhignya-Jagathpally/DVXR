@@ -27,6 +27,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 import numpy as np
+_np_trapz = getattr(np, 'trapezoid', getattr(np, 'trapz'))  # numpy 1.x/2.x compat
 import pandas as pd
 from scipy import signal as sp_signal
 
@@ -320,11 +321,11 @@ def _bandpower_welch(x: np.ndarray, fs: float) -> dict[str, float]:
     if nper < 16:
         return {b: 0.0 for b in EEG_BANDS}
     freqs, psd = sp_signal.welch(x, fs=fs, nperseg=nper)
-    total = np.trapezoid(psd, freqs) + 1e-12
+    total = _np_trapz(psd, freqs) + 1e-12
     out = {}
     for band, (lo, hi) in EEG_BANDS.items():
         m = (freqs >= lo) & (freqs < hi)
-        out[band] = float(np.trapezoid(psd[m], freqs[m]) / total) if m.any() else 0.0
+        out[band] = float(_np_trapz(psd[m], freqs[m]) / total) if m.any() else 0.0
     return out
 
 

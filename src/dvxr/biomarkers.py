@@ -12,6 +12,7 @@ import warnings
 from typing import Sequence
 
 import numpy as np
+_np_trapz = getattr(np, 'trapezoid', getattr(np, 'trapz'))  # numpy 1.x/2.x compat
 import pandas as pd
 
 
@@ -92,8 +93,8 @@ def _eeg_band_ratio(eeg_values: np.ndarray, sampling_rate_hz: float) -> dict[str
         )
         alpha_mask = (freqs >= 8) & (freqs < 13)
         beta_mask = (freqs >= 13) & (freqs < 30)
-        alpha_power = float(np.trapezoid(psd[alpha_mask], freqs[alpha_mask])) if alpha_mask.any() else 0.0
-        beta_power = float(np.trapezoid(psd[beta_mask], freqs[beta_mask])) if beta_mask.any() else 0.0
+        alpha_power = float(_np_trapz(psd[alpha_mask], freqs[alpha_mask])) if alpha_mask.any() else 0.0
+        beta_power = float(_np_trapz(psd[beta_mask], freqs[beta_mask])) if beta_mask.any() else 0.0
         ratio = beta_power / alpha_power if alpha_power > 0 else float("nan")
         return {"eeg_beta_alpha_ratio": ratio}
     except Exception:

@@ -19,14 +19,14 @@ subject-held-out CV**, above the honest LOSO/external-validation bars comparable
 methods report. High headline DEAP/Mumtaz numbers elsewhere are segment-level with subject
 leakage and are not comparable.
 
-> **⚠️ Integrity caveat (from `docs/LITERATURE_REVIEW.md`, the "Identity Trap", arXiv:2606.06647).**
-> Resting-state clinical-EEG depression AUROCs under subject-disjoint CV can reflect
-> **subject-identity features that happen to correlate with the label in one cohort**, not a
-> generalizable biomarker (subject-variance 13–89× a random null across LaBraM/CBraMod/REVE).
-> So the **0.961 should be treated as a possibly-contaminated upper bound** until it clears an
-> identity-leakage audit on a held-out cohort with within-subject label variation. That audit
-> — not a model swap — is the #1 recommended next step. We flag this rather than present 0.961
-> unqualified.
+> **⚠️ Integrity caveat — AUDIT DONE, confound CONFIRMED (`scripts/depression_identity_audit.py`,
+> `outputs/_r2/depression_identity_audit.md`; Identity Trap, arXiv:2606.06647).**
+> We ran the recommended audit on Mumtaz (58 subjects, band-power features): **subject identity
+> is decodable at 88.8% accuracy — 52× chance (1/58)** — and each subject carries exactly one
+> diagnosis. Therefore subject-held-out CV **cannot separate a depression biomarker from subject
+> identity**, and the **0.961 is an empirically-confounded upper bound**, not a validated
+> biomarker. Honest fix: a cohort with **within-subject label variation** (e.g. pre/post-treatment)
+> or an identity-adversarial training control. Presented with this caveat, never as 0.961 unqualified.
 
 **What drove the depression win** (documented in `BENCHMARK_FINDINGS.md`): swapping the
 representation from hand-crafted band-power to the **real pretrained LaBraM EEG
