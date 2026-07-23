@@ -157,6 +157,9 @@ def fig_heads_sota():
     ax.set(xticks=x, xticklabels=[h[0] for h in heads], ylabel="AUROC (subject-held-out)",
            ylim=(0.4, 1.0), title="Mental-health heads vs published SOTA (honest, protocol-labeled)")
     ax.grid(axis="x", visible=False)
+    ax.text(0.0, -0.16, "⚠ depression 0.961 pending an identity-leakage audit (Identity Trap, "
+            "arXiv:2606.06647) — treat as an upper bound; DEAP anxiety is at chance (data-limited)",
+            transform=ax.transAxes, fontsize=9.5, color=WARN, style="italic")
     fig.savefig(FIGS / "fig_heads_sota.png", dpi=170, bbox_inches="tight"); plt.close(fig)
 
 

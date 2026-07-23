@@ -14,10 +14,19 @@ Sources: `outputs/benchmark_scoreboard.md`, `outputs/_dnh_labram/`, `src/dvxr/se
 | **Stress** (PhysioNet Non-EEG) | **AUROC 0.892** | PCA→logistic concat | — (cohort-specific) | Strong |
 | **Cognitive workload** (EEGMAT) | AUROC 0.740 | ECG single-modality | subject-independent (Khanam 2023) | Matches honest framing; ECG (not EEG) is the ceiling |
 
-The depression result is the clearest genuine SOTA-competitive claim: **0.961/0.986 AUROC
-under subject-held-out CV**, above the honest LOSO/external-validation bars that comparable
-published methods report. High headline DEAP/Mumtaz numbers elsewhere in the literature are
-segment-level with subject leakage and are not comparable.
+The depression result is the strongest SOTA-competitive claim: **0.961/0.986 AUROC under
+subject-held-out CV**, above the honest LOSO/external-validation bars comparable published
+methods report. High headline DEAP/Mumtaz numbers elsewhere are segment-level with subject
+leakage and are not comparable.
+
+> **⚠️ Integrity caveat (from `docs/LITERATURE_REVIEW.md`, the "Identity Trap", arXiv:2606.06647).**
+> Resting-state clinical-EEG depression AUROCs under subject-disjoint CV can reflect
+> **subject-identity features that happen to correlate with the label in one cohort**, not a
+> generalizable biomarker (subject-variance 13–89× a random null across LaBraM/CBraMod/REVE).
+> So the **0.961 should be treated as a possibly-contaminated upper bound** until it clears an
+> identity-leakage audit on a held-out cohort with within-subject label variation. That audit
+> — not a model swap — is the #1 recommended next step. We flag this rather than present 0.961
+> unqualified.
 
 **What drove the depression win** (documented in `BENCHMARK_FINDINGS.md`): swapping the
 representation from hand-crafted band-power to the **real pretrained LaBraM EEG
