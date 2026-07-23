@@ -40,6 +40,7 @@ app = ["streamlit"]                       # the live interactive demo (dvxr demo
 api = ["starlette", "uvicorn"]            # the thin HTTP API (dvxr serve-api)
 deploy = ["fastapi", "uvicorn"]           # FastAPI wrapper for FastAPI Cloud (dvxr.serve.asgi:app)
 agents = ["langgraph>=0.2", "langchain-core>=1.0,<2"]  # LangGraph orchestration spine (/v1/research/predict/agentic)
+explain = ["anthropic>=0.39"]             # Claude-API grounded explanations (ANTHROPIC_API_KEY); deterministic fallback
 dev = ["pytest"]                          # the pytest-style user-facing web tests
 all = ["dvxr[eeg,floor,io,app,api]"]
 

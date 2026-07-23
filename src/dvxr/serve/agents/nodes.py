@@ -202,15 +202,17 @@ def _grounded_explanation(body: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def explain_prediction(state: PipelineState) -> Dict[str, Any]:
+    from dvxr.serve.llm_explainer import explain
     return {
-        "explanation": _grounded_explanation(state["body"]),
+        "explanation": explain(state["body"]),
         "trace": _trace(state, "explain_prediction"),
     }
 
 
 def explain_abstention(state: PipelineState) -> Dict[str, Any]:
+    from dvxr.serve.llm_explainer import explain
     return {
-        "explanation": _grounded_explanation(state["body"]),
+        "explanation": explain(state["body"]),
         "trace": _trace(state, "explain_abstention"),
     }
 
