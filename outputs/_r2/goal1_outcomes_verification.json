@@ -1,0 +1,27 @@
+[
+  {
+    "outcome": "a) Standardized wearable/BCI data ingestion framework",
+    "status": "PASS",
+    "evidence": "canonical schema = 13 required cols; 5 device converters (deap, emotiv, galea, omics, wesad); real EMOTIV ingested = 14-ch EEG; sentinel builders: prepare-cgmacros/diatrend/big-ideas; LSL streams eeg/wearable/reference_glucose"
+  },
+  {
+    "outcome": "b) EEG and physiological embedding pipelines",
+    "status": "PASS",
+    "evidence": "real pretrained LaBraM loaded via from_pretrained() = True (200-d frozen EEG embedding; drives depression AUROC 0.961); physiological encoders: biosignal_adapter + cgm_adapter (CGM-history 17 feats via cgmacros_data)"
+  },
+  {
+    "outcome": "c) Real-time stress and glucose monitoring capability",
+    "status": "PASS",
+    "evidence": "streamed 5 rt-demo-v1 frames: stress=True, glucose(+abstain)=True, BCI command=True; WS /v1/realtime/stream + SSE + LSL replay; glucose abstains honestly"
+  },
+  {
+    "outcome": "d) Explainable neural and physiological biomarkers",
+    "status": "PASS",
+    "evidence": "per-prediction signed attributions present (top: ['time_above_range', 'cgm_std', 'hba1c']); grounded explainer (Claude/local, hallucination-guarded); EEG band/channel-importance biomarkers: ['channel_band_importance.png', 'channel_band_importance.png']"
+  },
+  {
+    "outcome": "e) Personalized diabetes risk prediction models",
+    "status": "PASS",
+    "evidence": "per-patient personalization: NeuroGlycemicNet.forward consumes patient_index + seen_patient (new-vs-seen patient) = True; diabetes-risk outcomes ('diabetes_status', 'glucose_instability', 'diabetes_complication'); response-kernel personalizes the carb->glucose response per patient"
+  }
+]
