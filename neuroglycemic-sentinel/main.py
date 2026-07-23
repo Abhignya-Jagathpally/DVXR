@@ -92,6 +92,7 @@ NEURAL_AND_INTEROPERABILITY_COMMANDS = (
     "prepare-lsl-glucose",
     "prepare-mimic-neural",
     "prepare-diatrend",
+    "prepare-cgmacros",
     "prepare-big-ideas",
     "prepare-physiocgm",
     "train-neural",
@@ -1916,6 +1917,51 @@ def cli() -> None:
             },
         )
         print(f"\nSaved aligned DiaTrend windows outside Git: {destination}")
+        return
+
+    if arguments.study == "prepare-cgmacros":
+        from src.neuroglycemic.cgmacros_data import (
+            CGMacrosBuildConfig,
+            build_cgmacros_dataset,
+            discover_cgmacros_subjects,
+        )
+        from src.neuroglycemic.workspace import ResearchWorkspace
+
+        if arguments.workspace is None or arguments.source_dir is None:
+            parser.error("prepare-cgmacros requires --workspace and --source-dir.")
+        if not arguments.source_timezone:
+            parser.error("prepare-cgmacros requires --source-timezone.")
+        _require_external_runtime_path(
+            arguments.source_dir,
+            label="CGMacros source data",
+            parser=parser,
+        )
+        workspace = ResearchWorkspace.create(
+            arguments.workspace, repository_root=PROJECT_ROOT
+        )
+        subjects = discover_cgmacros_subjects(arguments.source_dir)
+        build_config = CGMacrosBuildConfig(source_timezone=arguments.source_timezone)
+        windows, audit = build_cgmacros_dataset(subjects, config=build_config)
+        print_frame("CGMACROS SOURCE AUDIT", audit)
+        print_frame("CGMACROS CAUSAL CGM-AUTOREGRESSIVE WINDOWS", windows)
+        destination = workspace.aligned / "cgmacros_patient_windows.csv.gz"
+        audit_path = workspace.canonical / "cgmacros_ingestion_audit.csv"
+        windows.to_csv(destination, index=False, compression="gzip")
+        audit.to_csv(audit_path, index=False)
+        _save_json(
+            workspace.canonical / "cgmacros_build_config.json",
+            {
+                "source_timezone": build_config.source_timezone,
+                "glucose_source": build_config.glucose_source,
+                "horizons_minutes": list(build_config.horizons_minutes),
+                "grid_minutes": build_config.grid_minutes,
+                "history_minutes": build_config.history_minutes,
+                "anchor_stride_minutes": build_config.anchor_stride_minutes,
+                "minimum_history_coverage": build_config.minimum_history_coverage,
+                "subject_count": len(subjects),
+            },
+        )
+        print(f"\nSaved aligned CGMacros windows outside Git: {destination}")
         return
 
     if arguments.study == "lsl-replay":
