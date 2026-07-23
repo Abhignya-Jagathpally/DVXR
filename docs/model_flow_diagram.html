@@ -1,12 +1,12 @@
-<title>NeuroGlycemic Model Flow</title>
+<title>DVXR Multimodal Prediction — Model Flow</title>
 <style>
   :root {
     --bg: #0a0e1a; --panel: #111726; --panel-2: #0e1422;
     --line: rgba(148,163,184,.14); --line-strong: rgba(148,163,184,.28);
     --ink: #eaf1fa; --ink-2: #c3ccdb; --muted: #8b97ab;
-    --glucose: #2dd4bf; --neural: #a78bfa; --pulse: #fb7185; --meal: #fbbf24;
+    --eeg: #a78bfa; --phr: #2dd4bf; --ppg: #fb7185; --glucose: #34d399;
     --good: #34d399; --warn: #fbbf24; --crit: #fb7185;
-    --spine: linear-gradient(180deg, var(--glucose), var(--neural));
+    --spine: linear-gradient(180deg, var(--eeg), var(--phr));
     --shadow: 0 1px 0 rgba(255,255,255,.03) inset, 0 18px 40px -24px rgba(0,0,0,.8);
     --radius: 16px;
     --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
@@ -17,7 +17,7 @@
       --bg: #eef2f8; --panel: #ffffff; --panel-2: #f4f7fb;
       --line: rgba(15,23,42,.10); --line-strong: rgba(15,23,42,.20);
       --ink: #0a0e1a; --ink-2: #29344a; --muted: #5a6678;
-      --glucose: #0d9488; --neural: #7c3aed; --pulse: #e11d48; --meal: #d97706;
+      --eeg: #7c3aed; --phr: #0d9488; --ppg: #e11d48; --glucose: #059669;
       --good: #059669; --warn: #b45309; --crit: #e11d48;
       --shadow: 0 1px 0 rgba(255,255,255,.6) inset, 0 20px 40px -28px rgba(15,23,42,.35);
     }
@@ -26,7 +26,7 @@
     --bg: #0a0e1a; --panel: #111726; --panel-2: #0e1422;
     --line: rgba(148,163,184,.14); --line-strong: rgba(148,163,184,.28);
     --ink: #eaf1fa; --ink-2: #c3ccdb; --muted: #8b97ab;
-    --glucose: #2dd4bf; --neural: #a78bfa; --pulse: #fb7185; --meal: #fbbf24;
+    --eeg: #a78bfa; --phr: #2dd4bf; --ppg: #fb7185; --glucose: #34d399;
     --good: #34d399; --warn: #fbbf24; --crit: #fb7185;
     --shadow: 0 1px 0 rgba(255,255,255,.03) inset, 0 18px 40px -24px rgba(0,0,0,.8);
   }
@@ -34,7 +34,7 @@
     --bg: #eef2f8; --panel: #ffffff; --panel-2: #f4f7fb;
     --line: rgba(15,23,42,.10); --line-strong: rgba(15,23,42,.20);
     --ink: #0a0e1a; --ink-2: #29344a; --muted: #5a6678;
-    --glucose: #0d9488; --neural: #7c3aed; --pulse: #e11d48; --meal: #d97706;
+    --eeg: #7c3aed; --phr: #0d9488; --ppg: #e11d48; --glucose: #059669;
     --good: #059669; --warn: #b45309; --crit: #e11d48;
     --shadow: 0 1px 0 rgba(255,255,255,.6) inset, 0 20px 40px -28px rgba(15,23,42,.35);
   }
@@ -42,77 +42,50 @@
   * { box-sizing: border-box; }
   body {
     margin: 0; background:
-      radial-gradient(1200px 500px at 80% -10%, color-mix(in srgb, var(--glucose) 10%, transparent), transparent 60%),
-      radial-gradient(900px 500px at 0% 10%, color-mix(in srgb, var(--neural) 9%, transparent), transparent 55%),
+      radial-gradient(1200px 500px at 82% -10%, color-mix(in srgb, var(--eeg) 11%, transparent), transparent 60%),
+      radial-gradient(900px 500px at 0% 8%, color-mix(in srgb, var(--phr) 10%, transparent), transparent 55%),
       var(--bg);
     color: var(--ink); font-family: var(--sans);
     -webkit-font-smoothing: antialiased; line-height: 1.5;
   }
   .wrap { max-width: 1080px; margin: 0 auto; padding: clamp(28px, 5vw, 72px) clamp(18px, 4vw, 40px) 80px; }
 
-  /* ---------- hero ---------- */
-  .eyebrow {
-    font-family: var(--mono); font-size: 12px; letter-spacing: .22em; text-transform: uppercase;
-    color: var(--glucose); display: flex; align-items: center; gap: 10px; margin-bottom: 18px;
-  }
-  .eyebrow::before { content: ""; width: 26px; height: 1px; background: var(--glucose); opacity: .7; }
-  h1 {
-    font-size: clamp(30px, 5.4vw, 54px); line-height: 1.02; letter-spacing: -.02em;
-    font-weight: 800; margin: 0 0 16px; text-wrap: balance; max-width: 18ch;
-  }
-  h1 .sig { color: var(--glucose); }
-  .lede { color: var(--ink-2); font-size: clamp(15px, 2vw, 18px); max-width: 62ch; margin: 0; }
+  .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .22em; text-transform: uppercase;
+    color: var(--phr); display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+  .eyebrow::before { content: ""; width: 26px; height: 1px; background: var(--phr); opacity: .7; }
+  h1 { font-size: clamp(30px, 5.4vw, 52px); line-height: 1.03; letter-spacing: -.02em;
+    font-weight: 800; margin: 0 0 16px; text-wrap: balance; max-width: 20ch; }
+  h1 .a { color: var(--eeg); } h1 .b { color: var(--phr); } h1 .c { color: var(--ppg); }
+  .lede { color: var(--ink-2); font-size: clamp(15px, 2vw, 18px); max-width: 64ch; margin: 0; }
 
-  .trace { margin: 34px 0 8px; border: 1px solid var(--line); border-radius: var(--radius);
-    background: linear-gradient(180deg, var(--panel), var(--panel-2)); box-shadow: var(--shadow);
-    overflow: hidden; position: relative; }
-  .trace canvas { display: block; width: 100%; height: 130px; }
-  .trace .rail { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
-    padding: 10px 16px; border-top: 1px solid var(--line); font-family: var(--mono);
-    font-size: 11.5px; color: var(--muted); letter-spacing: .04em; }
-  .trace .rail b { color: var(--ink); font-weight: 600; }
-  .band-key { display: inline-flex; align-items: center; gap: 6px; }
-  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  /* inputs */
+  .devices { display: flex; flex-wrap: wrap; gap: 12px; margin: 34px 0 4px; }
+  .chip { font-family: var(--mono); font-size: 12.5px; letter-spacing: .02em; display: inline-flex;
+    align-items: center; gap: 9px; padding: 11px 15px; border-radius: 12px; border: 1px solid var(--line-strong);
+    background: color-mix(in srgb, var(--panel) 72%, transparent); color: var(--ink); }
+  .chip .dot { width: 9px; height: 9px; border-radius: 50%; box-shadow: 0 0 0 4px color-mix(in srgb, currentColor 16%, transparent); }
+  .chip.eeg { color: var(--eeg); } .chip.phr { color: var(--phr); } .chip.ppg { color: var(--ppg); }
+  .chip small { color: var(--muted); font-size: 11px; }
+  .plus { align-self: center; color: var(--muted); font-family: var(--mono); font-size: 18px; }
 
-  /* ---------- device chips ---------- */
-  .devices { display: flex; flex-wrap: wrap; gap: 10px; margin: 30px 0 6px; }
-  .chip {
-    font-family: var(--mono); font-size: 12px; letter-spacing: .03em;
-    display: inline-flex; align-items: center; gap: 8px; padding: 8px 13px;
-    border-radius: 999px; border: 1px solid var(--line-strong);
-    background: color-mix(in srgb, var(--panel) 70%, transparent); color: var(--ink-2);
-  }
-  .chip .dot { box-shadow: 0 0 0 4px color-mix(in srgb, currentColor 16%, transparent); }
-  .chip.cgm { color: var(--glucose); } .chip.pulse { color: var(--pulse); }
-  .chip.meal { color: var(--meal); } .chip.eeg { color: var(--neural); }
-  .chip small { color: var(--muted); }
-
-  /* ---------- pipeline spine ---------- */
-  .pipe { position: relative; margin-top: 26px; padding-left: 62px; }
-  .pipe::before {
-    content: ""; position: absolute; left: 26px; top: 6px; bottom: 26px; width: 3px;
-    border-radius: 3px; background: var(--spine); opacity: .55;
-  }
-  .pulse-dot {
-    position: absolute; left: 22px; width: 11px; height: 11px; border-radius: 50%;
-    background: var(--glucose); box-shadow: 0 0 14px 3px color-mix(in srgb, var(--glucose) 70%, transparent);
-    animation: travel 5.2s cubic-bezier(.5,0,.5,1) infinite;
-  }
+  /* pipeline spine */
+  .pipe { position: relative; margin-top: 30px; padding-left: 62px; }
+  .pipe::before { content: ""; position: absolute; left: 26px; top: 6px; bottom: 26px; width: 3px;
+    border-radius: 3px; background: var(--spine); opacity: .55; }
+  .pulse-dot { position: absolute; left: 22px; width: 11px; height: 11px; border-radius: 50%;
+    background: var(--phr); box-shadow: 0 0 14px 3px color-mix(in srgb, var(--phr) 70%, transparent);
+    animation: travel 5.4s cubic-bezier(.5,0,.5,1) infinite; }
   @keyframes travel { 0% { top: 6px; opacity: 0; } 8% { opacity: 1; } 92% { opacity: 1; } 100% { top: calc(100% - 40px); opacity: 0; } }
 
   .stage { position: relative; margin-bottom: 16px; }
-  .node {
-    position: absolute; left: -49px; top: 20px; width: 26px; height: 26px; border-radius: 50%;
+  .node { position: absolute; left: -49px; top: 20px; width: 26px; height: 26px; border-radius: 50%;
     background: var(--panel); border: 2px solid var(--line-strong); display: grid; place-items: center;
-    font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--muted); z-index: 2;
-  }
-  .stage.accent .node { border-color: var(--glucose); color: var(--glucose); }
+    font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--muted); z-index: 2; }
+  .stage.accent .node { border-color: var(--phr); color: var(--phr); }
   .stage.warnnode .node { border-color: var(--warn); color: var(--warn); }
-  .card {
-    border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 20px;
+  .card { border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 20px;
     background: linear-gradient(180deg, var(--panel), var(--panel-2)); box-shadow: var(--shadow);
-    transition: border-color .25s ease, transform .25s ease;
-  }
+    transition: border-color .25s ease, transform .25s ease; }
   .card:hover { border-color: var(--line-strong); transform: translateY(-2px); }
   .card .top { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
   .card h3 { margin: 0; font-size: 17px; letter-spacing: -.01em; font-weight: 700; }
@@ -122,82 +95,68 @@
   .flowin { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
   .flowin span { font-family: var(--mono); font-size: 10.5px; letter-spacing: .04em; padding: 3px 8px;
     border-radius: 6px; border: 1px solid var(--line); color: var(--muted); }
-  .flowin span.cgm { color: var(--glucose); border-color: color-mix(in srgb, var(--glucose) 40%, var(--line)); }
-  .flowin span.pulse { color: var(--pulse); border-color: color-mix(in srgb, var(--pulse) 40%, var(--line)); }
-  .flowin span.meal { color: var(--meal); border-color: color-mix(in srgb, var(--meal) 40%, var(--line)); }
-  .flowin span.eeg { color: var(--neural); border-color: color-mix(in srgb, var(--neural) 40%, var(--line)); }
+  .flowin span.eeg { color: var(--eeg); border-color: color-mix(in srgb, var(--eeg) 40%, var(--line)); }
+  .flowin span.phr { color: var(--phr); border-color: color-mix(in srgb, var(--phr) 40%, var(--line)); }
+  .flowin span.ppg { color: var(--ppg); border-color: color-mix(in srgb, var(--ppg) 40%, var(--line)); }
   .metric { font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 12.5px;
-    color: var(--glucose); background: color-mix(in srgb, var(--glucose) 12%, transparent);
-    border: 1px solid color-mix(in srgb, var(--glucose) 30%, var(--line)); padding: 4px 10px; border-radius: 8px; }
+    color: var(--phr); background: color-mix(in srgb, var(--phr) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--phr) 30%, var(--line)); padding: 4px 10px; border-radius: 8px; }
   .metric.warn { color: var(--warn); background: color-mix(in srgb, var(--warn) 12%, transparent);
     border-color: color-mix(in srgb, var(--warn) 30%, var(--line)); }
 
-  /* ---------- panels ---------- */
-  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 40px; }
-  @media (max-width: 720px) { .grid2 { grid-template-columns: 1fr; } }
-  .panel { border: 1px solid var(--line); border-radius: var(--radius); padding: 22px;
+  /* outputs */
+  .outs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 14px; }
+  @media (max-width: 720px) { .outs { grid-template-columns: repeat(2, 1fr); } }
+  .out { text-align: center; border: 1px solid var(--line); border-radius: 12px; padding: 13px 8px;
+    background: color-mix(in srgb, var(--panel) 60%, transparent); }
+  .out .n { font-family: var(--mono); font-size: 12px; color: var(--ink); font-weight: 600; }
+  .out .s { font-family: var(--mono); font-size: 10.5px; color: var(--muted); margin-top: 3px; }
+  .out.tgt { border-color: color-mix(in srgb, var(--glucose) 45%, var(--line)); }
+  .out.tgt .n { color: var(--glucose); }
+
+  /* mapping panel */
+  .panel { border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; margin-top: 40px;
     background: linear-gradient(180deg, var(--panel), var(--panel-2)); box-shadow: var(--shadow); }
   .panel h4 { margin: 0 0 4px; font-size: 15px; letter-spacing: -.01em; }
   .panel .sub { font-family: var(--mono); font-size: 11px; letter-spacing: .04em; color: var(--muted);
-    text-transform: uppercase; margin-bottom: 18px; }
+    text-transform: uppercase; margin-bottom: 16px; }
+  .map { display: grid; grid-template-columns: 150px 1fr auto; align-items: center; gap: 14px; padding: 10px 0;
+    border-top: 1px solid var(--line); }
+  .map:first-of-type { border-top: 0; }
+  .map .from { font-family: var(--mono); font-size: 12.5px; }
+  .map .arrow { color: var(--muted); font-family: var(--mono); }
+  .map .to { color: var(--ink-2); font-size: 13.5px; }
+  .map .stat { font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 12px; color: var(--muted);
+    white-space: nowrap; }
+  .from.eeg { color: var(--eeg); } .from.phr { color: var(--phr); } .from.ppg { color: var(--ppg); }
+  .stat.ok { color: var(--good); } .stat.tgt { color: var(--warn); }
 
-  .bar { display: grid; grid-template-columns: 130px 1fr 62px; align-items: center; gap: 12px; margin: 11px 0; }
-  .bar .lbl { font-family: var(--mono); font-size: 12px; color: var(--ink-2); }
-  .bar .track { height: 9px; border-radius: 6px; background: color-mix(in srgb, var(--muted) 18%, transparent); overflow: hidden; }
-  .bar .fill { height: 100%; border-radius: 6px; background: var(--glucose); }
-  .bar .fill.crit { background: var(--crit); }
-  .bar .val { font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 12.5px;
-    text-align: right; color: var(--ink); }
-  .note { font-size: 12.5px; color: var(--muted); margin-top: 14px; line-height: 1.5; }
-
-  .gauges { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-  .gauge { text-align: center; border: 1px solid var(--line); border-radius: 12px; padding: 14px 8px;
-    background: color-mix(in srgb, var(--panel) 60%, transparent); }
-  .gauge .h { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: .05em; }
-  .gauge .v { font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 22px; font-weight: 700;
-    color: var(--glucose); margin: 4px 0 2px; }
-  .gauge .p { font-family: var(--mono); font-size: 10.5px; color: var(--muted); }
-
-  /* ---------- honesty ---------- */
-  .honesty { margin-top: 40px; border: 1px solid color-mix(in srgb, var(--warn) 34%, var(--line));
-    border-radius: var(--radius); padding: 20px 22px; background: color-mix(in srgb, var(--warn) 8%, var(--panel)); }
-  .honesty h4 { margin: 0 0 10px; font-size: 14px; color: var(--warn); font-family: var(--mono);
-    letter-spacing: .06em; text-transform: uppercase; }
-  .honesty ul { margin: 0; padding-left: 18px; color: var(--ink-2); font-size: 13.5px; }
-  .honesty li { margin: 6px 0; }
+  .honesty { margin-top: 34px; border: 1px solid color-mix(in srgb, var(--warn) 34%, var(--line));
+    border-radius: var(--radius); padding: 16px 20px; background: color-mix(in srgb, var(--warn) 8%, var(--panel));
+    font-size: 13px; color: var(--ink-2); }
   .honesty b { color: var(--ink); }
-
-  footer { margin-top: 34px; font-family: var(--mono); font-size: 11.5px; color: var(--muted);
+  footer { margin-top: 32px; font-family: var(--mono); font-size: 11.5px; color: var(--muted);
     letter-spacing: .04em; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
     border-top: 1px solid var(--line); padding-top: 18px; }
-
   @media (prefers-reduced-motion: reduce) { .pulse-dot { animation: none; opacity: .9; top: 40%; } }
 </style>
 
 <div class="wrap">
   <header>
-    <div class="eyebrow">NeuroGlycemic · model flow</div>
-    <h1>How the framework forecasts <span class="sig">blood glucose</span> from device signals.</h1>
-    <p class="lede">One availability-aware model turns whatever the DVXR devices provide — CGM, the
-      wearable/pulse watch, logged meals — into a calibrated 30-to-120-minute glucose forecast, then
-      explains it without inventing a number. Below is the whole path, signal to explanation.</p>
+    <div class="eyebrow">DVXR · multimodal prediction · model flow</div>
+    <h1>Predicting glucose &amp; mind-state from
+      <span class="a">EEG</span> + <span class="b">PHR</span> + <span class="c">PPG</span>.</h1>
+    <p class="lede">The framework ingests the DVXR lab's own device streams — Galea/EMOTIV brain signals,
+      the wearable personal-health record, and the pulse photoplethysmograph — and fuses them into one
+      set of calibrated clinical predictions, explained without inventing a number.</p>
   </header>
 
-  <div class="trace" aria-hidden="true">
-    <canvas id="cgm" width="1040" height="130"></canvas>
-    <div class="rail">
-      <span class="band-key"><i class="dot" style="background:var(--pulse)"></i> hypo &lt; 70</span>
-      <span class="band-key"><i class="dot" style="background:var(--good)"></i> in range 70–180</span>
-      <span class="band-key"><i class="dot" style="background:var(--meal)"></i> hyper &gt; 180</span>
-      <span>held-out RMSE&nbsp;<b>12.77 mg/dL</b>&nbsp;@30 min · persistence 17.40</span>
-    </div>
-  </div>
-
   <div class="devices">
-    <span class="chip cgm"><i class="dot" style="background:var(--glucose)"></i> CGM <small>glucose history</small></span>
-    <span class="chip pulse"><i class="dot" style="background:var(--pulse)"></i> Wearable / pulse <small>HR · HRV</small></span>
-    <span class="chip meal"><i class="dot" style="background:var(--meal)"></i> Meals <small>carbs · macros</small></span>
-    <span class="chip eeg"><i class="dot" style="background:var(--neural)"></i> EEG <small>Galea · EMOTIV — ready slot</small></span>
+    <span class="chip eeg"><i class="dot" style="background:var(--eeg)"></i> EEG · BCI <small>Galea · EMOTIV</small></span>
+    <span class="plus">+</span>
+    <span class="chip phr"><i class="dot" style="background:var(--phr)"></i> PHR · wearable <small>iHealth watch — HR/HRV/SpO₂/EDA</small></span>
+    <span class="plus">+</span>
+    <span class="chip ppg"><i class="dot" style="background:var(--ppg)"></i> PPG · pulse <small>photoplethysmography</small></span>
   </div>
 
   <section class="pipe">
@@ -206,175 +165,96 @@
     <div class="stage accent">
       <div class="node">01</div>
       <div class="card">
-        <div class="top"><h3>Device streams in</h3><span class="tag">LSL · availability-aware</span></div>
-        <p>Live signals arrive over Lab Streaming Layer. Whatever is present is used; nothing is required —
-          the model degrades gracefully as devices drop in and out.</p>
-        <div class="flowin"><span class="cgm">CGM</span><span class="pulse">pulse HR</span><span class="meal">meals</span><span class="eeg">EEG*</span></div>
+        <div class="top"><h3>Device streams in</h3><span class="tag">LSL · time-aligned</span></div>
+        <p>The three device streams arrive over Lab Streaming Layer, time-synchronised per subject.
+          Whatever is present is used; the framework degrades gracefully as devices connect or drop.</p>
+        <div class="flowin"><span class="eeg">EEG</span><span class="phr">PHR</span><span class="ppg">PPG</span></div>
       </div>
     </div>
 
     <div class="stage">
       <div class="node">02</div>
       <div class="card">
-        <div class="top"><h3>Causal features, per device</h3><span class="tag">past-only</span></div>
-        <p>Each stream becomes lags, deltas, rolling mean/SD and slopes computed <b>only from time&nbsp;t or
-          earlier</b> — no peeking at the future it is asked to forecast. This is what keeps the error honest.</p>
+        <div class="top"><h3>Per-modality encoders</h3><span class="tag">causal · past-only</span></div>
+        <p>Each stream is embedded by an encoder that understands it: a real <b>LaBraM</b> EEG
+          foundation model for the brain signal, and causal physiology features (rolling HR/HRV,
+          pulse morphology) for the wearable PHR and the pulse PPG. No feature reads the future.</p>
+        <div class="flowin"><span class="eeg">EEG → LaBraM embedding</span><span class="phr">PHR → physiology</span><span class="ppg">PPG → pulse features</span></div>
       </div>
     </div>
 
     <div class="stage">
       <div class="node">03</div>
       <div class="card">
-        <div class="top"><h3>Per-device experts</h3><span class="tag">Gaussian μ, σ</span></div>
-        <p>Every device gets its own expert that outputs a glucose estimate <em>and</em> its uncertainty,
-          conditioned on the forecast horizon. A device the model trusts less contributes less.</p>
-      </div>
-    </div>
-
-    <div class="stage">
-      <div class="node">04</div>
-      <div class="card">
-        <div class="top"><h3>Meal response kernel</h3><span class="tag">sign-constrained +Δ</span></div>
-        <p>A physiologically-shaped carb→glucose response is added to the experts. Meals can only <b>raise</b>
-          future glucose, with a bounded gain — the model can't invent an implausible dip from food.</p>
-        <div class="flowin"><span class="meal">meals → Δ glucose</span></div>
+        <div class="top"><h3>Per-modality experts</h3><span class="tag">estimate + uncertainty</span></div>
+        <p>Every modality becomes an expert that outputs an estimate <em>and</em> its confidence.
+          A modality the model trusts less — noisy EEG, a stale pulse read — contributes less.</p>
       </div>
     </div>
 
     <div class="stage warnnode">
-      <div class="node">05</div>
+      <div class="node">04</div>
       <div class="card">
-        <div class="top"><h3>Availability-aware fusion</h3><span class="metric warn">abstains if no device usable</span></div>
-        <p>Experts are combined by weighting each device on its current quality, staleness and clock
-          certainty. If nothing usable remains, the model <b>abstains</b> rather than guessing — and says so.</p>
+        <div class="top"><h3>Availability-aware fusion</h3><span class="metric warn">abstains if no modality usable</span></div>
+        <p>Experts are combined by weighting each device on its current quality and staleness. If none is
+          usable, the model <b>abstains</b> rather than guessing — the safeguard that keeps it honest.</p>
       </div>
     </div>
 
     <div class="stage">
-      <div class="node">06</div>
+      <div class="node">05</div>
       <div class="card">
-        <div class="top"><h3>Residual over persistence</h3><span class="tag">correct “stays flat”</span></div>
-        <p>The network predicts a <b>correction</b> to the naive “glucose stays where it is” baseline,
-          shrunk toward it. That inductive bias is why it reliably beats persistence instead of trailing it.</p>
+        <div class="top"><h3>Multi-task calibrated heads</h3><span class="metric">split-conformal intervals</span></div>
+        <p>The fused representation feeds one head per clinical target, each calibrated so its
+          probability or interval is trustworthy — not just a raw score.</p>
       </div>
     </div>
 
     <div class="stage accent">
-      <div class="node">07</div>
+      <div class="node">06</div>
       <div class="card">
-        <div class="top"><h3>Calibrated forecast</h3><span class="metric">PI-95 coverage 0.91</span></div>
-        <p>Split-conformal calibration turns the mixture into an honest interval at each horizon —
-          a point value plus a 95% band you can trust.</p>
-        <div class="gauges" style="margin-top:14px">
-          <div class="gauge"><div class="h">30 min</div><div class="v">12.8</div><div class="p">vs 17.4</div></div>
-          <div class="gauge"><div class="h">60 min</div><div class="v">21.9</div><div class="p">vs 26.8</div></div>
-          <div class="gauge"><div class="h">90 min</div><div class="v">26.6</div><div class="p">vs 32.6</div></div>
-          <div class="gauge"><div class="h">120 min</div><div class="v">29.1</div><div class="p">vs 36.5</div></div>
+        <div class="top"><h3>Predictions</h3><span class="tag">from EEG + PHR + PPG</span></div>
+        <p>One multimodal read-out — the metabolic and mental-health targets the POW calls for.</p>
+        <div class="outs">
+          <div class="out tgt"><div class="n">Glucose</div><div class="s">instability</div></div>
+          <div class="out"><div class="n">Stress</div><div class="s">detection</div></div>
+          <div class="out"><div class="n">Anxiety</div><div class="s">risk</div></div>
+          <div class="out"><div class="n">Depression</div><div class="s">screening</div></div>
+          <div class="out"><div class="n">Workload</div><div class="s">cognitive</div></div>
         </div>
       </div>
     </div>
 
     <div class="stage">
-      <div class="node">08</div>
+      <div class="node">07</div>
       <div class="card">
         <div class="top"><h3>Explanation layer</h3><span class="tag">grounded · never predicts</span></div>
-        <p>A deterministic renderer — an <b>LLM-ready, LLM-gated seat</b> — restates the model's own numbers
-          (risk band, top drivers) in plain language. It is validated so it can phrase, never compute:
-          it cannot introduce a value the model didn't produce.</p>
+        <p>Each prediction is explained in plain language — restating the model's own numbers and drivers.
+          The explainer is gated so it can phrase, never compute: it cannot introduce a value the model
+          didn't produce.</p>
       </div>
     </div>
   </section>
 
-  <div class="grid2">
-    <div class="panel">
-      <h4>What each device contributes</h4>
-      <div class="sub">leave-one-out · RMSE mg/dL @30 min</div>
-      <div class="bar"><span class="lbl">all devices</span><span class="track"><span class="fill" style="width:36%"></span></span><span class="val">12.77</span></div>
-      <div class="bar"><span class="lbl">− wearable</span><span class="track"><span class="fill" style="width:36%"></span></span><span class="val">12.78</span></div>
-      <div class="bar"><span class="lbl">− meals</span><span class="track"><span class="fill" style="width:37%"></span></span><span class="val">13.14</span></div>
-      <div class="bar"><span class="lbl">− CGM</span><span class="track"><span class="fill crit" style="width:100%"></span></span><span class="val">35.13</span></div>
-      <p class="note"><b style="color:var(--ink)">CGM dominates</b> — remove it and error nearly triples. Meals
-        add ~0.4; the pulse device adds little at 30 min but more by 120 min, and keeps a forecast alive
-        (~90% coverage) when CGM drops out. Every device earns its place, honestly measured.</p>
-    </div>
-
-    <div class="panel">
-      <h4>Why not just a bigger model?</h4>
-      <div class="sub">same-split ladder · RMSE @30 min</div>
-      <div class="bar"><span class="lbl">persistence</span><span class="track"><span class="fill crit" style="width:100%"></span></span><span class="val">17.40</span></div>
-      <div class="bar"><span class="lbl">linear ridge</span><span class="track"><span class="fill" style="width:74%"></span></span><span class="val">12.83</span></div>
-      <div class="bar"><span class="lbl">gradient boost</span><span class="track"><span class="fill" style="width:72%"></span></span><span class="val">12.48</span></div>
-      <div class="bar"><span class="lbl">this model</span><span class="track"><span class="fill" style="width:73%"></span></span><span class="val">12.99</span></div>
-      <p class="note">On raw point accuracy, <b style="color:var(--ink)">gradient boosting ties or wins</b> — the
-        causal features are the real win, not depth. The neural model earns its keep through calibrated
-        uncertainty, abstention, and multi-device fusion, and we report that trade-off rather than hide it.</p>
-    </div>
+  <div class="panel">
+    <h4>Which signal drives which prediction</h4>
+    <div class="sub">modality → target · honest status (subject-held-out)</div>
+    <div class="map"><span class="from eeg">EEG (Galea/EMOTIV)</span><span class="arrow">→</span><span class="to">Depression screening</span><span class="stat ok">AUROC 0.961 ✓</span></div>
+    <div class="map"><span class="from phr">PHR (wearable)</span><span class="arrow">→</span><span class="to">Stress detection</span><span class="stat ok">AUROC 0.955 ✓</span></div>
+    <div class="map"><span class="from ppg">PPG (pulse) + PHR</span><span class="arrow">→</span><span class="to">Autonomic arousal / anxiety</span><span class="stat">physiology-driven</span></div>
+    <div class="map"><span class="from eeg">EEG + PHR + PPG</span><span class="arrow">→</span><span class="to">Glucose instability (fused)</span><span class="stat tgt">target · lab-collection</span></div>
   </div>
 
   <div class="honesty">
-    <h4>What this is — and isn't</h4>
-    <ul>
-      <li><b>Research-grade, not a device.</b> Every output carries <code>validated_for_clinical_use = false</code>; the one remaining gate is prospective external validation.</li>
-      <li><b>Glucose is forecast from CGM + wearable/pulse + meals</b> — real device streams. <b>EEG (EMOTIV/Galea)</b> is trained today for the mental-health heads (depression AUROC 0.961) and is a wired, honest slot for glucose the moment co-registered EEG+CGM data is captured — not faked.</li>
-      <li><b>Temporally causal, not causal-inference.</b> No future leakage; contributions are associational attributions, not intervention effects.</li>
-      <li><b>The explanation is deterministic here</b> — an LLM seat that stays gated to restating model numbers, so it can never hallucinate one.</li>
-    </ul>
+    <b>Status, honestly:</b> the mental-health predictions from EEG and PHR are validated today
+    (depression 0.961, stress 0.955, subject-held-out). Glucose instability from the fused
+    EEG + PHR + PPG stream is the framework's target: it is wired end-to-end and abstains until the lab
+    captures co-registered EEG + PHR + PPG with reference glucose (the LSL contract is ready). Nothing here
+    is a validated clinical claim — every output carries <b>validated_for_clinical_use = false</b>.
   </div>
 
   <footer>
     <span>DVXR Lab · UNT — multimodal health intelligence</span>
-    <span>cohort: CGMacros (45 subjects) · patient-disjoint · superiority gate passed</span>
+    <span>ingest → encode → fuse → predict → explain · availability-aware · abstaining</span>
   </footer>
 </div>
-
-<script>
-  (function () {
-    const c = document.getElementById('cgm');
-    if (!c) return;
-    const ctx = c.getContext('2d');
-    const css = getComputedStyle(document.documentElement);
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
-    function color(n){ return css.getPropertyValue(n).trim(); }
-
-    function resize() {
-      const w = c.clientWidth || 1040, h = 130;
-      c.width = w * dpr; c.height = h * dpr; ctx.setTransform(dpr,0,0,dpr,0,0);
-      draw(w, h);
-    }
-    // a smooth pseudo-CGM trace (deterministic, decorative)
-    const N = 220; const pts = [];
-    let g = 120; let v = 0;
-    for (let i=0;i<N;i++){
-      const meal = (i===40||i===120||i===175) ? 34 : 0;
-      v = v*0.86 + (Math.sin(i*0.13)*3.2) + meal - (g-115)*0.02 + (Math.sin(i*0.5)*1.1);
-      g = Math.max(58, Math.min(215, g + v*0.32));
-      pts.push(g);
-    }
-    function y(val,h){ const lo=50, hi=230; return h - ((val-lo)/(hi-lo))*(h-16) - 8; }
-    function draw(w,h){
-      ctx.clearRect(0,0,w,h);
-      const gl = color('--glucose'), meal = color('--meal'), pulse = color('--pulse'), good = color('--good');
-      // range bands
-      ctx.globalAlpha = .10;
-      ctx.fillStyle = good; ctx.fillRect(0, y(180,h), w, y(70,h)-y(180,h));
-      ctx.globalAlpha = .06;
-      ctx.fillStyle = pulse; ctx.fillRect(0, y(70,h), w, h-y(70,h));
-      ctx.fillStyle = meal; ctx.fillRect(0, 0, w, y(180,h));
-      ctx.globalAlpha = 1;
-      // trace
-      ctx.beginPath();
-      for (let i=0;i<N;i++){ const x=(i/(N-1))*w; const yy=y(pts[i],h); i?ctx.lineTo(x,yy):ctx.moveTo(x,yy); }
-      const grad = ctx.createLinearGradient(0,0,w,0);
-      grad.addColorStop(0, color('--neural')); grad.addColorStop(1, gl);
-      ctx.strokeStyle = grad; ctx.lineWidth = 2.4; ctx.lineJoin='round'; ctx.stroke();
-      // area glow
-      ctx.lineTo(w,h); ctx.lineTo(0,h); ctx.closePath();
-      ctx.globalAlpha=.10; ctx.fillStyle=gl; ctx.fill(); ctx.globalAlpha=1;
-      // endpoint
-      const ex=w, ey=y(pts[N-1],h);
-      ctx.beginPath(); ctx.arc(ex-3,ey,3.4,0,Math.PI*2); ctx.fillStyle=gl; ctx.fill();
-    }
-    resize();
-    let ro; window.addEventListener('resize', ()=>{ clearTimeout(ro); ro=setTimeout(resize,120); });
-  })();
-</script>
