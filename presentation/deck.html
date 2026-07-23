@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DVXR — Multimodal Clinical Risk Prediction</title>
+<style>
+  :root{
+    --ink:#0f2038;          /* deep navy */
+    --ink-soft:#33465f;
+    --muted:#6a7a90;
+    --accent:#0e8f8f;       /* teal */
+    --accent-2:#6d4fc4;     /* violet */
+    --bg:#f4f7fa;
+    --panel:#ffffff;
+    --line:#dbe3ec;
+    --good:#127a5a;
+    --warn:#9a5b00;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,"Noto Sans",sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  .deck{position:relative;width:100vw;height:100vh}
+
+  .slide{
+    position:absolute;inset:0;
+    width:100vw;height:100vh;
+    padding:5.5vh 6vw 8vh;
+    display:flex;flex-direction:column;
+    opacity:0;visibility:hidden;
+    transform:translateX(28px);
+    transition:opacity .45s ease, transform .45s ease, visibility .45s;
+    background:var(--bg);
+  }
+  .slide.active{opacity:1;visibility:visible;transform:translateX(0);z-index:2}
+
+  /* slide chrome */
+  .kicker{
+    font-size:15px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--accent);font-weight:700;margin-bottom:10px;
+  }
+  h1{font-size:40px;line-height:1.12;color:var(--ink);font-weight:800;letter-spacing:-.01em}
+  h2{font-size:40px;line-height:1.12;color:var(--ink);font-weight:800;letter-spacing:-.01em;margin-bottom:6px}
+  .sub{font-size:22px;color:var(--ink-soft);margin-top:14px;line-height:1.4;max-width:60ch}
+
+  .body{
+    flex:1;display:flex;gap:3vw;align-items:center;margin-top:2.4vh;min-height:0;
+  }
+  .col-text{flex:0 0 34%;max-width:34%;display:flex;flex-direction:column;justify-content:center}
+  .col-fig{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;gap:2vw;height:100%}
+
+  ul{list-style:none;display:flex;flex-direction:column;gap:16px}
+  li{
+    font-size:22px;line-height:1.4;color:var(--ink-soft);
+    padding-left:26px;position:relative;
+  }
+  li::before{
+    content:"";position:absolute;left:0;top:11px;
+    width:11px;height:11px;border-radius:3px;
+    background:var(--accent);
+  }
+  li b{color:var(--ink);font-weight:700}
+  li.violet::before{background:var(--accent-2)}
+
+  figure{margin:0;max-width:100%;max-height:100%;display:flex;flex-direction:column;align-items:center}
+  figure img{
+    max-width:100%;max-height:74vh;object-fit:contain;
+    border:1px solid var(--line);border-radius:12px;
+    background:#fff;padding:10px;
+    box-shadow:0 14px 40px rgba(15,32,56,.14);
+  }
+  .col-fig.duo img{max-height:62vh}
+  figcaption{font-size:15px;color:var(--muted);margin-top:12px;text-align:center;max-width:44ch}
+
+  /* full-width figure variant */
+  .fig-wide{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;margin-top:2vh;min-height:0}
+  .fig-wide img{
+    max-width:88vw;max-height:66vh;object-fit:contain;
+    border:1px solid var(--line);border-radius:12px;background:#fff;padding:10px;
+    box-shadow:0 14px 40px rgba(15,32,56,.14);
+  }
+
+  /* metric chips */
+  .metrics{display:flex;gap:18px;flex-wrap:wrap;margin-top:22px}
+  .metric{
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:16px 20px;min-width:150px;box-shadow:0 6px 18px rgba(15,32,56,.06);
+  }
+  .metric .n{font-size:34px;font-weight:800;color:var(--accent);line-height:1}
+  .metric .n.v{color:var(--accent-2)}
+  .metric .l{font-size:15px;color:var(--muted);margin-top:8px;line-height:1.3}
+
+  /* title slide */
+  .title-slide{align-items:flex-start;justify-content:center;padding-left:9vw;padding-right:9vw}
+  .title-slide .brand{font-size:15px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);font-weight:700;margin-bottom:26px}
+  .title-slide h1{font-size:58px;line-height:1.08;max-width:20ch}
+  .title-slide .sub{font-size:26px;color:var(--ink-soft);margin-top:26px;max-width:64ch}
+  .rule{height:4px;width:120px;background:linear-gradient(90deg,var(--accent),var(--accent-2));border-radius:3px;margin:34px 0}
+  .title-metrics{margin-top:30px}
+
+  /* CSS flow diagram (slide 4) */
+  .flow{display:flex;align-items:stretch;justify-content:center;gap:0;flex-wrap:wrap;margin-top:2vh}
+  .flow-node{
+    background:var(--panel);border:1px solid var(--line);border-top:5px solid var(--accent);
+    border-radius:14px;padding:22px 20px;min-width:190px;max-width:220px;
+    box-shadow:0 8px 22px rgba(15,32,56,.08);text-align:center;
+  }
+  .flow-node:nth-child(4n+3){border-top-color:var(--accent-2)}
+  .flow-node .ft{font-size:21px;font-weight:800;color:var(--ink);margin-bottom:8px}
+  .flow-node .fd{font-size:15px;color:var(--muted);line-height:1.35}
+  .flow-arrow{display:flex;align-items:center;font-size:34px;color:var(--accent);padding:0 8px;font-weight:400}
+
+  /* trust grid (slide 12) */
+  .trust-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:2vh;flex:1;align-content:center}
+  .trust-card{
+    background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:26px 26px;
+    box-shadow:0 8px 22px rgba(15,32,56,.07);border-left:5px solid var(--accent);
+  }
+  .trust-card:nth-child(even){border-left-color:var(--accent-2)}
+  .trust-card .tt{font-size:23px;font-weight:800;color:var(--ink);margin-bottom:8px}
+  .trust-card .td{font-size:18px;color:var(--ink-soft);line-height:1.4}
+
+  /* demo slide (11) */
+  .demo-cols{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-top:2vh;flex:1;align-content:center}
+  .demo-card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:30px;box-shadow:0 8px 22px rgba(15,32,56,.07)}
+  .demo-card h3{font-size:26px;color:var(--ink);margin-bottom:14px}
+  .demo-card h3 .tag{font-size:14px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);display:block;margin-bottom:4px}
+
+  /* clinical positioning (13) */
+  .status-banner{
+    margin-top:2.4vh;background:#fff8ec;border:1px solid #f0dcb4;border-left:6px solid var(--warn);
+    border-radius:14px;padding:22px 26px;
+  }
+  .status-banner .flag{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:22px;color:var(--warn);font-weight:700}
+  .status-banner .flag b{color:#7a2e00}
+  .path-steps{display:flex;gap:0;align-items:stretch;margin-top:2.4vh;flex-wrap:wrap}
+  .path-step{
+    flex:1;min-width:200px;background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:20px;box-shadow:0 6px 18px rgba(15,32,56,.06);
+  }
+  .path-step .sn{font-size:14px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent-2);font-weight:700}
+  .path-step .sh{font-size:21px;font-weight:800;color:var(--ink);margin:8px 0 6px}
+  .path-step .sd{font-size:16px;color:var(--muted);line-height:1.35}
+  .path-step.here{border-top:5px solid var(--accent)}
+  .path-arrow{display:flex;align-items:center;font-size:26px;color:var(--muted);padding:0 6px}
+
+  .caveat{font-size:16px;color:var(--warn);margin-top:14px;padding-left:26px;position:relative}
+  .caveat::before{content:"⚠";position:absolute;left:0;top:0}
+
+  /* footer / counter */
+  .footer{
+    position:fixed;bottom:0;left:0;right:0;height:42px;z-index:10;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:0 26px;font-size:14px;color:var(--muted);
+    background:linear-gradient(180deg,rgba(244,247,250,0),rgba(244,247,250,.9) 40%);
+  }
+  .footer .lab{font-weight:700;color:var(--ink-soft);letter-spacing:.04em}
+  .footer .lab .dot{color:var(--accent)}
+  .counter{font-variant-numeric:tabular-nums;font-weight:700;color:var(--ink)}
+  .progress{position:fixed;top:0;left:0;height:4px;background:linear-gradient(90deg,var(--accent),var(--accent-2));z-index:11;transition:width .35s ease}
+
+  .hint{position:fixed;bottom:52px;right:20px;font-size:13px;color:var(--muted);z-index:10;opacity:.8}
+</style>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+<div class="deck" id="deck">
+
+  <!-- 1 · TITLE -->
+  <section class="slide title-slide">
+    <div class="brand">DVXR Lab · University of North Texas</div>
+    <h1>LLM-Based Multimodal Clinical Risk Prediction &amp; Mental-Health Analytics</h1>
+    <div class="rule"></div>
+    <p class="sub">BCI (Galea / EMOTIV) · Wearables · EHR · Diabetes</p>
+    <div class="metrics title-metrics">
+      <div class="metric"><div class="n">12.8</div><div class="l">glucose RMSE mg/dL @30 min<br>(beats persistence)</div></div>
+      <div class="metric"><div class="n v">0.961</div><div class="l">depression AUROC<br>held-out</div></div>
+      <div class="metric"><div class="n">0.955</div><div class="l">WESAD stress<br>held-out</div></div>
+    </div>
+  </section>
+
+  <!-- 2 · THE FRAMEWORK -->
+  <section class="slide">
+    <div class="kicker">The framework</div>
+    <h2>One system, many signals</h2>
+    <div class="body">
+      <div class="col-text">
+        <ul>
+          <li><b>EEG + PHR + PPG</b> flow into a single availability-aware model.</li>
+          <li>Two clinical targets from shared representation: <b>glucose</b> and <b>mind-state</b>.</li>
+          <li>Modalities are complementary, not siloed — one pipeline, many devices.</li>
+        </ul>
+      </div>
+      <div class="col-fig">
+        <figure>
+          <img src="diagrams/framework_overview.png" alt="DVXR framework overview: EEG, PHR and PPG signals feeding glucose and mind-state prediction">
+          <figcaption>Framework overview — signals to clinical risk outputs.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 · GOAL 1 INGESTION -->
+  <section class="slide">
+    <div class="kicker">Goal 1 · Ingestion</div>
+    <h2>The pipeline ingests all five modalities</h2>
+    <div class="body">
+      <div class="col-text">
+        <ul>
+          <li>Five modalities land in one canonical schema — <b>EEG, PPG/wearable, EHR, CGM, behavioral</b>.</li>
+          <li>Plug-and-play encoders per device; missing streams handled by design.</li>
+        </ul>
+        <p class="caveat">Behavioral metrics are wired into the pipeline, not yet run end-to-end.</p>
+      </div>
+      <div class="col-fig">
+        <figure>
+          <img src="figures/fig_ingestion_matrix.png" alt="Ingestion matrix showing the five modalities supported by the pipeline">
+          <figcaption>Ingestion matrix — modality coverage across the pipeline.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 · MODEL FLOW -->
+  <section class="slide">
+    <div class="kicker">Model flow</div>
+    <h2>Device streams → experts → fusion → forecast → explanation</h2>
+    <div class="flow">
+      <div class="flow-node"><div class="ft">Device streams</div><div class="fd">EEG · PPG · wearable · CGM · EHR</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node"><div class="ft">Experts</div><div class="fd">Per-modality encoders, availability-aware</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node"><div class="ft">Fusion</div><div class="fd">Mixture-of-experts over present signals</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node"><div class="ft">Forecast</div><div class="fd">Glucose horizons · mind-state heads</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node"><div class="ft">Explanation</div><div class="fd">Calibrated, abstaining, LLM-guarded</div></div>
+    </div>
+    <p class="sub" style="margin-top:auto">The end-to-end path each observation takes — from raw device stream to a guarded, explainable risk output.</p>
+  </section>
+
+  <!-- 5 · MODEL IN DETAIL -->
+  <section class="slide">
+    <div class="kicker">Model in detail</div>
+    <h2>Availability-aware mixture-of-experts</h2>
+    <div class="body">
+      <div class="col-text">
+        <ul>
+          <li>Each modality has a dedicated <b>expert encoder</b>.</li>
+          <li>A gate weighs only the experts whose signals are <b>present</b> for a subject.</li>
+          <li>Graceful degradation: partial device sets still yield a prediction.</li>
+        </ul>
+      </div>
+      <div class="col-fig">
+        <figure>
+          <img src="diagrams/model_architecture.png" alt="Model architecture: availability-aware mixture-of-experts">
+          <figcaption>Availability-aware mixture-of-experts architecture.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6 · GLUCOSE RESULT -->
+  <section class="slide">
+    <div class="kicker">Goal 2 · Result — glucose</div>
+    <h2>Beats persistence at every horizon</h2>
+    <div class="body">
+      <div class="col-text">
+        <ul>
+          <li>RMSE <b>12.8 / 21.9 / 26.6 / 29.1</b> mg/dL @ 30 / 60 / 90 / 120 min.</li>
+          <li>Superiority gate over persistence <b>passed</b> at all four horizons.</li>
+          <li>Evaluated patient-held-out — no leakage across subjects.</li>
+        </ul>
+        <div class="metrics">
+          <div class="metric"><div class="n">12.8</div><div class="l">RMSE mg/dL @30 min</div></div>
+          <div class="metric"><div class="n">29.1</div><div class="l">RMSE mg/dL @120 min</div></div>
+        </div>
+      </div>
+      <div class="col-fig duo">
+        <figure>
+          <img src="figures/fig_glucose_horizons.png" alt="Glucose forecast RMSE by horizon versus persistence baseline">
+          <figcaption>RMSE by horizon vs. persistence.</figcaption>
+        </figure>
+        <figure>
+          <img src="figures/glucose_forecast_scatter.png" alt="Predicted versus observed glucose scatter">
+          <figcaption>Predicted vs. observed glucose.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 · WHY THIS MODEL -->
+  <section class="slide">
+    <div class="kicker">Goal 3 · Why this model?</div>
+    <h2>The causal representation is the win — not depth</h2>
+    <div class="body">
+      <div class="col-text">
+        <ul>
+          <li>Climbing the model ladder, gains come from the <b>causal representation</b>, not deeper nets.</li>
+          <li>Bigger/deeper baselines do not close the gap.</li>
+          <li>Interpretable by construction — the mechanism, not the parameter count, carries performance.</li>
+        </ul>
+      </div>
+      <div class="col-fig">
+        <figure>
+          <img src="figures/fig_model_ladder.png" alt="Model ladder comparing causal representation against deeper baselines">
+          <figcaption>Model ladder — causal representation vs. depth.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8 · WHICH DEVICE MATTERS -->
+  <section class="slide">
+    <div class="kicker">Which device matters</div>
+    <h2>Per-device leave-one-out</h2>
+    <div class="body">
+      <div class="col-text">
+        <ul>
+          <li>Each device dropped in turn to measure its marginal contribution.</li>
+          <li>Quantifies which streams are <b>load-bearing</b> vs. redundant.</li>
+          <li>Guides a minimal, deployable sensor set.</li>
+        </ul>
+      </div>
+      <div class="col-fig">
+        <figure>
+          <img src="figures/fig_per_device.png" alt="Per-device leave-one-out contribution to performance">
+          <figcaption>Per-device leave-one-out contribution.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9 · MENTAL-HEALTH HEADS vs SOTA -->
+  <section class="slide">
+    <div class="kicker">Mental-health heads</div>
+    <h2>Competitive with SOTA</h2>
+    <div class="body">
+      <div class="col-text">
+        <ul>
+          <li>Depression AUROC <b>0.961</b> — SOTA-competitive, held-out.</li>
+          <li class="violet">WESAD stress <b>0.955</b> — held-out.</li>
+          <li>Same shared representation drives both mind-state heads.</li>
+        </ul>
+        <div class="metrics">
+          <div class="metric"><div class="n">0.961</div><div class="l">depression AUROC</div></div>
+          <div class="metric"><div class="n v">0.955</div><div class="l">WESAD stress</div></div>
+        </div>
+      </div>
+      <div class="col-fig">
+        <figure>
+          <img src="figures/fig_heads_sota.png" alt="Mental-health heads compared against state-of-the-art">
+          <figcaption>Mental-health heads vs. SOTA.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10 · DIATREND COHORT -->
+  <section class="slide">
+    <div class="kicker">DiaTrend-style cohort</div>
+    <h2>CGM traces · time-in-range · cohort summary</h2>
+    <div class="col-fig duo" style="margin-top:2vh;flex:1;gap:1.6vw">
+      <figure>
+        <img src="figures/diatrend_cgm_traces.png" alt="DiaTrend-style CGM traces" style="max-height:60vh">
+        <figcaption>CGM traces</figcaption>
+      </figure>
+      <figure>
+        <img src="figures/diatrend_time_in_range.png" alt="Time-in-range distribution" style="max-height:60vh">
+        <figcaption>Time-in-range</figcaption>
+      </figure>
+      <figure>
+        <img src="figures/diatrend_cohort_summary.png" alt="Cohort summary statistics" style="max-height:60vh">
+        <figcaption>Cohort summary</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- 11 · REAL-TIME DEMO -->
+  <section class="slide">
+    <div class="kicker">Real-time demo</div>
+    <h2>BCI digital-twin — web + Unity</h2>
+    <div class="demo-cols">
+      <div class="demo-card">
+        <h3><span class="tag">Web scene</span>Browser digital-twin</h3>
+        <ul>
+          <li>Live BCI stream drives a browser-based avatar in real time.</li>
+          <li>Streams device signals through the same experts → fusion path.</li>
+        </ul>
+      </div>
+      <div class="demo-card">
+        <h3><span class="tag">Unity</span>DVXR_RT_Demo</h3>
+        <ul>
+          <li class="violet">Unity scene renders the digital-twin for immersive review.</li>
+          <li class="violet">Same guarded outputs — calibrated and abstaining.</li>
+        </ul>
+      </div>
+    </div>
+    <p class="sub" style="margin-top:auto">Demonstrations only — the real-time twin visualizes the pipeline; it is not a cleared clinical device.</p>
+  </section>
+
+  <!-- 12 · TRUST -->
+  <section class="slide">
+    <div class="kicker">Trust</div>
+    <h2>Causal · calibrated · abstains · guarded · never prescribes</h2>
+    <div class="trust-grid">
+      <div class="trust-card"><div class="tt">Causal</div><div class="td">Predictions rest on a causal representation, not spurious correlation.</div></div>
+      <div class="trust-card"><div class="tt">Calibrated</div><div class="td">Confidence is calibrated so probabilities mean what they say.</div></div>
+      <div class="trust-card"><div class="tt">Abstains</div><div class="td">Declines to answer when signals are insufficient rather than guessing.</div></div>
+      <div class="trust-card"><div class="tt">LLM explains (guarded)</div><div class="td">Language explanations are guarded — grounded in model outputs, not free-form claims.</div></div>
+      <div class="trust-card"><div class="tt">Never prescribes</div><div class="td">Outputs risk, never a diagnosis or a treatment decision.</div></div>
+      <div class="trust-card"><div class="tt">Documented</div><div class="td">Every property traced in docs/CAUSAL.md &amp; docs/EXPLAINABILITY.md.</div></div>
+    </div>
+  </section>
+
+  <!-- 13 · CLINICAL POSITIONING -->
+  <section class="slide">
+    <div class="kicker">Clinical positioning</div>
+    <h2>Clinical purpose — pre-deployment maturity</h2>
+    <div class="status-banner">
+      <div class="flag">clinical purpose, pre-deployment · <b>validated_for_clinical_use = false</b></div>
+    </div>
+    <div class="path-steps">
+      <div class="path-step here"><div class="sn">Where we are</div><div class="sh">Built &amp; retrospectively evaluated</div><div class="sd">Held-out, honest benchmarks across all goals.</div></div>
+      <div class="path-arrow">→</div>
+      <div class="path-step"><div class="sn">Next</div><div class="sh">Prospective validation</div><div class="sd">Forward-looking clinical study on unseen cohorts.</div></div>
+      <div class="path-arrow">→</div>
+      <div class="path-step"><div class="sn">Then</div><div class="sh">Regulatory &amp; deployment</div><div class="sd">Clearance and monitored rollout before clinical use.</div></div>
+    </div>
+    <p class="sub" style="margin-top:2.2vh">The framework is a clinical risk-prediction system at pre-deployment maturity. It is not validated or cleared for clinical use; prospective validation is the required next step.</p>
+  </section>
+
+</div>
+
+<div class="hint">← / → · space to navigate</div>
+<div class="footer">
+  <span class="lab">DVXR<span class="dot">·</span>Lab — UNT</span>
+  <span class="counter"><span id="cur">1</span> / <span id="total">13</span></span>
+</div>
+
+<script>
+(function(){
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var total = slides.length;
+  var i = 0;
+  var curEl = document.getElementById('cur');
+  var totalEl = document.getElementById('total');
+  var progress = document.getElementById('progress');
+  totalEl.textContent = total;
+
+  function show(n){
+    i = Math.max(0, Math.min(total - 1, n));
+    slides.forEach(function(s, idx){ s.classList.toggle('active', idx === i); });
+    curEl.textContent = i + 1;
+    progress.style.width = ((i + 1) / total * 100) + '%';
+  }
+
+  function next(){ show(i + 1); }
+  function prev(){ show(i - 1); }
+
+  document.addEventListener('keydown', function(e){
+    switch(e.key){
+      case 'ArrowRight':
+      case ' ':
+      case 'PageDown':
+        e.preventDefault(); next(); break;
+      case 'ArrowLeft':
+      case 'PageUp':
+        e.preventDefault(); prev(); break;
+      case 'Home': e.preventDefault(); show(0); break;
+      case 'End': e.preventDefault(); show(total - 1); break;
+    }
+  });
+
+  // click right / left half to advance (convenience, no external deps)
+  document.getElementById('deck').addEventListener('click', function(e){
+    if (e.clientX > window.innerWidth * 0.5) next(); else prev();
+  });
+
+  show(0);
+})();
+</script>
+</body>
+</html>
