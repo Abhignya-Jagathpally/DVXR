@@ -6,6 +6,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import AvatarScene from "./AvatarScene.jsx";
+import SkillHUD from "./SkillHUD.jsx";
+import { INITIAL_SKILL_STATE, nextSkillState } from "./skills.js";
 import {
   EXPERIMENTAL_BADGE,
   RT_DEMO_MODE,
@@ -15,16 +17,22 @@ import {
 
 export default function RTDemo() {
   const frameRef = useRef(buildFrame(0));
+  const skillRef = useRef(INITIAL_SKILL_STATE);
   const [telemetry, setTelemetry] = useState(buildFrame(0));
+  const [skillState, setSkillState] = useState(INITIAL_SKILL_STATE);
 
   useEffect(() => {
     let raf = 0;
+    let clock = 0; // deterministic monotonic clock (avoids Date.now in the reducer path)
     const stop = subscribeFrames((frame) => {
       frameRef.current = frame;
+      clock += 120;
+      skillRef.current = nextSkillState(skillRef.current, frame, clock);
     }, { intervalMs: 120 });
     // throttle the DOM readout to animation frames (the 3D scene reads frameRef directly)
     const tick = () => {
       setTelemetry(frameRef.current);
+      setSkillState(skillRef.current);
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
@@ -41,15 +49,17 @@ export default function RTDemo() {
   return (
     <section id="rt-demo" className="wrap pad-y">
       <div className="kicker reveal">
-        <span className="eyebrow">Real-time · avatar decode</span>
+        <span className="eyebrow">BCI digital twin · real-time skills</span>
       </div>
       <h2 className="display chapter-h reveal">
-        A live signal,<br />rendered honestly.
+        Your signals,<br />as a playable twin.
       </h2>
-      <p className="reveal" style={{ maxWidth: 640, opacity: 0.8 }}>
-        The cube is an avatar driven by a decoded movement command (the BCI analog).
-        It tints with the stress index. The glucose ring stays grey and abstains —
-        no synchronized EEG+CGM data exists, so no glucose value is invented.
+      <p className="reveal" style={{ maxWidth: 660, opacity: 0.8 }}>
+        A digital twin driven by live decoded EMOTIV commands — each becomes a
+        <strong> skill</strong> (Focus · Ward · Surge · Recover) that fires on intent and
+        confidence. The twin reddens with predicted stress; its glucose ring abstains
+        when no synchronized CGM stream exists — no value is invented. Built in the spirit
+        of the UNT DVXR Lab's BCI + digital-twin immersive work.
       </p>
 
       <div
@@ -76,6 +86,8 @@ export default function RTDemo() {
         </span>
 
         <AvatarScene frameRef={frameRef} />
+
+        <SkillHUD frame={telemetry} skillState={skillState} />
 
         {/* telemetry readout */}
         <div

@@ -51,3 +51,27 @@ Assets/Scripts/AvatarController.cs   Drives the avatar from the latest frame
   `experimental: true` — demonstration only, not clinical inference.
 - The web scene (`web/signal/src/components/rtdemo/`) is the runnable, screenshot-verifiable
   equivalent; this Unity scaffold satisfies the same contract for an XR/Editor deployment.
+
+## Skill system (DVXR-lab-aligned digital twin)
+
+The avatar is framed as a **BCI digital twin** whose physiology (predicted stress/glucose)
+drives the scene, and whose decoded commands become **skills** — aligned to the DVXR Lab's
+BCI + Digital-Twin + immersive-training work (e.g. VR Fire Evacuation with a BCI-driven
+avatar). The command→skill mapping is shared with the web scene (`web/signal/src/components/rtdemo/skills.js`):
+
+| Command | Skill | Effect |
+|---|---|---|
+| Neutral | 🧘 Focus | baseline calm; lowers twin stress |
+| Left | 🛡️ Ward Left | left-side guard |
+| Right | 🛡️ Ward Right | right-side guard |
+| Push | ⚡ Surge | forward burst (high effort) |
+| Pull | 💠 Recover | pull back / recover |
+
+A skill fires only when the decoded command matches with confidence ≥ 0.6 and its cooldown
+has elapsed. `AvatarController.cs` already maps command→transform; extend it with the same
+cooldown/confidence gate to drive a Unity skill HUD. The twin's glucose ring **abstains**
+(no value) when the stream reports insufficient data.
+
+**Honesty caveat (keep visible in the HUD):** the command channel is a single-subject EMOTIV
+mental-command engine label (~0.82 4-class, trial-grouped) — a demonstration control signal,
+not validated neural intent.

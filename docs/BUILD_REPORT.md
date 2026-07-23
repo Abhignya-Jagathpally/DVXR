@@ -8,6 +8,30 @@ Every number below traces to a committed scoreboard or an out-of-repo run direct
 honesty posture is enforced by `make audit` (torch-free CI) and the invariants in
 `.github/workflows/audit.yml`.
 
+## Round 2 — best-in-class, empirically-justified models (headline)
+
+The second round replaced the weak glucose result and questioned every modeling decision:
+
+- **Glucose (the headline):** CGM-autoregressive forecasting on the **real CGMacros cohort**
+  (45 subjects) — **RMSE 12.99 mg/dL @30 min** (persistence 17.40), 22.18/26.90/29.05 @60/90/120,
+  PI-95 coverage ~0.91. Superiority gate **passed** (beats persistence at every horizon under
+  patient-clustered 95% CIs); deterministic reproduction confirmed. A real jump from the last
+  loop's ~31 and competitive with published CGM SOTA. Research-only (one blocker: prospective
+  external validation). Details: `docs/MODEL_JUSTIFICATION.md`.
+- **Why this model? (honest):** the same-split model ladder shows **gradient boosting is the
+  best point forecaster at every horizon** (12.48 @30) — the deep net does not earn its
+  complexity on point accuracy; it earns it via calibration + abstention + fusion. Every model
+  beats persistence ~25% → the **representation is the win, not the architecture**.
+- **Heads:** depression 0.961/0.986, WESAD stress 0.955, stress 0.892 — SOTA-competitive,
+  protocol-labeled (`docs/HEADS_SOTA.md`). DEAP anxiety honest negative: at chance even at full
+  128 Hz (`outputs/_r2/deap_fullrate_probe.md`) — decimation hypothesis refuted.
+- **Trust:** explainability (3 layers), latency (<3 ms all paths), hallucination test, and
+  device/EHR interoperability with interpretation payloads — `docs/{EXPLAINABILITY,INTEROPERABILITY}.md`,
+  `outputs/latency_report.md`. Every question answered in `docs/DECISIONS_QA.md`.
+- **Demo:** a DVXR-lab-aligned **BCI digital-twin skill experience** (web react-three-fiber +
+  Unity scaffold) — decoded commands become avatar skills; the twin's glucose ring abstains
+  when data is insufficient. `web/signal/src/components/rtdemo/`, `docs/UNITY_RT_DEMO.md`.
+
 ## Goal 1 — ingestion / pipeline for wearable, BCI, EHR, and diabetes data
 
 A unified ingestion + encoder stack already lands heterogeneous modalities on the canonical
