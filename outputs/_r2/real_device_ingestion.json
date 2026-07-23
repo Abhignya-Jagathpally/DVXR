@@ -1,0 +1,23 @@
+{
+  "emotiv": {
+    "device": "EMOTIV EPOC X (serial E5020C07)",
+    "eeg_channels": 14,
+    "eeg_samples": 175857,
+    "duration_s": 1373.1,
+    "mental_commands": {
+      "Neutral": 9279,
+      "Left": 728,
+      "Right": 410,
+      "Push": 368,
+      "Pull": 206
+    },
+    "bandpower_rows": 10991
+  },
+  "galea": {
+    "device": "Galea / OpenBCI (BrainFlow RAW)",
+    "samples": 52548,
+    "columns": 29,
+    "eeg_channels_est": 16
+  },
+  "source": "non-public DVXR lab hardware, 2026-06-08"
+}

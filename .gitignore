@@ -42,3 +42,10 @@ src/dvxr/serve/asgi.py.before-*
 # UI recovery patch (user download) — not applied; real fix is the index.html asset path
 dvxr-ui-recovery-patch/
 ROOT_CAUSE_AND_DEPLOY.md
+
+# Real device recordings — large raw files kept out of version control (see docs/REAL_DEVICE_DATA.md)
+data/real/emotiv/*.csv
+data/real/emotiv/*.json
+data/real/emotiv/*.zip
+data/real/galea/OpenBCISession_*/
+data/real/galea/*.zip
