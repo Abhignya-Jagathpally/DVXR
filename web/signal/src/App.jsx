@@ -7,6 +7,7 @@ import SignalWorld from "./components/SignalWorld.jsx";
 import IntelligencePipeline from "./components/IntelligencePipeline.jsx";
 import ResearchSimulator from "./components/ResearchSimulator.jsx";
 import InteractiveExperience from "./components/InteractiveExperience.jsx";
+import RTDemo from "./components/rtdemo/RTDemo.jsx";
 import FeatureGrid from "./components/FeatureGrid.jsx";
 import UseCases from "./components/UseCases.jsx";
 import EvidenceSection from "./components/EvidenceSection.jsx";
@@ -31,6 +32,7 @@ export default function App() {
       <IntelligencePipeline />
       <ResearchSimulator />
       <InteractiveExperience />
+      <RTDemo />
       <FeatureGrid />
       <UseCases />
       <EvidenceSection />

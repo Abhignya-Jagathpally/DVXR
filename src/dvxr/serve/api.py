@@ -38,8 +38,8 @@ def create_app(screener_root: str | Path = _SCREENER_ROOT,
     routes (/health + the two /v1 lifecycle routes) — the benchmark/screener endpoints (/screen,
     /triage, /evidence) are NOT part of the product surface and are omitted (Gate D §23)."""
     from starlette.applications import Starlette
-    from starlette.responses import JSONResponse, PlainTextResponse
-    from starlette.routing import Route
+    from starlette.responses import JSONResponse, PlainTextResponse, StreamingResponse
+    from starlette.routing import Route, WebSocketRoute
 
     from dvxr.storage import open_local_stores
 
@@ -157,6 +157,48 @@ def create_app(screener_root: str | Path = _SCREENER_ROOT,
             return JSONResponse({"error": "internal error scoring the research prediction",
                                  "disclaimer": DISCLAIMER}, status_code=500)
         return JSONResponse(out)
+
+    def _rt_params(params) -> tuple[Optional[int], float]:
+        raw_count = params.get("count")
+        count = int(raw_count) if raw_count and raw_count.isdigit() else None
+        try:
+            interval = max(0.0, float(params.get("interval", "0.1")))
+        except (TypeError, ValueError):
+            interval = 0.1
+        return count, interval
+
+    async def realtime_ws(websocket):
+        """WS /v1/realtime/stream — EXPERIMENTAL RT-Demo frames (rt-demo-v1). The avatar
+        command is the bci_real analog; glucose abstains by construction. Not clinical."""
+        from dvxr.serve.realtime_bridge import stream_frames
+        await websocket.accept()
+        count, interval = _rt_params(websocket.query_params)
+        try:
+            async for frame in stream_frames(count=count, interval_seconds=interval):
+                await websocket.send_json(frame)
+        except Exception:  # noqa: BLE001 — client disconnect / stream end
+            pass
+        finally:
+            try:
+                await websocket.close()
+            except Exception:  # noqa: BLE001
+                pass
+
+    async def realtime_sse(request):
+        """GET /v1/realtime/sse — same EXPERIMENTAL frames as the WS route, Server-Sent
+        Events for clients where WebSocket is awkward. Defaults to a bounded stream."""
+        import json as _json
+
+        from dvxr.serve.realtime_bridge import stream_frames
+        count, interval = _rt_params(request.query_params)
+        if count is None:
+            count = 200  # SSE is a pull; keep the default stream bounded
+
+        async def _gen():
+            async for frame in stream_frames(count=count, interval_seconds=interval):
+                yield f"data: {_json.dumps(frame)}\n\n"
+
+        return StreamingResponse(_gen(), media_type="text/event-stream")
 
     async def research_predict_agentic(request):
         """POST /v1/research/predict/agentic — same scoring as /v1/research/predict, routed
@@ -332,6 +374,8 @@ def create_app(screener_root: str | Path = _SCREENER_ROOT,
         Route("/triage/{task}", triage),
         Route("/v1/research/predict", research_predict, methods=["POST"]),
         Route("/v1/research/predict/agentic", research_predict_agentic, methods=["POST"]),
+        WebSocketRoute("/v1/realtime/stream", realtime_ws),
+        Route("/v1/realtime/sse", realtime_sse),
         Route("/v1/risk-reports", risk_reports, methods=["POST"]),
         Route("/v1/predictions/{prediction_id}", get_risk_report),
         Route("/v1/alerts/{alert_id}", get_alert),
