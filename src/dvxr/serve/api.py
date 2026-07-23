@@ -158,6 +158,32 @@ def create_app(screener_root: str | Path = _SCREENER_ROOT,
                                  "disclaimer": DISCLAIMER}, status_code=500)
         return JSONResponse(out)
 
+    async def research_predict_agentic(request):
+        """POST /v1/research/predict/agentic — same scoring as /v1/research/predict, routed
+        through the LangGraph orchestration spine. The numeric body is byte-identical to the
+        direct path; it adds a per-node ``trace`` and a grounded ``explanation`` (the graph
+        orchestrates, it never computes a new number). Falls back to the direct path when the
+        optional ``agents`` extra (LangGraph) is not installed."""
+        from dvxr.serve.research_predict import ValidationError, run_research_prediction
+        try:
+            body = await request.json()
+        except Exception:  # noqa: BLE001 — a malformed body is a client error
+            return JSONResponse({"error": "request body must be valid JSON", "disclaimer": DISCLAIMER},
+                                status_code=400)
+        try:
+            from dvxr.serve.agents import agentic_available, run_agentic_prediction
+            if agentic_available():
+                out = run_agentic_prediction(body, screener_root=str(root))
+            else:
+                out = run_research_prediction(body, screener_root=str(root))
+                out["orchestration"] = "unavailable_direct_fallback"
+        except ValidationError as e:
+            return JSONResponse({"error": str(e), "disclaimer": DISCLAIMER}, status_code=400)
+        except Exception:  # noqa: BLE001 — never leak internals; abstain-shaped safe error
+            return JSONResponse({"error": "internal error scoring the research prediction",
+                                 "disclaimer": DISCLAIMER}, status_code=500)
+        return JSONResponse(out)
+
     def _principal(request):
         from dvxr.serve.auth import authenticate
         return authenticate(request.headers.get("X-API-Key"), principals, unsafe_dev=unsafe_dev)
@@ -286,6 +312,7 @@ def create_app(screener_root: str | Path = _SCREENER_ROOT,
     product_routes = [
         Route("/health", health),
         Route("/v1/research/predict", research_predict, methods=["POST"]),
+        Route("/v1/research/predict/agentic", research_predict_agentic, methods=["POST"]),
         Route("/v1/risk-reports", risk_reports, methods=["POST"]),
         Route("/v1/predictions/{prediction_id}", get_risk_report),
         Route("/v1/alerts/{alert_id}", get_alert),
@@ -304,6 +331,7 @@ def create_app(screener_root: str | Path = _SCREENER_ROOT,
         Route("/screen/subject", screen_subject, methods=["POST"]),
         Route("/triage/{task}", triage),
         Route("/v1/research/predict", research_predict, methods=["POST"]),
+        Route("/v1/research/predict/agentic", research_predict_agentic, methods=["POST"]),
         Route("/v1/risk-reports", risk_reports, methods=["POST"]),
         Route("/v1/predictions/{prediction_id}", get_risk_report),
         Route("/v1/alerts/{alert_id}", get_alert),
