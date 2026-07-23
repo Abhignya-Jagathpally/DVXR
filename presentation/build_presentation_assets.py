@@ -194,7 +194,7 @@ def fig_deep_vs_gbm():
 def main():
     FIGS.mkdir(parents=True, exist_ok=True)
     for fn in (fig_ingestion_matrix, fig_glucose_horizons, fig_model_ladder, fig_per_device,
-               fig_heads_sota, fig_deep_vs_gbm):
+               fig_heads_sota):
         fn(); print("wrote", FIGS / (fn.__name__.replace("fig_", "fig_") + ".png"))
     print("done")
 

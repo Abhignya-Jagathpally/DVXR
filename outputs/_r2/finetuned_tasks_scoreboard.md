@@ -1,0 +1,13 @@
+# Fine-tuned models for the 7 POW clinical-risk tasks (honest scoreboard)
+
+Selected model per docs/LITERATURE_REVIEW.md; subject/patient-held-out. Two targets are honest gaps (labelled), not faked.
+
+| task                       | selected_model              | metric            |    value | status                                                                              |
+|:---------------------------|:----------------------------|:------------------|---------:|:------------------------------------------------------------------------------------|
+| Stress detection           | wearable physiology (WESAD) | AUROC             |   0.955  | validated (subject-held-out)                                                        |
+| Anxiety prediction         | EEG + physiology (DEAP)     | AUROC             |   0.53   | data-limited — at chance (honest negative)                                          |
+| Depression risk            | LaBraM EEG FM (Mumtaz)      | AUROC             |   0.961  | validated — pending identity-leakage audit                                          |
+| Cognitive workload         | EEG+ECG (EEGMAT)            | AUROC             |   0.74   | validated (ECG-dominant)                                                            |
+| Glucose instability        | CGM deep model (CGMacros)   | AUROC(hypo/hyper) |   0.9785 | validated — hypo 0.976 / hyper 0.981                                                |
+| Diabetes complication risk | — (no labelled data)        | —                 | nan      | HONEST GAP: no open dataset carries real complication labels — not fine-tunable yet |
+| Clinical risk (mortality)  | GBM on MIMIC-IV labs        | AUROC             |   0.813  | trained now — 15/252 events, 5-fold grouped CV (small-n)                            |
