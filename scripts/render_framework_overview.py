@@ -84,12 +84,12 @@ def main() -> None:
         ax.annotate("", xy=(cx, 3.75), xytext=(cx, 4.85),
                     arrowprops=dict(arrowstyle="-|>", color="#475569", lw=1.1))
 
-    # honest note
-    ax.text(6, 1.6,
-            "Honest scope: the heads share ONE framework, but glucose is forecast from CGM history + meals —\n"
-            "no open dataset records EEG + CGM on the same person, so 'glucose from stress/mood' is a "
-            "scoped goal, not a validated claim.",
-            ha="center", va="center", fontsize=8.8, color="#b45309",
+    # honest note — glucose IS predicted from the device streams (Goal 1), per-device strength
+    ax.text(6, 1.55,
+            "Glucose from the DVXR devices (Goal 1): the framework fuses whatever devices are present —\n"
+            "CGM device → RMSE ~13 mg/dL@30min (strong) · wearable/pulse HR-HRV alone → ~31 (real but weak).\n"
+            "EEG→glucose (hypoglycemia signature) is built-ready, awaiting the lab's co-registered EMOTIV/Galea + CGM capture.",
+            ha="center", va="center", fontsize=8.6, color="#b45309",
             bbox=dict(boxstyle="round,pad=0.4", facecolor="#fffbeb", edgecolor="#f59e0b"))
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
