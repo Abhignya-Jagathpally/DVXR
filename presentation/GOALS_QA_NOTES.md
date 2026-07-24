@@ -812,3 +812,35 @@ So integration pays off where modalities carry complementary signal on one subje
 
 That completes Goal 3's "prepare a table for comparative performance analysis." If you want, I can drop this table into the slide deck as the Goal-3 slide, or add the depression LaBraM single-EEG number (0.961, even higher than the 0.918 SOTA baseline shown) as an annotation.
 
+
+
+---
+
+## Integration of BCI devices (Galea & EMOTIV) with the clinical LLM systems
+
+How the proposed system actually connects the lab BCI hardware (Galea biosensing headset + EMOTIV EEG) to the clinical-LLM pipeline, traced end-to-end from the real code — with the honesty caveats this repo's `make audit` gate requires.
+
+**1. Device ingestion → canonical schema.** EMOTIV EPOC X and Galea/OpenBCI sessions load through `dvxr.bci_real.ingest_emotiv` / `ingest_galea` (`src/dvxr/bci_real.py`) — EMOTIV gives 14-ch EEG @128 Hz + its Mental-Command / Performance-Metric (incl. a proprietary `PM.Stress`) / band-power streams; Galea gives 16-ch BrainFlow RAW. Converters (`scripts/convert_emotiv_subject.py`, `convert_galea_subject.py`) map every sample onto the one 13-column event table `REQUIRED_EVENT_COLUMNS` (`src/dvxr/schemas.py`: `modality="eeg"`, `channel`, `value`, `unit="uV"`, …), so a headset stream and a CGM stream live in the same schema.
+
+**2. EEG embedding.** `EEGAdapter` (`src/dvxr/encoders/eeg_adapter.py`) embeds windowed EEG via the **real pretrained LaBraM foundation model** — `LaBraMEncoder.from_pretrained()` (`src/dvxr/encoders/labram_real.py`, strict safetensors load, frozen 200-d CLS token); band-power+VQ is the fallback. Sibling adapters cover CGM (`cgm_adapter.py`) and wearable physiology (`biosignal_adapter.py`).
+
+**3. Fusion into the unified predictor.** Per-modality latents feed availability-aware learned fusion (`src/dvxr/fusion/strategies.py` — five strategies; absent modalities get a learned "absent" token and are masked, never zero-imputed) and, for glucose, the sentinel's `LearnedMaskedFusion` / `weighted_late` aggregators (`src/dvxr/fusion/aggregate.py`). Calibrated risk heads sit on top.
+
+**4. Clinical LLM layer — two distinct roles, kept separate.**
+ (a) **EHR clinical language model:** a frozen **Bio_ClinicalBERT** transformer over structured + unstructured EHR (`notes_adapter.py` / `ehr_adapter.py`), used as an embedding extractor, not a diagnoser.
+ (b) **Grounded explainer LLM:** turns frozen predictions into narratives (`src/dvxr/serve/explain.py`, `research_predict.py`, `serve/llm_explainer.py`, sentinel `health_agent.py`). It is hallucination-guarded — *"the LLM phrases, it never predicts"*; numbers are computed before the LLM and it "cannot calculate, replace, or feed values back into the prediction model," with a retry-then-deterministic guard against any number not in the facts.
+
+**5. Real-time path.** `src/dvxr/serve/realtime_bridge.py` emits `rt-demo-v1` frames (stress + BCI command + glucose-with-abstention); the live tap is **LSL** (`neuroglycemic-sentinel/config/lsl_streams.json` defines `eeg`/`wearable`/`reference_glucose` streams), guarded so absent `pylsl` never fakes a live device.
+
+```
+Galea / EMOTIV ──ingest──▶ 13-col canonical schema ──▶ LaBraM EEG embedding ┐
+  wearable / CGM / EHR ─────────────────────────────▶ per-modality encoders ┤
+                                        availability-aware masked fusion ◀───┘
+                                        └─▶ calibrated risk head ─▶ grounded clinical-LLM explanation
+                        (real-time: LSL eeg/wearable/glucose ─▶ realtime_bridge ─▶ live stress inference)
+```
+
+**Non-negotiable honesty caveats.**
+- **Galea/EMOTIV data is schema-only:** the real device sessions demonstrate the canonical *ingestion schema* for plug-and-play encoders — they are **not** used for training or validation of any clinical claim.
+- The BCI decoding demo is **single-subject / single-session, using EMOTIV's own on-device engine labels** (not experimenter-cued intent) — an experimental demonstration, not validated neural decoding (`docs/REAL_DEVICE_DATA.md`).
+- Every served head carries **`validated_for_clinical_use = False`** (`src/dvxr/serve/research_predict.py`, `llm_explainer.py`). The plumbing is real; clinical validation is not claimed.
