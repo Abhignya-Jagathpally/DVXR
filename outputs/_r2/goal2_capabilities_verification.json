@@ -1,0 +1,22 @@
+[
+  {
+    "capability": "1) BCI devices (Galea & EMOTIV) integrated with clinical-LLM systems",
+    "status": "PASS",
+    "evidence": "EMOTIV EPOC X ingested = 14-ch EEG -> canonical schema; real LaBraM embedding loaded = True; EHR clinical-LM (Bio_ClinicalBERT) adapter present; grounded explainer predicts=False (LLM explains, never predicts). CAVEAT: Galea/EMOTIV data is schema-only (not training/validation); BCI decoding is a single-subject/engine-label demo; validated_for_clinical_use=False."
+  },
+  {
+    "capability": "2) Multimodal fusion of EEG, wearable, EHR, and diabetes-related data",
+    "status": "PASS",
+    "evidence": "5 fusion strategies run on {eeg,wearable,ehr,cgm}: ['early', 'intermediate', 'late_weighted', 'attention', 'cross_modal']; 3 baseline aggregators (ensemble_avg/weighted_late/confidence_weighted) OK=True; availability-aware (EEG absent -> learned token, fuses on ['wearable_phys', 'cgm']). HONEST VERDICT: on 6 mental-health/EEG tasks the integrated fusion LOSES \u2014 5 single-modality-wins, 1 ~tie (DEAP anxiety, both at chance), 0 fusion-wins (all deltas negative, Holm p~1.0); glucose integrated-wins=True (CGM+meals 12.99 < CGM-only 13.33). Fusion helps only where modalities co-register per subject."
+  },
+  {
+    "capability": "3) Real-time stress and glucose prediction",
+    "status": "PASS",
+    "evidence": "streamed 5 rt-demo-v1 frames: real-time stress inference=True, continuous glucose (+honest abstain)=True, streaming BCI command=True; WS /v1/realtime/stream + SSE + LSL replay (eeg/wearable/reference_glucose). Glucose abstains rather than manufacturing a point when data is insufficient."
+  },
+  {
+    "capability": "4) Personalized diabetes and mental-health analytics",
+    "status": "PASS",
+    "evidence": "diabetes personalization: NeuroGlycemicNet.forward consumes patient_index + seen_patient (new-vs-seen patient kernel) = True; diabetes-risk outcomes = ['diabetes_status', 'diabetes_complication']; mental-health heads scored (6): ['stress', 'wesad_stress', 'deap_anxiety', 'deap_arousal', 'eegmat_workload', 'mumtaz_depression']. Depression 0.961 carries an identity-leakage caveat; personalization is a per-patient response kernel, population kernel for unseen patients."
+  }
+]

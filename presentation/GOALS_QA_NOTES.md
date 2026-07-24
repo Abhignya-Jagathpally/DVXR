@@ -876,3 +876,24 @@ Bio_ClinicalBERT (EHR/notes) ┘   ──▶ availability-aware masked fusion �
 **Honest verdict:** fusion pays off where modalities carry complementary signal on the **same subject** (glucose) and adds noise where one modality dominates (mental health). It is not presented as a universal win.
 
 **Caveats.** `validated_for_clinical_use = False` on every served head; Galea/EMOTIV device data is **schema-only** (plug-and-play ingestion demo, never training/validation); no public cohort co-registers EEG+CGM, so the fused EEG+glucose "NeuroGlycemic Sentinel" headline stays research-stage and abstains.
+
+
+---
+
+## Are all four capability areas addressed? — strict verification (4/4 PASS)
+
+I re-checked the four proposed capability areas by **testing** each one (running the real code), not by asserting it — harness: `scripts/verify_goal2_capabilities.py`, evidence written to `outputs/_r2/goal2_capabilities_verification.{md,json}`. Result: **4/4 PASS, no code changes required** — every area was already implemented. Honest labels (schema-only plumbing, measured negatives) are kept on the numbers.
+
+| # | Capability | Status | What was exercised (evidence) |
+|---|---|---|---|
+| 1 | **BCI (Galea & EMOTIV) ↔ clinical-LLM** | **PASS** | Real EMOTIV EPOC X session ingested → 14-ch EEG on the canonical schema (`bci_real.ingest_emotiv`); real pretrained **LaBraM** embedding loads (`labram_real.from_pretrained`); EHR **Bio_ClinicalBERT** adapter present; grounded explainer returns `predicts=False` — the LLM **explains, never predicts**. |
+| 2 | **Multimodal fusion (EEG · wearable · EHR · diabetes)** | **PASS** | All **5 fusion strategies** (early / intermediate / late_weighted / attention / cross_modal) run on `{eeg, wearable_phys, ehr, cgm}`; **3 baseline aggregators** (ensemble_avg / weighted_late / confidence_weighted) run; availability-aware — dropping EEG falls back to a learned "absent" token (no silent imputation). |
+| 3 | **Real-time stress & glucose prediction** | **PASS** | Streamed 5 `rt-demo-v1` frames: real-time stress inference ✓, continuous glucose with **honest abstention** ✓, streaming BCI command ✓ (`realtime_bridge.stream_frames`; WS + SSE + LSL for eeg/wearable/reference_glucose). |
+| 4 | **Personalized diabetes & mental-health analytics** | **PASS** | `NeuroGlycemicNet.forward` consumes `patient_index` + `seen_patient` (per-patient response kernel; population kernel for unseen patients); diabetes-risk outcomes `{diabetes_status, diabetes_complication}`; 6 mental-health heads scored (stress×2, depression, anxiety, arousal, workload). |
+
+**The honest result carried alongside the PASS (not dressed up as a win):**
+- **Fusion is not a universal win.** On the 6 mental-health/EEG tasks the integrated cross-modal fusion **loses** to the best single modality on every one — 5 single-modality-wins, 1 ~tie (DEAP anxiety, both at chance), 0 fusion-wins; all deltas negative, Holm p≈1.0. Fusion **wins only for glucose** (real CGMacros: CGM+meals 12.99 < CGM-only 13.33 RMSE @30 min).
+- **Depression 0.961/0.986** is an identity-leakage-**confounded upper bound** (subject identity decodable at 88.8%, 52× chance), not a validated biomarker.
+- **Galea/EMOTIV device data is schema-only** (plug-and-play ingestion demo, never training/validation); the BCI decoding demo is **single-subject / engine-label**; `validated_for_clinical_use = False` on every served head.
+
+**Bottom line:** all four capability areas are addressed and independently exercised (4/4 PASS). The gaps that remain are honest scientific limits (fusion helps only where modalities co-register per subject; depression confound; no public EEG+CGM co-registered cohort), documented as measured — not capability gaps in the framework.
