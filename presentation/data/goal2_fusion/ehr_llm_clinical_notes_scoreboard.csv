@@ -1,0 +1,17 @@
+task,config,metric,value
+surgery,majority,auroc,0.500000
+surgery,tfidf+lr,auroc,0.822840
+surgery,hashing+gbm,auroc,0.789203
+surgery,clinicalbert+lr,auroc,0.910324
+specialty,majority,macro_f1,0.009313
+specialty,majority,accuracy,0.221828
+specialty,majority,macro_auroc,0.500000
+specialty,tfidf+lr,macro_f1,0.437099
+specialty,tfidf+lr,accuracy,0.406983
+specialty,tfidf+lr,macro_auroc,0.960621
+specialty,hashing+gbm,macro_f1,0.035269
+specialty,hashing+gbm,accuracy,0.113838
+specialty,hashing+gbm,macro_auroc,0.500260
+specialty,clinicalbert+lr,macro_f1,0.404848
+specialty,clinicalbert+lr,accuracy,0.472330
+specialty,clinicalbert+lr,macro_auroc,0.930765

@@ -1,0 +1,14 @@
+item,type,name,implemented,source,note
+strategy,fusion,early fusion,yes,src/dvxr/fusion/strategies.py (EarlyFusion),Concatenate modality latents then MLP; also the concat baseline in outputs/benchmark_scoreboard.csv.
+strategy,fusion,intermediate fusion,yes,src/dvxr/fusion/strategies.py (IntermediateFusion),Per-modality projection then joint mixing.
+strategy,fusion,late fusion (weighted),yes,src/dvxr/fusion/strategies.py (late_weighted) + src/dvxr/fusion/aggregate.py (weighted_late),POW-required simplest form; per-modality weighted average of probabilities.
+strategy,fusion,attention-based fusion,yes,src/dvxr/fusion/strategies.py (AttentionFusion); outputs/fusion_attention.csv,Per-modality attention weights alpha_m exported for explainability.
+strategy,fusion,cross-modal transformer,yes,src/dvxr/fusion/strategies.py (cross_modal),Cross-modal attention over present-modality tokens; absent modalities masked via learned absent token.
+baseline,fusion,ensemble averaging,yes,src/dvxr/fusion/aggregate.py (ensemble_avg),POW-required baseline: unweighted mean of per-modality probabilities.
+baseline,fusion,confidence-weighted aggregation,yes,src/dvxr/fusion/aggregate.py (confidence_weighted),POW-required baseline: per-sample normalized-entropy confidence weighting.
+baseline,fusion,quality-gated fusion (abstaining),yes,src/dvxr/fusion/aggregate.py (quality_gated / gated_fusion); src/dvxr/bench/gated_fusion.py,Extension: availability x quality x freshness x confidence x (1-ood); abstains when all gates collapse.
+modality,input,EEG / BCI signals,yes,src/dvxr/encoders/eeg_adapter.py; src/dvxr/encoders/labram_real.py,Real LaBraM EEG foundation model + band-power; Mumtaz/EEGMAT/DEAP.
+modality,input,wearable physiological streams,yes,src/dvxr/encoders/biosignal_adapter.py,ECG/EDA/EMG/RESP/TEMP/PPG/motion; WESAD/PhysioNet.
+modality,input,glucose monitoring (CGM),yes,src/dvxr/encoders/cgm_adapter.py; neuroglycemic-runtime,Continuous glucose traces; CGMacros/BIG-IDEAS.
+modality,input,diabetes biomarkers,yes,src/dvxr/encoders/omics_adapter.py,Omics/biomarker adapter; feeds glucose/complication path.
+modality,input,EHR embeddings,yes,src/dvxr/encoders/ehr_adapter.py; src/dvxr/encoders/notes_adapter.py,Structured MIMIC-IV events + Bio_ClinicalBERT unstructured notes.

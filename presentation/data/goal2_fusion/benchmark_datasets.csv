@@ -1,0 +1,9 @@
+dataset,modality,task,best_metric,best_value,protocol,source,note
+WESAD,wearable physiology,stress detection,AUROC,0.955,subject-held-out 5x5 CV,outputs/_r2/finetuned_tasks_scoreboard.csv; outputs/_r2/comparative_analysis.csv,POW-listed. Single-modality best; fusion loses.
+PhysioNet Non-EEG,wearable physiology,stress detection,AUROC,0.892,subject-held-out 5x5 CV,outputs/benchmark_scoreboard.csv; outputs/_r2/comparative_analysis.csv,POW-listed (PhysioNet). Single-modality wins.
+DEAP,EEG + peripheral physiology,anxiety / arousal,AUROC,0.548,subject-held-out 5x5 CV,outputs/_r2/comparative_analysis.csv,POW-listed. Honest negative: at/near chance (known-hard cross-subject affect).
+Mumtaz MDD,EEG (LaBraM FM),depression risk,AUROC,0.961 window / 0.986 subject,subject-held-out,outputs/_labram_mumtaz/benchmark_scoreboard.csv; outputs/product/screeners/mumtaz_depression/manifest.json,Identity-leakage confound (upper bound) - see outputs/_r2/depression_identity_audit.md.
+EEGMAT,EEG + ECG,cognitive workload,AUROC,0.740,subject-held-out 5x5 CV,outputs/_labram_eegmat/benchmark_scoreboard.csv; outputs/_r2/comparative_analysis.csv,ECG-dominant single modality is the ceiling.
+CGMacros,CGM + meal events,glucose forecast / instability,RMSE@30 (mg/dL) / AUROC,12.99 / 0.976 hypo 0.981 hyper,patient-held-out,neuroglycemic-runtime/runs/cgmacros-cgm-aug-v1/missing_modality_ablation.csv; outputs/_r2/eval_cgmacros_v1.log,POW diabetes monitoring dataset. Only task where integrated fusion WINS.
+MIMIC-IV (demo),EHR structured labs,clinical risk / mortality,AUROC,0.813,5-fold grouped CV,outputs/_r2/finetuned_tasks_scoreboard.csv,POW-listed (MIMIC-IV). Small-n (15/252 events); indicative.
+MTSamples,EHR unstructured notes,surgical vs specialty,AUROC / macro-AUROC,0.910 surgical / 0.961 specialty,held-out,outputs/clinical_notes_scoreboard.csv,LLM pipeline (Bio_ClinicalBERT). ClinicalBERT wins surgical; TF-IDF wins specialty.
