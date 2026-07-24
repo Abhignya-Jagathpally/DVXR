@@ -1,0 +1,19 @@
+{
+  "name": "com.dvxr.vr-realtime",
+  "version": "0.1.0",
+  "displayName": "DVXR VR-Realtime Stats HUD",
+  "description": "Drop-in world-space VR HUD that shows a person's personalized DVXR stats (decoded BCI command, stress, glucose-or-honest-abstention) in realtime beside their existing Unity avatar. Consumes the rt-demo-v1 stream contract. EXPERIMENTAL / demonstration only — not for clinical use.",
+  "unity": "2021.3",
+  "keywords": ["dvxr", "vr", "xr", "bci", "eeg", "realtime", "digital-twin", "healthcare"],
+  "author": { "name": "DVXR" },
+  "dependencies": {
+    "com.unity.ugui": "1.0.0"
+  },
+  "samples": [
+    {
+      "displayName": "Quick Start (bootstrap + notes)",
+      "description": "One-component setup that spawns the HUD against Camera.main / your XR Rig.",
+      "path": "Samples~/QuickStart"
+    }
+  ]
+}
