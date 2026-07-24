@@ -844,3 +844,35 @@ Galea / EMOTIV ──ingest──▶ 13-col canonical schema ──▶ LaBraM EE
 - **Galea/EMOTIV data is schema-only:** the real device sessions demonstrate the canonical *ingestion schema* for plug-and-play encoders — they are **not** used for training or validation of any clinical claim.
 - The BCI decoding demo is **single-subject / single-session, using EMOTIV's own on-device engine labels** (not experimenter-cued intent) — an experimental demonstration, not validated neural decoding (`docs/REAL_DEVICE_DATA.md`).
 - Every served head carries **`validated_for_clinical_use = False`** (`src/dvxr/serve/research_predict.py`, `llm_explainer.py`). The plumbing is real; clinical validation is not claimed.
+
+---
+
+## Multimodal fusion of EEG, wearable, EHR, and diabetes-related data
+
+How the system fuses four modality families into one predictor, traced from the real code — with the honest evaluated verdict this repo's `make audit` gate requires.
+
+**1. Four modalities → four encoders** (`src/dvxr/encoders/`). Each family gets its own adapter, all sharing a `BaseAdapter` "real primary weights, deterministic fallback" contract:
+- **EEG/BCI →** the **real pretrained LaBraM foundation model** (`labram_real.py`, `LaBraMEncoder.from_pretrained()`, strict safetensors load, frozen 200-d CLS embedding).
+- **Wearable physiology →** `BiosignalAdapter` (`biosignal_adapter.py`, modality `wearable_phys`; primary MOMENT-1, fallback VQ/PCA) over HRV/EDA/resp/PPG/motion.
+- **EHR →** `EHRAdapter` (structured MIMIC code timelines) + `NotesEHRAdapter` (free-text notes) — both backed by frozen **Bio_ClinicalBERT** clinical language embeddings.
+- **Diabetes / glucose →** `CGMAdapter` (`cgm_adapter.py`; primary CGM-JEPA/Chronos/MOMENT, fallback CGM-history summary: mean, CV, MAGE, time-in-range, slope via `cgm_history_features`).
+
+**2. Canonical schema.** Every modality is aligned on the one 13-column event table `REQUIRED_EVENT_COLUMNS` (`src/dvxr/schemas.py`: `subject_id … modality, channel, value, unit … label_value`); `MODALITIES` (`config.py`) = `eeg, wearable_phys, cgm, ehr, ehr_notes, omics, behavior`.
+
+**3. Availability-aware fusion.** `CACMFModel` (`fusion/model.py`) wires per-modality latents → **VQ codebooks** → a chosen fusion strategy → joint latent `h` → calibrated risk head. Five learned strategies exist (`fusion/strategies.py`): **early, intermediate, late_weighted, attention, cross_modal** — a **missing modality gets a learned "absent" token and is masked out of attention, never zero-imputed**. Prediction-level baselines (`fusion/aggregate.py`, `AGGREGATORS`) add **weighted_late, ensemble_avg, confidence_weighted**, plus a **quality_gated** aggregator that abstains (NaN) when every gate collapses.
+
+```
+LaBraM (EEG) ─┐
+biosignal ────┤   13-col canonical schema
+CGM ──────────┼──▶  per-modality latents ──▶ VQ codebooks
+Bio_ClinicalBERT (EHR/notes) ┘   ──▶ availability-aware masked fusion ──▶ calibrated risk head
+                     (absent modality → learned "absent" token, masked; never imputed)
+```
+
+**4. The honest evaluated result** (`outputs/_r2/comparative_analysis.md`/`.csv`). Fusion is **not** a universal win:
+- **Mental-health / EEG tasks — single modality wins.** Every task's learned fusion is *worse* than the best single modality, all non-significant (Holm p=1.0): Stress-WESAD AUROC 0.955→0.871 (−0.084), Depression-Mumtaz 0.918→0.795 (−0.123), Cognitive-workload-EEGMAT 0.74→0.635 (−0.105), DEAP ≈ tie.
+- **Glucose — integration helps.** On real CGMacros, CGM+meals RMSE **12.99 < 13.33** CGM-only @30 min, and adding the wearable/pulse device lowers it further to **12.77**. (Note the separate *excursion-classification* ablation, `glucose_ablation_cgmacros.md`, finds the wearable adds no measurable AUROC there under participant-level bootstrap — honesty preserved.)
+
+**Honest verdict:** fusion pays off where modalities carry complementary signal on the **same subject** (glucose) and adds noise where one modality dominates (mental health). It is not presented as a universal win.
+
+**Caveats.** `validated_for_clinical_use = False` on every served head; Galea/EMOTIV device data is **schema-only** (plug-and-play ingestion demo, never training/validation); no public cohort co-registers EEG+CGM, so the fused EEG+glucose "NeuroGlycemic Sentinel" headline stays research-stage and abstains.
